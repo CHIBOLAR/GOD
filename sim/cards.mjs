@@ -81,12 +81,12 @@ export const BROKERS = [
     text: "COPY the printed strength of the weakest unit in your own army." },
   { key: "archerbroker", name: "Slinger", s: 1, copies: 5,
     text: "KILL the weakest unit of the opposing army." },
-  { key: "scout", name: "Scout", s: 2, copies: 5,
-    text: "REVEAL one committed unit of one player. It stays revealed." },
+  { key: "spy", name: "Spy", s: 2, copies: 5,
+    text: "SWAP with the weakest unit of the opposing army." },
   { key: "sepoy", name: "Sepoy", s: 4, copies: 5,
     text: "If your army LOSES, kill every recovering unit of the winning army." },
-  { key: "spy", name: "Spy", s: 6, copies: 5,
-    text: "SWAP with the weakest unit of the opposing army." },
+  { key: "scout", name: "Scout", s: 6, copies: 5,
+    text: "REVEAL one committed unit of one player. It stays revealed." },
 ];
 
 // ---- the victory target -----------------------------------------------------
