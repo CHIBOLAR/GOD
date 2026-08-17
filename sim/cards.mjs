@@ -3,8 +3,8 @@
 // ---- the ring ---------------------------------------------------------------
 // Each arm cancels the NEXT TWO along the ring, and is cancelled by the two behind it.
 //   ELEPHANT -> RIFLEMAN -> WARRIOR -> HORSEMAN -> ARCHER -> back to ELEPHANT
-export const ARMS = ["ELEPHANT", "RIFLEMAN", "WARRIOR", "HORSEMAN", "ARCHER"];
-export const GLYPH = { ELEPHANT: "E", RIFLEMAN: "R", WARRIOR: "W", HORSEMAN: "H", ARCHER: "A" };
+export const ARMS = ["ELEPHANT", "RIFLEMAN", "PALTAN", "HORSEMAN", "ARCHER"];
+export const GLYPH = { ELEPHANT: "E", RIFLEMAN: "R", PALTAN: "P", HORSEMAN: "H", ARCHER: "A" };
 export const armIndex = (a) => ARMS.indexOf(a);
 export const beatsIdx = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
 export const beats = (a, b) => beatsIdx(armIndex(a), armIndex(b));
@@ -22,29 +22,34 @@ export const PREY = Object.fromEntries(
 // The ladder is the lever on faction balance: the RATIO between the cheapest and dearest arm
 // is what an Archer-heavy faction has to overcome. 1..9 is a 9x ratio; shifting the whole
 // ladder up compresses it without touching the gaps or the odd/even broker shadow.
-export const LADDER = (process.env.LADDER || "1,3,5,7,9").split(",").map(Number);
+// ARMSTR assigns a strength to each arm IN RING ORDER (ELEPHANT, RIFLEMAN, WARRIOR,
+// HORSEMAN, ARCHER). Which strength sits on which arm is the one lever that can level the
+// factions without touching the ring the designer specified — the relationships stay exactly
+// as written, only the numbers move.
+export const ARMSTR = (process.env.ARMSTR || "9,3,7,5,1").split(",").map(Number);
+const S = Object.fromEntries(ARMS.map((a, i) => [a, ARMSTR[i]]));
 export const FORCE = [
-  { key: "archer", name: "Archer", arm: "ARCHER", s: LADDER[0] },
-  { key: "horseman", name: "Horseman", arm: "HORSEMAN", s: LADDER[1] },
-  { key: "warrior", name: "Warrior", arm: "WARRIOR", s: LADDER[2] },
-  { key: "rifleman", name: "Rifleman", arm: "RIFLEMAN", s: LADDER[3] },
-  { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: LADDER[4] },
+  { key: "archer", name: "Archer", arm: "ARCHER", s: S.ARCHER },
+  { key: "horseman", name: "Horseman", arm: "HORSEMAN", s: S.HORSEMAN },
+  { key: "paltan", name: "Paltan", arm: "PALTAN", s: S.PALTAN },
+  { key: "rifleman", name: "Rifleman", arm: "RIFLEMAN", s: S.RIFLEMAN },
+  { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: S.ELEPHANT },
 ];
 
 export const BROKERS = [
-  { key: "slinger", name: "Slinger", arm: "ARCHER", s: LADDER[0] + 1, copies: 5,
+  { key: "slinger", name: "Slinger", arm: "ARCHER", s: S.ARCHER + 1, copies: 5,
     text: "REMOVE the weakest unit of the opposing army." },
-  { key: "spy", name: "Spy", arm: "HORSEMAN", s: LADDER[1] + 1, copies: 5,
+  { key: "spy", name: "Spy", arm: "HORSEMAN", s: S.HORSEMAN + 1, copies: 5,
     text: "SWAP with the strongest unit of the opposing army." },
-  { key: "senapati", name: "Senapati", arm: "WARRIOR", s: LADDER[2] + 1, copies: 5,
+  { key: "senapati", name: "Senapati", arm: "PALTAN", s: S.PALTAN + 1, copies: 5,
     text: "If your army LOSES, kill every recovering unit of the winning army." },
-  { key: "sepoy", name: "Sepoy", arm: "RIFLEMAN", s: LADDER[3] + 1, copies: 5,
+  { key: "sepoy", name: "Sepoy", arm: "RIFLEMAN", s: S.RIFLEMAN + 1, copies: 5,
     text: "While ALONE in your army, fight at double strength." },
   // Deployed FACE UP. A hidden reveal-card is unenforceable at a real table: nobody can check
   // that you held one, so a player could simply claim the peek. Playing it face up also makes
   // it self-balancing — the strongest card in the game is the one that announces itself, and
   // an announced ELEPHANT invites every Archer and Rifleman at the table.
-  { key: "siege", name: "Siege Elephant", arm: "ELEPHANT", s: LADDER[4] + 1, copies: 5, faceUp: true,
+  { key: "siege", name: "Siege Elephant", arm: "ELEPHANT", s: S.ELEPHANT + 1, copies: 5, faceUp: true,
     text: "Deploy FACE UP. On deployment, REVEAL any one enemy unit." },
 ];
 
@@ -66,15 +71,32 @@ export const PATTERN = (process.env.PATTERN || "3,2,2,2,1").split(",").map(Numbe
 const NAMES = {
   ELEPHANT: ["Qutb Shahi of Golconda", "the diamond throne"],
   RIFLEMAN: ["The Firangi", "the coastal batteries"],
-  WARRIOR: ["The Mughal Host", "the Deccan campaigns"],
+  PALTAN: ["The Mughal Host", "the Deccan campaigns"],
   HORSEMAN: ["The Marathas", "Ganimi Kava"],
   ARCHER: ["The Berads", "the hill country"],
 };
 const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
 
+// COUNTS, when given, sets each faction's units per arm directly instead of rotating one
+// pattern. A pure rotation equalises how MANY units a faction holds but not what they are
+// worth, and that residue is what the rotation cannot fix.
+// Hill-climbed from the pure rotation 3/2/2/2/1. Exactly one faction needed adjusting: the
+// Mughal Host trades its last Rifleman for a third Archer, which took the worst mean faction
+// deviation from 4.21 to 1.66. Rows are factions in ring order (Elephant-lead first), columns
+// are arms in ring order: ELEPHANT RIFLEMAN PALTAN HORSEMAN ARCHER.
+const DEFAULT_COUNTS = [
+  [3, 2, 2, 2, 1],   // Qutb Shahi   — lead ELEPHANT
+  [1, 3, 2, 2, 2],   // The Firangi  — lead RIFLEMAN
+  [2, 0, 3, 2, 3],   // Mughal Host  — lead PALTAN, and no firearms at all
+  [2, 2, 1, 3, 2],   // The Marathas — lead HORSEMAN
+  [2, 2, 2, 1, 3],   // The Berads   — lead ARCHER
+];
+const COUNTS = process.env.COUNTS ? JSON.parse(process.env.COUNTS) : DEFAULT_COUNTS;
+
 export const FACTIONS = ARMS.map((lead, k) => {
   const counts = {};
-  PATTERN.forEach((n, g) => { counts[ARMS[(g + k) % 5]] = n; });
+  if (COUNTS) ARMS.forEach((a, i) => { counts[a] = COUNTS[k][i]; });
+  else PATTERN.forEach((n, g) => { counts[ARMS[(g + k) % 5]] = n; });
   const units = [];
   for (const arm of ARMS) for (let i = 0; i < counts[arm]; i++) units.push({ ...forceByArm[arm] });
   return {
@@ -83,7 +105,11 @@ export const FACTIONS = ARMS.map((lead, k) => {
   };
 });
 
-export const VICTORY_TARGET = { 2: 4, 3: 4, 4: 4, 5: 4 };
+// Two players need a longer game than the rest: with almost no alliances at two seats the
+// game collapses into a duel, where the faction asymmetry bites hardest and a short game
+// cannot regress it. Swept: target 4 gives deviation 4.96 over 3.7 rounds, target 5 gives
+// 3.82 over 4.7, target 8 drifts back to 5.42.
+export const VICTORY_TARGET = { 2: 5, 3: 4, 4: 4, 5: 4 };
 
 export function validate() {
   const p = [];

@@ -600,3 +600,72 @@ analysis.
 **And it makes the card self-balancing.** The strongest card in the game is now the one that
 announces itself — an ELEPHANT face up on the table invites every Archer and Rifleman present,
 both of which cancel it. You buy information by giving information away.
+
+---
+
+## 2026-08-18 — D031. The strength arrangement, the Paltan, and per-faction counts
+
+Three changes that together take the design from a hard failure to every gate passing, all
+measured on the **whole game with alliances** — the duel numbers in `sim/prove.mjs` are
+superseded and should not be quoted.
+
+**1. Strengths rearranged around the ring: `9,3,7,5,1`.**
+
+| Arm | Force | Broker |
+| --- | --- | --- |
+| ELEPHANT | Elephant 9 | Siege Elephant 10 |
+| PALTAN | Paltan 7 | Senapati 8 |
+| HORSEMAN | Horseman 5 | Spy 6 |
+| RIFLEMAN | Rifleman 3 | Sepoy 4 |
+| ARCHER | Archer 1 | Slinger 2 |
+
+All 24 distinct arrangements were measured. **The tidy one we had — 9,7,5,3,1 descending
+round the ring — ranked 21st of 24 at deviation 10.6.** The best is 9,3,7,5,1 at 5.88. The
+ring the designer specified is untouched: only which number sits on which arm moved, and the
+odd/even split survives exactly.
+
+It is also the better history. Matchlocks in the Deccan were slow, few and unreliable while
+massed infantry was the backbone of every army in the field, so a **Rifleman at 3 and a Paltan
+at 7** is closer to those wars than a Rifleman at 7. The descending ladder was never a design
+property — just an accident of the order we happened to write the arms down in.
+
+**2. The Warrior is now the PALTAN** — a formation, not one man. Designer's call, and it pairs
+with the Senapati who commands it.
+
+**3. Per-faction unit counts, hill-climbed from the pure rotation.** Exactly one faction needed
+adjusting: **the Mughal Host trades its last Rifleman for a third Archer**, taking the worst
+mean faction deviation from 4.21 to 1.66. The great infantry host now fields **no firearms at
+all**, which is a better identity than the rotation gave it.
+
+| Faction | Lead | Hand |
+| --- | --- | --- |
+| Qutb Shahi of Golconda | ELEPHANT | E9 E9 E9 R3 R3 P7 P7 H5 H5 A1 |
+| The Firangi | RIFLEMAN | E9 R3 R3 R3 P7 P7 H5 H5 A1 A1 |
+| The Mughal Host | PALTAN | E9 E9 P7 P7 P7 H5 H5 A1 A1 A1 |
+| The Marathas | HORSEMAN | E9 E9 R3 R3 P7 H5 H5 H5 A1 A1 |
+| The Berads | ARCHER | E9 E9 R3 R3 P7 P7 H5 A1 A1 A1 |
+
+⚠️ The cost: the factions are no longer one pattern rotated, so there is no symmetry argument
+left at all. Balance here is measured and must be **re-measured whenever anything moves**.
+
+**4. Two players need a longer game: victory target 5, everyone else 4.** At two seats
+alliances almost never fire (4% of rounds against 87% at three), so the game collapses into a
+duel where the asymmetry bites hardest and a short game cannot regress it. Swept: target 4
+gives deviation 4.96 over 3.7 rounds, **target 5 gives 3.82 over 4.7**, target 8 drifts back
+to 5.42.
+
+### Where it landed — `npm run gates`, 3000 games per player count
+
+| Gate | Result |
+| --- | ---: |
+| worst seat deviation, 2–5p | **2.1** |
+| worst faction deviation, 2–5p | **4.3** |
+| game length | 4.4 – 6.0 rounds |
+| games decided on the target | **100%** |
+| rounds containing an alliance (3p+) | **87%** |
+| Power Brokers drawn per game | 10.7 of 25 |
+
+**8 gates, 8 pass, 0 warn, 0 fail.**
+
+The supply figure settles the designer's question: **25 is comfortable**, with the longest
+games drawing under half of it.
