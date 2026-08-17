@@ -464,8 +464,28 @@ defeat draws one broker per defeated player, so 1.5–2 leave the supply per rou
 lost in battle. Over a 7-round game that is comfortably inside 25 — but it is the assumption
 behind "25 is enough", and it is the number to re-check if games ever run long.
 
-⚠️ **Still undecided, and it changes the rate:** one broker per defeated **player**, or one per
-defeated **army**? The designer's wording — *"if you lose you recruit 1 power broker
-irrespective of units committed"* — reads as per player, which is the stronger catch-up. The
-old game drew one per winning **army** and gave it to the senior ally alone (Law 7.3–7.4),
-which is why 20 lasted there.
+**Settled in D026:** one per defeated **player**.
+
+
+---
+
+## 2026-08-18 — D026. One Power Broker per defeated PLAYER
+
+**Ruling:** every player with a unit in the defeated army recruits **one** Power Broker,
+whatever they committed. A three-player losing army draws three.
+
+**Reason:** designer ruling, and it is the stronger catch-up. Contrast the old game, which drew
+one per winning **army** and handed it to the senior ally alone (Law 7.3–7.4) — scarce, and
+concentrated on the player already winning. This is the opposite on both axes: plentiful, and
+spread across everyone who is behind.
+
+**Rate:** ~1.5–2 brokers leave the supply per round at 5 players, so a 7-round game uses
+11–14 of the 25. Comfortable, but it is the assumption behind "25 is enough" (D025).
+
+⚠️ **The interaction to measure, and it is the sharpest edge in the economy.** Joining a losing
+army with ONE cheap unit costs one card and pays one broker — card-neutral and
+quality-positive. Three players can do that at once, so a defeated army can become a shared
+broker farm. What stops it being degenerate is that the *winning* army is where the victory
+points are, and points are what end the game: aiming to lose is aiming not to win. That is
+probably enough. **Measure it** — specifically, whether a player who never tries to win can
+out-tempo the table on brokers alone.
