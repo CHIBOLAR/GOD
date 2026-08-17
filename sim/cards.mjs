@@ -47,7 +47,7 @@ export const FORCE = [
 const ABILITY = {
   siege:    { name: "Siege Elephant", faceUp: true, text: "Deploy FACE UP. On deployment, REVEAL any one enemy unit." },
   rockets: { name: "Sultan Rockets", text: "If your army LOSES, burn every recovering unit of the winning army." },
-  spy:      { name: "Spy", text: "SWAP with the strongest unit of the opposing army." },
+  spy:      { name: "Spy", text: "SWAP with the strongest unit of the opposing army. The exchange is PERMANENT — each card joins the other player's force for the rest of the game." },
   subhedar: { name: "Subhedar", text: "REMOVE the weakest unit of the opposing army." },
   sepoy:    { name: "Sepoy", text: "While ALONE in your army, fight at double strength." },
 };

@@ -821,3 +821,27 @@ survive that.
 ⚠️ **Lesson, third time this session:** the constraint I imposed to protect the design (D032's
 "lead arm strictly largest") was doing real work, but the SEARCH inside it was too timid. A
 timid search inside a good constraint still produces a bland answer.
+
+---
+
+## 2026-08-18 — D036. A Spy's theft is PERMANENT
+
+**Ruling:** when a Spy swaps, the two cards **change owner for good**. The stolen unit joins the
+thief's force and the Spy joins the victim's, for the rest of the game.
+
+**Reason:** the designer plays it this way and remembers it as the card's whole point. Their old
+Law defined SWAP but left *"which army a swapped unit follows after the battle"* explicitly
+undefined, so both readings were live.
+
+**Measured, and it is free:** faction deviation 6.7 (battle-only) against 7.0 (permanent) —
+inside the noise. Every other gate identical.
+
+⚠️ **But be clear WHY it is free: the Spy seldom gets through.** A theft completes in only
+**12% of two-player games, rising to 31% at eight.** Four filters stack — you must lose a
+battle to recruit at all, draw the Spy from five broker types, choose to commit it, and get it
+past the ring, where a Rifleman 3 or a Cannon 7 cancels it.
+
+Taken anyway. A card that appears in one game in four and changes that game's shape for good is
+worth more than one that fires every round and nudges a total. **If it should fire more often,
+the lever is the Spy's arm** — HORSEMAN is cancelled by Rifleman and Cannon, two of the
+commonest cards in the game.

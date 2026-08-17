@@ -55,6 +55,7 @@ export function resolveBattle(raw) {
       }
     }
   });
+  const swaps = [];
   for (const p of plan) if (p.k === "kill") p.t.dead = true;
   for (const p of plan) {
     if (p.k !== "swap" || p.u.dead || p.t.dead) continue;
@@ -64,15 +65,17 @@ export function resolveBattle(raw) {
     const mi = mine.indexOf(p.u), ti = armies[tj].indexOf(p.t);
     if (mi < 0 || ti < 0) continue;
     mine[mi] = p.t; armies[tj][ti] = p.u;
+    // record the exchange so the caller can make it permanent if the rules say so
+    swaps.push({ spy: p.u, taken: p.t, thief: p.u.owner, victim: p.t.owner });
   }
   armies = armies.map((a) => a.filter((u) => !u.dead));
 
   // ---- totals; the highest takes the ground, and armies level at the top all win
   const totals = armies.map((a) => a.reduce((s, u) => s + value(u, a), 0));
   const fielded = raw.map((a, i) => (a.length ? i : -1)).filter((i) => i >= 0);
-  if (!fielded.length) return { armies, totals, winners: new Set() };
+  if (!fielded.length) return { armies, totals, swaps, winners: new Set() };
   const top = Math.max(...fielded.map((i) => totals[i]));
-  return { armies, totals, winners: new Set(fielded.filter((i) => totals[i] === top)) };
+  return { armies, totals, swaps, winners: new Set(fielded.filter((i) => totals[i] === top)) };
 }
 
 // Points: each player in a winning army scores 1 for every surviving unit of theirs.

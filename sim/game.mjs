@@ -26,6 +26,9 @@ const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger
 export const NUM_ARMIES = Number(process.env.ARMIES || 2);
 const ARMY_CAP = Number(process.env.CAP || 3);
 const MAX_PER_ARMY = ARMY_CAP;
+// A Spy's theft is PERMANENT: the two cards change owner for good. Measured as free —
+// faction deviation 6.7 vs 7.0 — because a theft completes in only 12-31%% of games.
+const PERMANENT_SWAP = process.env.PERMSWAP !== "0";
 
 export function newGame(factionKeys, target, rnd) {
   const supply = [];
@@ -112,6 +115,8 @@ function accepts(m, army, rnd) {
   return rnd() < (biggest >= mineN ? 0.75 : 0.35);
 }
 
+export let st_swaps = 0;
+export const resetSwaps = () => { st_swaps = 0; };
 export function playRound(g, rnd) {
   const n = g.players.length;
   const m = {
@@ -159,6 +164,22 @@ export function playRound(g, rnd) {
     result = resolveBattle(m.armies);
     awarded = spoils(result);
     for (const [p, v] of awarded) g.players[p].vp += v;
+  }
+
+  // ---- a Spy's theft: PERMANENT if enabled. The two cards change owner for good, each
+  // joining the other player's deck. Otherwise the swap lasts only the battle.
+  if (result) st_swaps += result.swaps.length;
+  if (PERMANENT_SWAP && result) {
+    for (const sw of result.swaps) {
+      const thief = g.players[sw.thief], victim = g.players[sw.victim];
+      const iSpy = thief.hand.indexOf(sw.spy.ref), iTaken = victim.hand.indexOf(sw.taken.ref);
+      if (iSpy < 0 || iTaken < 0) continue;
+      thief.hand.splice(iSpy, 1); victim.hand.splice(iTaken, 1);
+      thief.hand.push(sw.taken.ref); victim.hand.push(sw.spy.ref);
+      sw.spy.ref.owner = sw.victim; sw.taken.ref.owner = sw.thief;
+      sw.spy.army = sw.taken.army;                 // each follows its new army's fate
+      sw.taken.army = sw.spy.army;
+    }
   }
 
   // ---- the economy: winners recover, the defeated burn and each recruits one broker
