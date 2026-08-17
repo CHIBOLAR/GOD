@@ -669,3 +669,40 @@ to 5.42.
 
 The supply figure settles the designer's question: **25 is comfortable**, with the longest
 games drawing under half of it.
+
+
+---
+
+## 2026-08-18 — D032. Faction identity beats the balance gate
+
+**Ruling:** every faction must hold **strictly more of its lead arm than of any other**. Counts
+are hill-climbed for balance *subject to that constraint*, not freely.
+
+| Faction | Lead | Hand |
+| --- | --- | --- |
+| Qutb Shahi of Golconda | ELEPHANT | E9 E9 E9 R3 R3 C7 C7 H5 H5 W1 |
+| The Firangi | RIFLEMAN | E9 E9 R3 R3 R3 C7 C7 H5 H5 W1 |
+| The Mughal Host | CANNON | E9 E9 C7 C7 C7 C7 H5 H5 W1 W1 |
+| The Marathas | HORSEMAN | E9 E9 R3 R3 C7 H5 H5 H5 W1 W1 |
+| The Berads | WARRIOR | E9 E9 R3 R3 C7 C7 H5 W1 W1 W1 |
+
+**Reason.** An unconstrained hill-climb reached faction deviation **3.4** and passed all eight
+gates — by dissolving the factions. It produced a **Cannon faction holding three elephants and
+two cannons**, two different factions each holding three elephants, and a Firangi hand down at
+a raw total of 38 against Qutb's 58. The metric was satisfied and the game read worse.
+
+Constrained, the climb stalls at **6.6** — one warn.
+
+⚠️ **The gate of 5 is ours, not a law.** It was written in Phase 1 by analogy with the old
+game's seat-fairness standard, and it is not worth a defect every player meets on their first
+read. A Cannon faction that fields more elephants than cannons is visible immediately; a 6.6%
+win-rate skew takes dozens of games to feel.
+
+**And the skew sits where it matters least.** At five players it is **2.8**, well inside the
+gate. The 6.6 is concentrated at two players — the seat count where alliances almost never fire
+(4% of rounds against 87% at three) and the game is least itself.
+
+⚠️ **Lesson worth keeping, and it is the second time this session:** a hill-climb optimises what
+you measure and spends anything you did not. The first time it took a Rifleman off the Mughal
+Host and improved the game; this time it took their cannons and ruined them. **Constrain the
+identity, then optimise inside it.**

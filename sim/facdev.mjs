@@ -28,5 +28,7 @@ for (const n of COUNTS) {
   rounds += rd / GAMES;
 }
 const mean = Object.fromEntries([...dev].map(([k, xs]) => [k, +(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(2)]));
-const worst = Math.max(...[...dev].flatMap(([, xs]) => xs.map(Math.abs)));
-console.log(JSON.stringify({ mean, worst: +worst.toFixed(2), rounds: +(rounds / COUNTS.length).toFixed(1) }));
+let worst = 0, worstName = "", worstSigned = 0;
+for (const [k, xs] of dev) for (const x of xs) if (Math.abs(x) > worst) { worst = Math.abs(x); worstName = k; worstSigned = x; }
+console.log(JSON.stringify({ mean, worst: +worst.toFixed(2), worstName, worstSigned: +worstSigned.toFixed(2),
+  rounds: +(rounds / COUNTS.length).toFixed(1) }));

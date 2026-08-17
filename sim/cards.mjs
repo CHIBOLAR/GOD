@@ -89,8 +89,8 @@ const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
 // are arms in ring order: ELEPHANT RIFLEMAN CANNON HORSEMAN WARRIOR.
 const DEFAULT_COUNTS = [
   [3, 2, 2, 2, 1],   // Qutb Shahi   — lead ELEPHANT
-  [1, 3, 2, 2, 2],   // The Firangi  — lead RIFLEMAN
-  [2, 0, 3, 2, 3],   // Mughal Host  — lead CANNON, and no firearms at all
+  [2, 3, 2, 2, 1],   // The Firangi  — lead RIFLEMAN
+  [2, 0, 4, 2, 2],   // Mughal Host  — lead CANNON, and no firearms at all
   [2, 2, 1, 3, 2],   // The Marathas — lead HORSEMAN
   [2, 2, 2, 1, 3],   // The Berads   — lead WARRIOR
 ];
