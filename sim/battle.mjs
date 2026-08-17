@@ -28,7 +28,7 @@ const weakest = (a) => a.reduce((b, u) => (!b || u.s < b.s ? u : b), null);
 const strongest = (a) => a.reduce((b, u) => (!b || u.s > b.s ? u : b), null);
 
 // The Sepoy doubles while alone in its army.
-const value = (u, army) => (u.broker === "subhedar" && army.length === 1 ? u.s * 2 : u.s);
+const value = (u, army) => (u.broker === "sepoy" && army.length === 1 ? u.s * 2 : u.s);
 
 export function resolveBattle(rawA, rawB) {
   let A = rawA.map((u) => ({ ...u }));
@@ -43,7 +43,7 @@ export function resolveBattle(rawA, rawB) {
   const plan = [];
   const scan = (mine, foe) => {
     for (const u of mine) {
-      if (u.broker === "slinger") { const t = weakest(foe); if (t) plan.push({ k: "kill", t }); }
+      if (u.broker === "subhedar") { const t = weakest(foe); if (t) plan.push({ k: "kill", t }); }
       if (u.broker === "spy") { const t = strongest(foe); if (t) plan.push({ k: "swap", u, t }); }
     }
   };
