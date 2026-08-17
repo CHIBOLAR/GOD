@@ -87,12 +87,13 @@ const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
 // Mughal Host trades its last Rifleman for a third Archer, which took the worst mean faction
 // deviation from 4.21 to 1.66. Rows are factions in ring order (Elephant-lead first), columns
 // are arms in ring order: ELEPHANT RIFLEMAN CANNON HORSEMAN WARRIOR.
+// SIX OF YOUR OWN ARM, ONE OF EVERYTHING ELSE. One sentence describes all five factions.
 const DEFAULT_COUNTS = [
-  [3, 2, 2, 2, 1],   // Qutb Shahi   — lead ELEPHANT
-  [2, 3, 2, 2, 1],   // The Firangi  — lead RIFLEMAN
-  [2, 0, 4, 2, 2],   // Mughal Host  — lead CANNON, and no firearms at all
-  [2, 2, 1, 3, 2],   // The Marathas — lead HORSEMAN
-  [2, 2, 2, 1, 3],   // The Berads   — lead WARRIOR
+  [6, 1, 1, 1, 1],   // Qutb Shahi   — six ELEPHANTS
+  [1, 6, 1, 1, 1],   // The Firangi  — six RIFLEMEN
+  [1, 1, 6, 1, 1],   // Mughal Host  — six CANNONS
+  [1, 1, 1, 6, 1],   // The Marathas — six HORSEMEN
+  [1, 1, 1, 1, 6],   // The Berads   — six WARRIORS
 ];
 const COUNTS = process.env.COUNTS ? JSON.parse(process.env.COUNTS) : DEFAULT_COUNTS;
 

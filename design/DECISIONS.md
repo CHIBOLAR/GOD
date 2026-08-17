@@ -774,3 +774,50 @@ not "worse against" — it is an opponent leaning on one arm every round with no
 a correlation, find the mechanism before writing the rule — the correlation with empty-arm
 COUNT was real, but the cause was coverage, and the two come apart exactly where the designer
 was pointing.
+
+
+---
+
+## 2026-08-18 — D035. Six of your own arm, one of everything else
+
+**Ruling:** every faction holds **six of its lead arm and one of each of the other four**. One
+sentence describes all five.
+
+| Faction | Lead | Hand | Raw total |
+| --- | --- | --- | ---: |
+| Qutb Shahi of Golconda | ELEPHANT | E9 x6 · C7 H5 R3 W1 | 70 |
+| The Mughal Host | CANNON | C7 x6 · E9 H5 R3 W1 | 60 |
+| The Marathas | HORSEMAN | H5 x6 · E9 C7 R3 W1 | 50 |
+| The Firangi | RIFLEMAN | R3 x6 · E9 C7 H5 W1 | 40 |
+| The Berads | WARRIOR | W1 x6 · E9 C7 H5 R3 | 30 |
+
+**Reason.** The designer rejected the previous compositions as bland, and was right: four of the
+five were 2/2/2/2 with one arm bumped to 3, so a faction's "speciality" was three cards out of
+ten. Only the Mughal Host read as anything.
+
+⚠️ **I had foreclosed this space on a bad reading of my own data.** D033 found extreme hands
+measured worse, but D034 established the cause was **coverage**, not extremity — and the random
+sampler had only ever generated extreme hands with three and four EMPTY arms, which fail for a
+different reason entirely. Bold hands that keep one of every arm were never tested.
+
+**Measured, and the boldest option is also the best balanced:**
+
+| Uniform pattern | Seat deviation | Faction deviation | |
+| --- | ---: | ---: | --- |
+| **6/1/1/1/1** | 3.6 | **5.0** | **8 gates, 8 pass, 0 warn, 0 fail** |
+| 5/2/1/1/1 | 1.7 | 8.8 | warn |
+| 4/2/2/1/1 | 2.5 | 10.9 | **fail** |
+| 3/2/2/2/1 (previous) | 3.4 | 6.6 | warn |
+
+**Why 6/1/1/1/1 is uniquely good:** it is the only pattern where a faction's NON-LEAD arms are
+all identical. The asymmetry is exactly one-dimensional — which arm you hold six of — so the
+five factions are pure rotations of one another. Give a faction a secondary arm and you add a
+second axis, and the ring cannot flatten two at once.
+
+**And it is a striking demonstration that the ring works.** Raw totals run from **30 to 70**,
+more than double, and the factions still measure level. Nothing else in the design would
+survive that.
+
+⚠️ **Lesson, third time this session:** the constraint I imposed to protect the design (D032's
+"lead arm strictly largest") was doing real work, but the SEARCH inside it was too timid. A
+timid search inside a good constraint still produces a bland answer.
