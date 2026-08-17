@@ -1,0 +1,522 @@
+<title>DECCAN</title>
+<!--
+  DERIVED. rules/RULEBOOK.md is the canon (DECISIONS.md D003) and wins any disagreement.
+  This is a shareable rendering for playtesters. If a rule changes, change RULEBOOK.md first.
+-->
+<style>
+  /* ---- tokens: complete light palette on bare :root ---------------------- */
+  :root {
+    /* basalt dust and limestone — the plateau in daylight */
+    --ground: #E8E9E4;
+    --surface: #F3F4F0;
+    --sunk: #DEDFD8;
+    --ink: #191D1B;
+    --muted: #5D6462;
+    --rule: #C7CAC3;
+    --gold: #8A6210;
+    --gold-soft: #B8912F;
+    --horse: #A24137;
+    --foot: #37634A;
+    --guns: #2F4E85;
+    --shadow: 0 1px 2px rgba(25, 29, 27, .07), 0 8px 24px -16px rgba(25, 29, 27, .3);
+
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --body: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+
+  /* ---- dark: bidriware. blackened zinc, silver inlay, marigold ----------- */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #14181A;
+      --surface: #1C2125;
+      --sunk: #101315;
+      --ink: #DBDFD9;
+      --muted: #8C9490;
+      --rule: #2C3237;
+      --gold: #E0A22B;
+      --gold-soft: #A87C24;
+      --horse: #D97A6C;
+      --foot: #7DB48C;
+      --guns: #7FA3D8;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px -16px rgba(0, 0, 0, .9);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #14181A;
+    --surface: #1C2125;
+    --sunk: #101315;
+    --ink: #DBDFD9;
+    --muted: #8C9490;
+    --rule: #2C3237;
+    --gold: #E0A22B;
+    --gold-soft: #A87C24;
+    --horse: #D97A6C;
+    --foot: #7DB48C;
+    --guns: #7FA3D8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px -16px rgba(0, 0, 0, .9);
+  }
+
+  /* ---- base -------------------------------------------------------------- */
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16.5px;
+    line-height: 1.62;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4.5rem) clamp(1.1rem, 4vw, 2rem) 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+  section { display: flex; flex-direction: column; gap: 1rem; }
+  p { margin: 0; max-width: 62ch; }
+  h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 600; text-wrap: balance; }
+
+  .eyebrow {
+    font-family: var(--body);
+    font-size: .715rem;
+    font-weight: 650;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0;
+  }
+
+  /* ---- hero -------------------------------------------------------------- */
+  header { display: flex; flex-direction: column; gap: 1.5rem; }
+  h1 {
+    font-size: clamp(3.4rem, 13vw, 6rem);
+    line-height: .9;
+    letter-spacing: .04em;
+    font-weight: 600;
+  }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: .55rem 1.4rem;
+    font-size: .8rem; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+    padding-bottom: 1.4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .standfirst { font-size: 1.16rem; line-height: 1.55; }
+  .standfirst strong { font-weight: 600; }
+
+  /* ---- the counter cycle ------------------------------------------------- */
+  .cycle {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.6rem 1.4rem 1.2rem;
+    display: flex; flex-direction: column; gap: .9rem; align-items: center;
+    box-shadow: var(--shadow);
+  }
+  .cycle svg { width: 100%; max-width: 24rem; height: auto; display: block; }
+  .cycle-note {
+    font-size: .875rem; color: var(--muted); text-align: center; max-width: 34ch;
+  }
+  .cycle-note b { color: var(--ink); font-weight: 650; }
+  .n-horse { fill: var(--horse); }
+  .n-foot  { fill: var(--foot); }
+  .n-guns  { fill: var(--guns); }
+  .arc { fill: none; stroke-width: 2.5; opacity: .85; }
+  .a-horse { stroke: var(--horse); }
+  .a-foot  { stroke: var(--foot); }
+  .a-guns  { stroke: var(--guns); }
+  .node-label {
+    font-family: var(--body); font-size: 15px; font-weight: 700;
+    letter-spacing: .1em; fill: var(--surface);
+  }
+
+  /* ---- the round: a real sequence, so it is numbered ---------------------- */
+  .round { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: grid; grid-template-columns: 2.6rem 1fr; gap: 0 1.1rem;
+    padding: 1.15rem 0; border-top: 1px solid var(--rule);
+  }
+  .step:last-child { border-bottom: 1px solid var(--rule); }
+  .step-n {
+    font-family: var(--display); font-size: 1.5rem; line-height: 1.1;
+    color: var(--gold-soft); font-variant-numeric: tabular-nums;
+  }
+  .step h3 { font-size: 1.22rem; margin-bottom: .3rem; }
+  .step p { font-size: .96rem; }
+  .step ul { margin: .55rem 0 0; padding-left: 1.05rem; display: flex; flex-direction: column; gap: .38rem; }
+  .step li { font-size: .93rem; }
+
+  /* ---- pull rule --------------------------------------------------------- */
+  .decree {
+    border-left: 3px solid var(--gold);
+    padding: .1rem 0 .1rem 1.15rem;
+    font-family: var(--display);
+    font-size: 1.24rem;
+    line-height: 1.45;
+  }
+
+  /* ---- tables ------------------------------------------------------------ */
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  th, td { text-align: left; padding: .62rem .8rem; border-bottom: 1px solid var(--rule); }
+  th {
+    font-size: .7rem; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--muted); font-weight: 650; border-bottom-color: var(--ink);
+  }
+  td.num, th.num { text-align: center; font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  ol.precedence { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: .45rem; }
+  ol.precedence b { font-weight: 650; }
+
+  /* ---- factions ---------------------------------------------------------- */
+  .factions { display: grid; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: .85rem; }
+  .faction {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
+    padding: .95rem 1rem 1rem; display: flex; flex-direction: column; gap: .6rem;
+  }
+  .faction h3 { font-size: 1.03rem; line-height: 1.25; }
+  .faction .shape {
+    font-size: .68rem; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--muted); font-weight: 650;
+  }
+  .arm { display: flex; align-items: center; gap: .4rem; }
+  .arm-name {
+    font-size: .63rem; letter-spacing: .1em; font-weight: 700;
+    width: 3.1rem; flex: none; color: var(--muted);
+  }
+  .chip {
+    font-family: var(--mono); font-size: .74rem; font-weight: 600;
+    padding: .1rem .34rem; border-radius: 2px; border: 1px solid;
+    font-variant-numeric: tabular-nums;
+  }
+  .c-horse { color: var(--horse); border-color: var(--horse); }
+  .c-foot  { color: var(--foot);  border-color: var(--foot); }
+  .c-guns  { color: var(--guns);  border-color: var(--guns); }
+  .chip.top { background: var(--sunk); }
+
+  /* ---- advice ------------------------------------------------------------ */
+  .advice { display: flex; flex-direction: column; gap: 1.15rem; }
+  .advice div { display: flex; flex-direction: column; gap: .28rem; }
+  .advice h3 { font-size: 1.06rem; }
+  .advice p { font-size: .96rem; color: var(--muted); }
+
+  /* ---- glossary ---------------------------------------------------------- */
+  dl { margin: 0; display: flex; flex-direction: column; gap: .7rem; }
+  dt {
+    font-size: .74rem; letter-spacing: .13em; text-transform: uppercase;
+    font-weight: 700; color: var(--gold);
+  }
+  dd { margin: .1rem 0 0; font-size: .94rem; color: var(--muted); }
+
+  footer {
+    border-top: 1px solid var(--rule); padding-top: 1.3rem;
+    font-size: .83rem; color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    header, .cycle { animation: rise .5s ease-out both; }
+    .cycle { animation-delay: .1s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <h1>DECCAN</h1>
+    <div class="meta">
+      <span>2&ndash;8 players</span><span>30&ndash;45 minutes</span><span>108 cards</span>
+    </div>
+    <p class="standfirst">
+      Two armies form on one piece of ground, three fronts wide. You do not command an army &mdash;
+      you put units <em>into</em> one, alongside whoever else wants the same ground, and it pays out
+      to whoever actually won the fighting. Sometimes that is you. Sometimes you have just spent
+      three good units buying somebody else a victory.
+    </p>
+    <p class="standfirst"><strong>Every unit you commit is gone for good, win or lose. Your faction is
+      the whole of your war.</strong></p>
+  </header>
+
+  <section class="cycle" aria-label="The counter cycle">
+    <svg viewBox="0 0 400 330" role="img" aria-label="Horse rides down Guns, Guns break Foot, Foot holds Horse">
+      <defs>
+        <marker id="hh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--horse)"/>
+        </marker>
+        <marker id="hf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--foot)"/>
+        </marker>
+        <marker id="hg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--guns)"/>
+        </marker>
+      </defs>
+
+      <path class="arc a-horse" d="M226 95 Q287 147 304 225" marker-end="url(#hh)"/>
+      <path class="arc a-guns"  d="M280 268 Q200 294 120 268" marker-end="url(#hg)"/>
+      <path class="arc a-foot"  d="M96 225 Q113 147 174 95"  marker-end="url(#hf)"/>
+
+      <circle class="n-horse" cx="200" cy="52"  r="46"/>
+      <circle class="n-guns"  cx="330" cy="268" r="46"/>
+      <circle class="n-foot"  cx="70"  cy="268" r="46"/>
+
+      <text class="node-label" x="200" y="58" text-anchor="middle">HORSE</text>
+      <text class="node-label" x="330" y="274" text-anchor="middle">GUNS</text>
+      <text class="node-label" x="70"  y="274" text-anchor="middle">FOOT</text>
+    </svg>
+    <p class="cycle-note">
+      Horse rides down guns &middot; guns break foot &middot; foot holds horse.
+      <b>A countered unit loses its front whatever its strength.</b>
+    </p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Components</p>
+    <h2>Nine factions of twelve units</h2>
+    <p>
+      Every unit shows a <strong>type</strong> &mdash; horse, foot or guns &mdash; and a printed
+      <strong>strength</strong> from 1 to 9.
+    </p>
+    <p>
+      Every faction holds the same twelve numbers and four units of each type. What differs is which
+      type each number is printed on: the Marathas&rsquo; nines are cavalry, the Siddis&rsquo; are guns.
+    </p>
+    <p>
+      The ground has three <strong>fronts</strong> &mdash; Van, Centre and Rear &mdash; and a row for
+      each of the two armies.
+    </p>
+  </section>
+
+  <section>
+    <p class="eyebrow">A round</p>
+    <div class="round">
+
+      <div class="step">
+        <div class="step-n">1</div>
+        <div>
+          <h3>Muster</h3>
+          <p>
+            Beginning with the start player and going clockwise, on your turn you <strong>commit one
+            unit face down</strong> into an empty slot, or you <strong>pass</strong>. Turns keep going
+            round the table until every player passes in succession.
+          </p>
+          <ul>
+            <li>There are only ever <strong>two armies</strong>, and each has one slot per front &mdash;
+              three units, and so at most three players.</li>
+            <li>The first player to commit to an army is its <strong>leader</strong>. To commit into an
+              army you are not already in, offer the unit to its leader, who accepts or refuses
+              <strong>without looking at it</strong>. Once you are in, you reinforce freely.</li>
+            <li><strong>A refusal does not end your turn.</strong> Offer to the other army instead, or
+              open it yourself. One offer to each army per turn. Refused by both, you pass.</li>
+            <li>You cannot hold units in both armies. Passing is not folding.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-n">2</div>
+        <div>
+          <h3>Charge</h3>
+          <p>Turn every committed unit face up.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-n">3</div>
+        <div>
+          <h3>Battle</h3>
+          <p>Settle each front on its own, in this order:</p>
+          <ol class="precedence">
+            <li><b>Countered?</b> That unit loses, whatever its strength.</li>
+            <li><b>Otherwise</b> the higher strength wins the front.</li>
+            <li><b>Equal strength</b> &mdash; nobody wins the front.</li>
+            <li><b>An empty slot</b> loses to any unit.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-n">4</div>
+        <div>
+          <h3>Spoils</h3>
+          <p>
+            Score, then <strong>every committed unit is spent</strong> &mdash; laid face up in front of
+            its owner, out of the game for good. Win or lose. Pass the start player to the left.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Taking the ground</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Situation</th><th>Who takes the ground</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>One army won more fronts</td><td>That army</td></tr>
+          <tr><td><strong>Fronts level</strong></td><td><strong>Whoever won the Centre</strong></td></tr>
+          <tr><td>Level, and neither won the Centre</td><td>Nobody</td></tr>
+          <tr><td>Only one army was fielded</td><td>It takes the ground, and wins every front it filled</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="decree">
+      Each player in the army that took the ground scores one point for every front they personally won.
+    </p>
+    <p>The beaten army scores nothing, and a ground nobody takes pays nobody.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Winning</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Players</th><th class="num">2</th><th class="num">3</th><th class="num">4</th>
+            <th class="num">5</th><th class="num">6</th><th class="num">7</th><th class="num">8</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Points to win</td><td class="num">6</td><td class="num">6</td><td class="num">6</td>
+            <td class="num">5</td><td class="num">5</td><td class="num">5</td><td class="num">4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The first player to reach the target wins. If two reach it in the same round, they share it. If a
+      whole round passes with nothing committed, or nobody has a unit left to commit, the game ends at
+      once and the most points wins.
+    </p>
+  </section>
+
+  <section>
+    <p class="eyebrow">The nine factions</p>
+    <h2>Same twelve numbers, different arms</h2>
+    <p>
+      Every faction holds <span class="chip">1</span> <span class="chip">2</span>
+      <span class="chip">3</span> <span class="chip">4</span> <span class="chip">4</span>
+      <span class="chip">5</span> <span class="chip">5</span> <span class="chip">6</span>
+      <span class="chip">6</span> <span class="chip">7</span> <span class="chip">8</span>
+      <span class="chip">9</span> and four units of each type. Only the allocation differs &mdash;
+      which is what makes them different armies and still exactly equal ones.
+    </p>
+
+    <div class="factions">
+
+      <div class="faction">
+        <div><h3>The Marathas</h3><div class="shape">Specialist &middot; elite horse</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse top">6</span><span class="chip c-horse top">7</span><span class="chip c-horse top">8</span><span class="chip c-horse top">9</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot">2</span><span class="chip c-foot">4</span><span class="chip c-foot">5</span><span class="chip c-foot">6</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns">1</span><span class="chip c-guns">3</span><span class="chip c-guns">4</span><span class="chip c-guns">5</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>The Mughal Host</h3><div class="shape">Specialist &middot; elite foot</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse">1</span><span class="chip c-horse">3</span><span class="chip c-horse">4</span><span class="chip c-horse">5</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot top">6</span><span class="chip c-foot top">7</span><span class="chip c-foot top">8</span><span class="chip c-foot top">9</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns">2</span><span class="chip c-guns">4</span><span class="chip c-guns">5</span><span class="chip c-guns">6</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>Adil Shahi of Bijapur</h3><div class="shape">Specialist &middot; elite guns</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse">2</span><span class="chip c-horse">4</span><span class="chip c-horse">5</span><span class="chip c-horse">6</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot">1</span><span class="chip c-foot">3</span><span class="chip c-foot">4</span><span class="chip c-foot">5</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns top">6</span><span class="chip c-guns top">7</span><span class="chip c-guns top">8</span><span class="chip c-guns top">9</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>Nizam Shahi of Ahmadnagar</h3><div class="shape">Blind spot &middot; no guns</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse top">3</span><span class="chip c-horse top">5</span><span class="chip c-horse top">7</span><span class="chip c-horse top">9</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot">5</span><span class="chip c-foot">6</span><span class="chip c-foot">6</span><span class="chip c-foot">8</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns">1</span><span class="chip c-guns">2</span><span class="chip c-guns">4</span><span class="chip c-guns">4</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>The Firangi</h3><div class="shape">Blind spot &middot; no horse</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse">1</span><span class="chip c-horse">2</span><span class="chip c-horse">4</span><span class="chip c-horse">4</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot top">3</span><span class="chip c-foot top">5</span><span class="chip c-foot top">7</span><span class="chip c-foot top">9</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns">5</span><span class="chip c-guns">6</span><span class="chip c-guns">6</span><span class="chip c-guns">8</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>Qutb Shahi of Golconda</h3><div class="shape">Blind spot &middot; no foot</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse">5</span><span class="chip c-horse">6</span><span class="chip c-horse">6</span><span class="chip c-horse">8</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot">1</span><span class="chip c-foot">2</span><span class="chip c-foot">4</span><span class="chip c-foot">4</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns top">3</span><span class="chip c-guns top">5</span><span class="chip c-guns top">7</span><span class="chip c-guns top">9</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>The Rajput Contingents</h3><div class="shape">Champion &middot; the best horse in the game</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse top">2</span><span class="chip c-horse top">7</span><span class="chip c-horse top">8</span><span class="chip c-horse top">9</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot">4</span><span class="chip c-foot">4</span><span class="chip c-foot">5</span><span class="chip c-foot">5</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns">1</span><span class="chip c-guns">3</span><span class="chip c-guns">6</span><span class="chip c-guns">6</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>The Berads</h3><div class="shape">Champion &middot; the best foot in the game</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse">1</span><span class="chip c-horse">3</span><span class="chip c-horse">6</span><span class="chip c-horse">6</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot top">2</span><span class="chip c-foot top">7</span><span class="chip c-foot top">8</span><span class="chip c-foot top">9</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns">4</span><span class="chip c-guns">4</span><span class="chip c-guns">5</span><span class="chip c-guns">5</span></div>
+      </div>
+
+      <div class="faction">
+        <div><h3>The Siddis of Janjira</h3><div class="shape">Champion &middot; the best guns in the game</div></div>
+        <div class="arm"><span class="arm-name">HORSE</span><span class="chip c-horse">4</span><span class="chip c-horse">4</span><span class="chip c-horse">5</span><span class="chip c-horse">5</span></div>
+        <div class="arm"><span class="arm-name">FOOT</span><span class="chip c-foot">1</span><span class="chip c-foot">3</span><span class="chip c-foot">6</span><span class="chip c-foot">6</span></div>
+        <div class="arm"><span class="arm-name">GUNS</span><span class="chip c-guns top">2</span><span class="chip c-guns top">7</span><span class="chip c-guns top">8</span><span class="chip c-guns top">9</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="advice">
+    <p class="eyebrow">Four things worth knowing</p>
+    <div>
+      <h3>One unit cannot take a contested ground.</h3>
+      <p>One front is never a majority of three. A single unit is an opening for others to join, a bid
+        for the Centre, or a free point if nobody bothers to contest you.</p>
+    </div>
+    <div>
+      <h3>Two units is a real army.</h3>
+      <p>Win both fronts you contest and the ground is yours &mdash; two cards spent for two points,
+        where three cards buy three. Neither is right. Certainty costs cards.</p>
+    </div>
+    <div>
+      <h3>Sitting out costs nothing but the round.</h3>
+      <p>Every unit you commit is gone forever, so the player who wins most is the player who runs dry
+        first.</p>
+    </div>
+    <div>
+      <h3>Everybody can see what your faction cannot do.</h3>
+      <p>The Firangi have no cavalry and the table knows it. What they cannot see is which unit you just
+        put on the Van.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Glossary</p>
+    <dl>
+      <div><dt>Army</dt><dd>One of the two sides forming on the ground. Three slots, one per front.</dd></div>
+      <div><dt>Commit</dt><dd>Place a unit face down in an empty slot. It cannot be taken back.</dd></div>
+      <div><dt>Counter</dt><dd>Horse beats guns, guns beat foot, foot beats horse. A countered unit loses its front however strong it is.</dd></div>
+      <div><dt>Faction</dt><dd>The twelve units you start with. When they are gone you are done committing.</dd></div>
+      <div><dt>Front</dt><dd>Van, Centre or Rear. Each is settled on its own.</dd></div>
+      <div><dt>Ground</dt><dd>What the two armies are fighting over. Won by taking more fronts, or by taking the Centre when the fronts are level.</dd></div>
+      <div><dt>Leader</dt><dd>The first player to commit to an army. Accepts or refuses every unit offered to it, without looking.</dd></div>
+      <div><dt>Spent</dt><dd>Committed, and therefore out of the game for good, whatever the result.</dd></div>
+      <div><dt>Strength</dt><dd>The number printed on a unit. It never changes.</dd></div>
+    </dl>
+  </section>
+
+  <footer>
+    Nine glossary terms, no exceptions, one page of rules. Balance verified across 2&ndash;8 players:
+    every faction level to 0.016 points a battle, every seat level to within 3.9 percentage points.
+  </footer>
+
+</div>
