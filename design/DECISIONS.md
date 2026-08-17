@@ -739,3 +739,38 @@ extremity: **one hole is a characteristic, four is a weakness.**
 
 ⚠️ 260 samples of a 170^5 space is not proof. But all five best samples are worse than the
 adopted hands and the trend is consistent, so the direction is not in doubt.
+
+---
+
+## 2026-08-18 — D034. CORRECTION to D033: the variable is COVERAGE, not the number of empty arms
+
+D033 concluded "one hole is a characteristic, four is a weakness". That was a curve fit
+dressed as a principle, and the designer challenged it: why is the Mughal Host's missing
+Rifleman fine when dropping arms elsewhere is not?
+
+**The real mechanism, computed.** An arm you hold cancels the two arms it beats, so what
+matters is whether your hand can still ANSWER all five arms:
+
+| arms held | hands that can answer all five |
+| --- | --- |
+| **4 of 5** | **5 of 5** — dropping one arm never costs coverage |
+| 3 of 5 | 5 of 10 — depends which two you drop |
+| 2 of 5 | **0 of 10** — always a permanent blind spot |
+
+**The Mughal Host holds ELEPHANT, CANNON, HORSEMAN, WARRIOR and answers all five arms.** It
+cannot *field* riflemen but it can still *cancel* them, because Elephant and Warrior both beat
+that arm and it holds four of one and two of the other. The hole is pure flavour and costs
+nothing structural.
+
+A hand missing three arms can have an arm it **can never cancel, for the entire game**. That is
+not "worse against" — it is an opponent leaning on one arm every round with no possible answer.
+
+**The rule to state on any future faction:**
+
+> Drop one arm freely. Drop two only if they are not adjacent on the ring. Drop three and you
+> have a hole that can be aimed at forever.
+
+⚠️ Lesson: D033's numbers were right and its explanation was invented. When a measurement shows
+a correlation, find the mechanism before writing the rule — the correlation with empty-arm
+COUNT was real, but the cause was coverage, and the two come apart exactly where the designer
+was pointing.
