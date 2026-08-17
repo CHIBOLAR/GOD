@@ -7,19 +7,19 @@
 // Rock-paper-scissors-lizard-Spock: arm i beats i+1 and i+2, and loses to i-1 and i-2.
 // Every edge below is a real thing that happened in the Deccan.
 //
-//   SLINGER  -> ELEPHANT (missiles panic them) · SPEARMAN (harried from range)
-//   ELEPHANT -> SPEARMAN (trampled)            · HORSEMAN (horses will not face them)
-//   SPEARMAN -> HORSEMAN (pikes stop a charge) · CANNON   (gun crews overrun)
-//   HORSEMAN -> CANNON   (ridden down)         · SLINGER  (run down in the open)
-//   CANNON   -> SLINGER  (shredded)            · ELEPHANT (the one answer to them)
+//   ARCHER   -> ELEPHANT (arrows panic them)     · WARRIOR  (shot down from range)
+//   ELEPHANT -> WARRIOR  (trampled)             · HORSEMAN (horses will not face them)
+//   WARRIOR  -> HORSEMAN (spears stop a charge) · CANNON   (gun crews overrun)
+//   HORSEMAN -> CANNON   (ridden down)          · ARCHER   (run down in the open)
+//   CANNON   -> ARCHER   (outranged, shredded)  · ELEPHANT (the one answer to them)
 //
 // ⚠️ FIVE ARMS, NOT THREE, AND THE COUNT IS LOAD-BEARING. With three arms a three-card army
 // can hold one of each, and it then cancels the ENTIRE enemy army whatever it is: the best
 // army in the game became one-of-each at minimum strength (100%), printed strength stopped
 // mattering, and every faction matchup solved to exactly 0.000. With five arms no three cards
 // can cover the field, so that lock is structurally impossible. See DECISIONS.md D023.
-export const ARMS = ["SLINGER", "ELEPHANT", "SPEARMAN", "HORSEMAN", "CANNON"];
-export const GLYPH = { SLINGER: "S", ELEPHANT: "E", SPEARMAN: "P", HORSEMAN: "H", CANNON: "C" };
+export const ARMS = ["ARCHER", "ELEPHANT", "WARRIOR", "HORSEMAN", "CANNON"];
+export const GLYPH = { ARCHER: "A", ELEPHANT: "E", WARRIOR: "W", HORSEMAN: "H", CANNON: "C" };
 
 export const armIndex = (a) => ARMS.indexOf(a);
 export const beatsIdx = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
@@ -76,25 +76,25 @@ export const FACTIONS = [
   F("maratha", "The Marathas", "Ganimi Kava",
     "The finest horse in the Deccan, and it knows it.", "specialist", "HORSEMAN"),
   F("mughal", "The Mughal Host", "the Deccan campaigns",
-    "The great infantry mass. It does not manoeuvre; it does not have to.", "specialist", "SPEARMAN"),
+    "The great infantry mass. It does not manoeuvre; it does not have to.", "specialist", "WARRIOR"),
   F("adilshahi", "Adil Shahi of Bijapur", "the Malik-e-Maidan",
     "Guns cast on a scale nobody else attempts.", "specialist", "CANNON"),
   F("qutbshahi", "Qutb Shahi of Golconda", "the diamond throne",
     "War elephants bought with diamond money, and howdahs to match.", "specialist", "ELEPHANT"),
   F("berad", "The Berads", "the hill matchlocks",
-    "Skirmishers out of the ravines who shoot better than anyone has a right to.", "specialist", "SLINGER"),
+    "Bowmen out of the ravines who shoot better than anyone has a right to.", "specialist", "ARCHER"),
 
   // --- THE TWIN ARMS. Two strong adjacent arms, and a real hole behind them. -----
   F("nizamshahi", "Nizam Shahi of Ahmadnagar", "Malik Ambar",
     "Malik Ambar's horse, and the guns they ride down, in the same army.", "twinarms", "HORSEMAN"),
   F("firangi", "The Firangi", "the coastal batteries",
-    "Drilled foot off the ships, with the horse to finish what they start.", "twinarms", "SPEARMAN"),
+    "Drilled foot off the ships, with the horse to finish what they start.", "twinarms", "WARRIOR"),
   F("siddi", "The Siddis of Janjira", "the island fortress",
-    "Abyssinian admirals, fortress guns, and slingers along the walls.", "twinarms", "CANNON"),
+    "Abyssinian admirals, fortress guns, and bowmen along the walls.", "twinarms", "CANNON"),
   F("rajput", "The Rajput Contingents", "sworn to the Deccan war",
     "A beast line that will not turn, and the spears that follow it in.", "twinarms", "ELEPHANT"),
   F("banjara", "The Banjara Caravans", "the grain roads",
-    "Everything an army eats, escorted by people who know every ravine.", "twinarms", "SLINGER"),
+    "Everything an army eats, escorted by people who know every ravine.", "twinarms", "ARCHER"),
 ];
 
 // ---- the victory target -----------------------------------------------------

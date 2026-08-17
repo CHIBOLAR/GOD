@@ -12,13 +12,13 @@
 //   node sim/five-test.mjs
 
 // Order matters: arm i beats i+1 and i+2. Every edge below is historically real.
-//   SLINGER  -> ELEPHANT (missiles panic them), SPEARMAN (harried from range)
-//   ELEPHANT -> SPEARMAN (trampled), HORSEMAN (horses will not face them)
-//   SPEARMAN -> HORSEMAN (pikes stop a charge), CANNON (gun crews overrun)
-//   HORSEMAN -> CANNON (ridden down), SLINGER (run down in the open)
-//   CANNON   -> SLINGER (shredded), ELEPHANT (the one answer to them)
-const ARMS = ["SLINGER", "ELEPHANT", "SPEARMAN", "HORSEMAN", "CANNON"];
-const G = { SLINGER: "S", ELEPHANT: "E", SPEARMAN: "P", HORSEMAN: "H", CANNON: "C" };
+//   ARCHER  -> ELEPHANT (missiles panic them), WARRIOR (harried from range)
+//   ELEPHANT -> WARRIOR (trampled), HORSEMAN (horses will not face them)
+//   WARRIOR -> HORSEMAN (pikes stop a charge), CANNON (gun crews overrun)
+//   HORSEMAN -> CANNON (ridden down), ARCHER (run down in the open)
+//   CANNON   -> ARCHER (shredded), ELEPHANT (the one answer to them)
+const ARMS = ["ARCHER", "ELEPHANT", "WARRIOR", "HORSEMAN", "CANNON"];
+const G = { ARCHER: "S", ELEPHANT: "E", WARRIOR: "P", HORSEMAN: "H", CANNON: "C" };
 const beats = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
 
 // A test pool: each arm at a low, middle and high strength.
