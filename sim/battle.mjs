@@ -1,83 +1,90 @@
 // DECCAN II — the resolver. PURE: no I/O, no randomness, no global state.
 //
-// This is the ONLY implementation of the battle rules. Every other module calls it, so they
-// cannot drift apart — the failure that put the old project's engine two full versions behind
-// its own rulebook.
+// An ARMY is up to three units, in no order. A unit is { t, s, owner, broker? }.
+// A Power Broker has t === null: it sits outside the counter ring, so it cancels nothing and
+// nothing cancels it.
 //
-// An ARMY is up to three units, in no order. A unit is { t, s, owner? }.
-//
-// ⚠️ THERE ARE NO POSITIONS. An earlier draft split the ground into three fronts and compared
-// them one at a time. Measured, that structure was carrying none of the balance — fronts alone
-// moved the card-value spread 53.9 -> 46.0, while the counter cycle moved it 46.0 -> 11.0.
-// See DECISIONS.md D022.
+// Order of business, all read off the REVEALED armies so nothing depends on who acted first:
+//   1. Power Broker abilities choose their targets, then all resolve together.
+//   2. Arms cancel: each unit cancels ONE enemy unit of an arm it beats, strongest first.
+//   3. Totals. Higher wins; level totals mean BOTH armies win.
 
-import { ARMS, beats } from "./cards.mjs";
+import { beats } from "./cards.mjs";
 
-// ---- cancellation -----------------------------------------------------------
-// EACH of your units cancels ONE enemy unit of an arm it beats — always the strongest one
-// still standing. Cancellation is simultaneous: both sides are read off the revealed armies,
-// so a unit that is itself cancelled still cancels.
-//
-// ⚠️ THE ONE-FOR-ONE CAP IS LOAD-BEARING. An earlier draft let one card cancel EVERY enemy
-// unit of its prey arm; with only three arms, one of each then cancelled the whole enemy army
-// and the cheapest rainbow won 100% of the time. See DECISIONS.md D022 and D023.
+const weakest = (army) => army.reduce((b, u) => (!b || u.s < b.s ? u : b), null);
+
+// ---- 1. Power Broker abilities ----------------------------------------------
+// Targets are chosen from the armies as revealed, then applied together, so two brokers
+// aiming at the same unit do not depend on an ordering rule.
+export function resolveAbilities(A, B) {
+  const plan = [];
+  const scan = (mine, foe) => {
+    for (const u of mine) {
+      if (u.broker === "archerbroker") { const t = weakest(foe); if (t) plan.push({ kind: "kill", t }); }
+      if (u.broker === "spy") { const t = weakest(foe); if (t) plan.push({ kind: "swap", u, t }); }
+      if (u.broker === "senapati") {
+        const others = mine.filter((x) => x !== u);
+        const t = weakest(others);
+        if (t) plan.push({ kind: "copy", u, value: t.s });
+      }
+      // scout is information only: no battle effect
+    }
+  };
+  scan(A, B); scan(B, A);
+
+  for (const p of plan) if (p.kind === "copy") p.u.s = p.value;
+  for (const p of plan) if (p.kind === "kill") p.t.dead = true;
+  for (const p of plan) if (p.kind === "swap" && !p.u.dead && !p.t.dead) {
+    const ai = A.indexOf(p.u), bi = B.indexOf(p.t);
+    if (ai >= 0 && bi >= 0) { A[ai] = p.t; B[bi] = p.u; }
+    else { const a2 = B.indexOf(p.u), b2 = A.indexOf(p.t); if (a2 >= 0 && b2 >= 0) { B[a2] = p.t; A[b2] = p.u; } }
+  }
+  return { A: A.filter((u) => !u.dead), B: B.filter((u) => !u.dead) };
+}
+
+// ---- 2. arms cancel ---------------------------------------------------------
 export function cancelledFlags(army, foe) {
-  const live = army.filter(Boolean);
-  const dead = new Array(live.length).fill(false);
-  // strongest cancellers resolve first only so the choice is deterministic; because every
-  // canceller takes the strongest legal target, the outcome does not depend on this order.
-  const order = foe.filter(Boolean).slice().sort((a, b) => b.s - a.s);
+  const dead = new Array(army.length).fill(false);
+  const order = foe.slice().sort((a, b) => b.s - a.s);
   for (const v of order) {
+    if (!v.t) continue;                       // a broker has no arm and cancels nothing
     let best = -1;
-    for (let i = 0; i < live.length; i++) {
-      if (dead[i] || !beats(v.t, live[i].t)) continue;
-      if (best === -1 || live[i].s > live[best].s) best = i;
+    for (let i = 0; i < army.length; i++) {
+      if (dead[i] || !army[i].t || !beats(v.t, army[i].t)) continue;
+      if (best === -1 || army[i].s > army[best].s) best = i;
     }
     if (best !== -1) dead[best] = true;
   }
-  return dead.map((d) => !d);      // true = this unit COUNTS
+  return dead.map((d) => !d);
 }
 
-export const counted = (army, foe) => cancelledFlags(army, foe);
-
-export function armyStrength(army, foe) {
-  const live = army.filter(Boolean);
-  const flags = cancelledFlags(live, foe);
-  return live.reduce((s, u, i) => s + (flags[i] ? u.s : 0), 0);
-}
-
-// winner is "A", "B" or "both" — level totals mean BOTH armies win.
-export function resolveBattle(armyA, armyB) {
-  const a = armyA.filter(Boolean), b = armyB.filter(Boolean);
+// ---- 3. the battle ----------------------------------------------------------
+export function resolveBattle(rawA, rawB) {
+  const A = rawA.map((u) => ({ ...u })), B = rawB.map((u) => ({ ...u }));
+  const { A: a, B: b } = resolveAbilities(A, B);
   const fa = cancelledFlags(a, b), fb = cancelledFlags(b, a);
   const totalA = a.reduce((s, u, i) => s + (fa[i] ? u.s : 0), 0);
   const totalB = b.reduce((s, u, i) => s + (fb[i] ? u.s : 0), 0);
   return {
-    totalA, totalB, countedA: fa, countedB: fb,
+    armyA: a, armyB: b, totalA, totalB, countedA: fa, countedB: fb,
     winner: totalA > totalB ? "A" : totalB > totalA ? "B" : "both",
   };
 }
 
-// An unopposed army wins, and nothing is there to cancel it.
 export function resolveUncontested(army) {
-  const a = army.filter(Boolean);
-  return {
-    totalA: a.reduce((s, u) => s + u.s, 0), totalB: 0,
-    countedA: a.map(() => true), countedB: [], winner: "A",
-  };
+  const a = army.map((u) => ({ ...u }));
+  return { armyA: a, armyB: [], totalA: a.reduce((s, u) => s + u.s, 0), totalB: 0,
+    countedA: a.map(() => true), countedB: [], winner: "A" };
 }
 
-// "Each player in a winning army scores 1 point for every unit of theirs that counted."
-// A cancelled unit fought for nothing and scores nothing.
-export function spoils(result, armyA, armyB) {
+// Each player in a winning army scores 1 point for every unit of theirs that counted.
+export function spoils(result) {
   const vp = new Map();
-  const award = (army, flags) => {
-    army.filter(Boolean).forEach((u, i) => {
-      if (!flags[i] || u.owner === undefined) return;
-      vp.set(u.owner, (vp.get(u.owner) || 0) + 1);
-    });
-  };
-  if (result.winner === "A" || result.winner === "both") award(armyA, result.countedA);
-  if (result.winner === "B" || result.winner === "both") award(armyB, result.countedB);
+  const award = (army, flags) => army.forEach((u, i) => {
+    if (!flags[i] || u.owner === undefined) return;
+    vp.set(u.owner, (vp.get(u.owner) || 0) + 1);
+  });
+  if (result.winner === "A" || result.winner === "both") award(result.armyA, result.countedA);
+  if (result.winner === "B" || result.winner === "both") award(result.armyB, result.countedB);
   return vp;
 }

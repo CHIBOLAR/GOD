@@ -27,34 +27,23 @@ export const PREY = Object.fromEntries(
 export const TYPES = ARMS;
 
 // ---- the faction chassis ----------------------------------------------------
-// CONSTRAINED ASYMMETRY. Every faction holds THE SAME TEN NUMBERS and exactly two units of
-// each arm. The only thing that differs between factions is which arm each number sits in.
+// 5 factions x 10 units = 50 cards, plus 25 Power Brokers = 75, inside the 76-card limit.
 //
-// ⚠️ An earlier draft constrained only the TOTAL strength and let the distribution vary. It
-// failed instructively: a faction of 1,2,8,9s measured +1.08 VP/battle against the field,
-// because you choose what to commit and simply never commit your 1s. Equal total strength is
-// not equal USABLE strength. Sharing the multiset closes that for good.
+// Every faction holds THE SAME TEN NUMBERS and two units of each arm. The only difference is
+// WHICH ARM each number sits in. With five factions and five arms there is exactly ONE
+// archetype, rotated five times — so every faction is a rotation of every other and they are
+// LEVEL BY SYMMETRY, exactly, with no tuning and nothing to search.
+//
+// The shape runs downhill round the ring: your lead arm is your best and each arm after it is
+// weaker. So the two arms that BEAT your lead arm are your two worst — you cannot cover your
+// own speciality, which is the tension the whole game turns on.
 export const UNITS_PER_FACTION = 10;
 export const UNITS_PER_ARM = 2;
 export const TOTAL_STRENGTH = 50;
 export const STRENGTH_MULTISET = [1, 2, 3, 4, 5, 5, 6, 7, 8, 9];
 
-// ---- the archetypes ---------------------------------------------------------
-// GROUP 0 GOES TO THE FACTION'S LEAD ARM — the one it is known for — and the rest follow
-// round the cycle. So `lead` always names the arm on the faction card.
-//
-// ⚠️ FACTIONS ARRIVE IN FIVES. The counter cycle has a five-fold rotational symmetry, and the
-// faction list is closed under it: every archetype appears in all five arms. Two factions of
-// the same archetype are therefore level BY SYMMETRY, with no tuning, and the whole balance
-// question collapses to one number per pair of archetypes. Add a sixth faction alone and the
-// guarantee is gone.
 export const ARCHETYPES = {
-  // THE SPECIALIST — the top of the ladder in one arm, and very little behind it.
-  specialist: [[8, 9], [5, 6], [4, 5], [2, 3], [1, 7]],
-  // THE TWIN ARMS — two strong adjacent arms and very little behind them. Found by
-  // sim/pattern-search.mjs as the shape that levels the specialist: the five rotations sum to
-  // +0.006, worst single matchup 0.065 VP/battle.
-  twinarms: [[8, 9], [6, 7], [1, 3], [4, 5], [2, 5]],
+  host: [[8, 9], [5, 7], [3, 6], [2, 4], [1, 5]],
 };
 
 const F = (key, name, era, blurb, archetype, lead) => {
@@ -67,29 +56,37 @@ const F = (key, name, era, blurb, archetype, lead) => {
 };
 
 export const FACTIONS = [
-  // --- THE SPECIALISTS. The top of the ladder in one arm, very little behind it. ---
   F("maratha", "The Marathas", "Ganimi Kava",
-    "The finest horse in the Deccan, and it knows it.", "specialist", "HORSEMAN"),
+    "The finest horse in the Deccan, and it knows it.", "host", "HORSEMAN"),
   F("mughal", "The Mughal Host", "the Deccan campaigns",
-    "The great infantry mass. It does not manoeuvre; it does not have to.", "specialist", "WARRIOR"),
+    "The great infantry mass. It does not manoeuvre; it does not have to.", "host", "WARRIOR"),
   F("firangi", "The Firangi", "the coastal batteries",
-    "Matchlocks off the ships, drilled to fire in ranks nobody here has seen.", "specialist", "RIFLEMAN"),
+    "Matchlocks off the ships, drilled to fire in ranks nobody here has seen.", "host", "RIFLEMAN"),
   F("qutbshahi", "Qutb Shahi of Golconda", "the diamond throne",
-    "War elephants bought with diamond money, and howdahs to match.", "specialist", "ELEPHANT"),
+    "War elephants bought with diamond money, and howdahs to match.", "host", "ELEPHANT"),
   F("berad", "The Berads", "the hill country",
-    "Bowmen out of the ravines who shoot better than anyone has a right to.", "specialist", "ARCHER"),
+    "Bowmen out of the ravines who shoot better than anyone has a right to.", "host", "ARCHER"),
+];
 
-  // --- THE TWIN ARMS. Two strong arms side by side, and a real hole behind them. ---
-  F("nizamshahi", "Nizam Shahi of Ahmadnagar", "Malik Ambar",
-    "Malik Ambar's horse, and the bowmen who ride with them.", "twinarms", "HORSEMAN"),
-  F("adilshahi", "Adil Shahi of Bijapur", "the Malik-e-Maidan",
-    "Bijapuri foot and the heavy horse that finishes what they start.", "twinarms", "WARRIOR"),
-  F("siddi", "The Siddis of Janjira", "the island fortress",
-    "Abyssinian admirals, wall guns, and the elephants that land with them.", "twinarms", "RIFLEMAN"),
-  F("rajput", "The Rajput Contingents", "sworn to the Deccan war",
-    "A beast line that will not turn, and the spears that follow it in.", "twinarms", "ELEPHANT"),
-  F("banjara", "The Banjara Caravans", "the grain roads",
-    "Everything an army eats, escorted by bows and matchlocks that know every ravine.", "twinarms", "ARCHER"),
+// ---- Power Brokers ----------------------------------------------------------
+// 5 kinds, 5 copies each. Recruited by LOSING a battle — one per defeat, whatever you
+// committed. That flow is what makes them safe to make strong: a Power Broker can only ever
+// reach a player who has just lost, so it is structurally incapable of running away. The old
+// game measured a broker at +38.8 in all 50 top armies precisely because WINNERS drew them.
+//
+// ⚠️ POWER BROKERS HAVE NO ARM. They cancel nothing and nothing cancels them, so they sit
+// outside the counter ring and cannot disturb the five-fold symmetry that levels the factions.
+export const BROKERS = [
+  { key: "senapati", name: "Senapati", s: 0, copies: 5,
+    text: "COPY the printed strength of the weakest unit in your own army." },
+  { key: "archerbroker", name: "Slinger", s: 1, copies: 5,
+    text: "KILL the weakest unit of the opposing army." },
+  { key: "scout", name: "Scout", s: 2, copies: 5,
+    text: "REVEAL one committed unit of one player. It stays revealed." },
+  { key: "sepoy", name: "Sepoy", s: 4, copies: 5,
+    text: "If your army LOSES, kill every recovering unit of the winning army." },
+  { key: "spy", name: "Spy", s: 6, copies: 5,
+    text: "SWAP with the weakest unit of the opposing army." },
 ];
 
 // ---- the victory target -----------------------------------------------------
@@ -118,6 +115,8 @@ export function validate() {
     const n = FACTIONS.filter((f) => f.archetype === a).length;
     if (n !== 5) problems.push(`archetype ${a} appears ${n} times, expected 5 (one per arm)`);
   }
+  if (BROKERS.reduce((s, b) => s + b.copies, 0) !== 25)
+    problems.push("the Power Broker supply is not 25 cards");
   return problems;
 }
 

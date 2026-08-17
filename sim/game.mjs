@@ -29,9 +29,9 @@ const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger than mi
 const ARMY_CAP = 3;
 
 // ---- state ------------------------------------------------------------------
-export function newGame(factionKeys, target) {
+export function newGame(factionKeys, target, econ = "spend") {
   return {
-    target, round: 0, start: 0,
+    target, econ, round: 0, start: 0,
     players: factionKeys.map((k, i) => {
       const f = byKey(k);
       return { seat: i, faction: f, hand: f.units.map((u) => ({ ...u, spent: false })), vp: 0 };
@@ -39,12 +39,25 @@ export function newGame(factionKeys, target) {
   };
 }
 
-const available = (p) => p.hand.filter((u) => !u.spent);
+// A unit is available unless it is gone for good or still recovering.
+const available = (p, round) => p.hand.filter((u) => !u.spent && (u.rest || 0) <= round);
+
+// THE ECONOMY. What happens to a committed unit after the battle.
+//   spend        every committed unit is gone for good, win or lose
+//   winnerburns  the winner's units are gone, the loser's recover a round  (the old game)
+//   winnerrests  the winner's units recover a round, the loser's come straight back
+//   allrest      everything recovers a round; nothing is ever lost
+const ECON = {
+  spend:       { win: "gone", lose: "gone" },
+  winnerburns: { win: "gone", lose: "rest" },
+  winnerrests: { win: "rest", lose: "back" },
+  allrest:     { win: "rest", lose: "rest" },
+};
 
 // ---- one turn's legal moves -------------------------------------------------
 function legalMoves(g, seat, m) {
   const moves = [{ pass: true }];
-  const units = available(g.players[seat]);
+  const units = available(g.players[seat], g.round);
   if (!units.length) return moves;
 
   const mine = m.armyOf.get(seat);
@@ -129,7 +142,7 @@ export function playRound(g, rnd, policy) {
     offeredThisTurn: new Set(),
     // what each player still held when the round opened — public, since every unit ever
     // committed was revealed at a battle. This is the belief a face-down card is judged on.
-    pools: g.players.map((p) => available(p).map((u) => ({ t: u.t, s: u.s }))),
+    pools: g.players.map((p) => available(p, g.round).map((u) => ({ t: u.t, s: u.s }))),
   };
 
   let passStreak = 0, seat = g.start, committed = 0;
@@ -153,8 +166,8 @@ export function playRound(g, rnd, policy) {
         m.offeredThisTurn.add(mv.army);       // refused; the turn is not over
         continue;
       }
-      mv.unit.spent = true;
-      m.armies[mv.army].push({ t: mv.unit.t, s: mv.unit.s, owner: seat });
+      mv.unit.rest = g.round + 1;              // off the table until the battle resolves
+      m.armies[mv.army].push({ t: mv.unit.t, s: mv.unit.s, owner: seat, ref: mv.unit });
       if (m.leader[mv.army] === null) m.leader[mv.army] = seat;
       m.armyOf.set(seat, mv.army);
       acted = true; committed++; turnsTaken[seat]++;
@@ -176,6 +189,23 @@ export function playRound(g, rnd, policy) {
   const awarded = result ? spoils(result, m.armies[0], m.armies[1]) : new Map();
   for (const [p, v] of awarded) g.players[p].vp += v;
 
+  // ---- the economy
+  const rule = ECON[g.econ] || ECON.spend;
+  const applyTo = (army, won) => {
+    const fate = won ? rule.win : rule.lose;
+    for (const u of army) {
+      if (fate === "gone") u.ref.spent = true;
+      else if (fate === "rest") u.ref.rest = g.round + 2;   // sits out the next round
+      else u.ref.rest = g.round + 1;                        // straight back
+    }
+  };
+  if (result) {
+    applyTo(m.armies[0], result.winner === "A" || result.winner === "both");
+    applyTo(m.armies[1], result.winner === "B" || result.winner === "both");
+  } else {
+    for (const a of m.armies) applyTo(a, false);
+  }
+
   g.round++;
   g.start = (g.start + 1) % n;
   return { committed, turnsTaken, awarded, result, armies: m.armies };
@@ -184,7 +214,7 @@ export function playRound(g, rnd, policy) {
 // ---- a whole game -----------------------------------------------------------
 export function playGame(factionKeys, target, seed, opts = {}) {
   const rnd = makeRng(seed);
-  const g = newGame(factionKeys, target);
+  const g = newGame(factionKeys, target, opts.econ);
   const n = g.players.length;
   const stats = {
     rounds: 0, commits: new Array(n).fill(0), satOut: new Array(n).fill(0),
@@ -202,7 +232,7 @@ export function playGame(factionKeys, target, seed, opts = {}) {
     if (r.result) { stats.battles++; if (r.result.winner === "both") stats.both++; }
     if (r.committed === 0) { stats.end = "quiet"; break; }
     if (Math.max(...g.players.map((p) => p.vp)) >= target) { stats.end = "target"; break; }
-    if (g.players.every((p) => available(p).length === 0)) { stats.end = "dry"; break; }
+    if (g.players.every((p) => available(p, g.round).length === 0)) { stats.end = "dry"; break; }
   }
   if (!stats.end) stats.end = "guard";
 
