@@ -706,3 +706,36 @@ gate. The 6.6 is concentrated at two players — the seat count where alliances 
 you measure and spends anything you did not. The first time it took a Rifleman off the Mughal
 Host and improved the game; this time it took their cannons and ruined them. **Constrain the
 identity, then optimise inside it.**
+
+---
+
+## 2026-08-18 — D033. Extreme hands do NOT balance better. Measured and rejected.
+
+**Question asked:** could factions skip arms entirely — hold zero of two or three of them — and
+would that extra freedom balance them better?
+
+**Measured.** There are 170 legal hands per faction (10 units, lead arm strictly largest).
+Sampled 260 whole combinations at random:
+
+| worst deviation | empty arms across the five hands |
+| ---: | ---: |
+| **4.38** | **1** — the adopted hands |
+| 9.96 | 4 |
+| 10.96 | 5 |
+| 11.44 | 5 |
+| 11.88 | 10 |
+| 13.73 | 8 |
+
+**Not one sample beat the adopted hands, and the correlation is monotone: more empty arms,
+worse balance.** The best random hand is more than twice as skewed.
+
+**Why, and this is the reusable part: a faction with no answer to an arm is HARD-COUNTERED.**
+Hold zero of something and an opponent who leans on the arm it cancels has a free win every
+round for the whole game. Extremes do not average out — they open a hole that can be aimed at
+indefinitely. Mild distributions are self-correcting; sharp ones are exploitable.
+
+This retro-justifies the Mughal Host's single empty arm as about the right amount of
+extremity: **one hole is a characteristic, four is a weakness.**
+
+⚠️ 260 samples of a 170^5 space is not proof. But all five best samples are worse than the
+adopted hands and the trend is consistent, so the direction is not in doubt.
