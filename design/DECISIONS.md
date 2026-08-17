@@ -489,3 +489,50 @@ broker farm. What stops it being degenerate is that the *winning* army is where 
 points are, and points are what end the game: aiming to lose is aiming not to win. That is
 probably enough. **Measure it** — specifically, whether a player who never tries to win can
 out-tempo the table on brokers alone.
+
+---
+
+## 2026-08-18 — D027. Countering is a BONUS, and every counter fights at 10
+
+**Ruling:** a unit that faces either of the arms it beats gains its bonus. Bonuses are
+**9 / 7 / 5 / 3 / 1**, so Archer, Horseman, Warrior, Rifleman and Elephant all counter at
+exactly **10**. Cancellation is gone.
+
+**Measured** — the designer's first draft used bonuses of 5/4/3/2/1, and **3 of the 10 counter
+relationships still lost**:
+
+| | | |
+| --- | --- | --- |
+| Archer 1+5 = 6 | vs Rifleman 7 | **loses** |
+| Archer 1+5 = 6 | vs Elephant 9 | **loses** |
+| Horseman 3+4 = 7 | vs Elephant 9 | **loses** |
+
+**Reason, and it generalises.** Under 5/4/3/2/1 the boosted ladder reads 6, 7, 8, 9, 10 —
+**the same order as the base ladder** 1, 3, 5, 7, 9. Every unit moved up and none overtook, so
+a boosted weak unit still lost to a stronger unit that was not even boosted. The Archer never
+beat either thing its own card said it countered.
+
+⚠️ **A counter has to reorder the ladder, not shift it.** Levelling every counter at 10 does
+that in one sentence — *"when you counter, you fight at 10"* — and it cannot be mutual, because
+in a five-ring nothing counters its own counter.
+
+**The ring itself was verified correct:** all ten ability lines agree exactly with
+ELEPHANT → RIFLEMAN → WARRIOR → HORSEMAN → ARCHER.
+
+---
+
+## 2026-08-18 — D028. The Slinger takes the weakest; brokers have no arm
+
+**Ruling:** the **Slinger** removes the **weakest** enemy unit. The **Spy** keeps the strongest.
+**Power Brokers have no arm** — they neither give nor take a counter bonus.
+
+**Reason:** as first drafted, Slinger and Spy both targeted the strongest — the same
+two-cards-one-target collision that took four separate rulings to clear in the old game. The
+line is now fully separated: the Slinger takes the bottom of the enemy's, the Spy the top.
+
+Brokers sitting outside the ring keeps them from disturbing its five-fold symmetry, and it is
+one less thing on the card.
+
+**Kept, and worth protecting:** the Force is **odd** (1,3,5,7,9) and the brokers are **even**
+(2,4,6,8,10). A Force unit and a broker can never tie, and every broker slots between two Force
+units.
