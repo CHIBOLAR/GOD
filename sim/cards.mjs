@@ -74,15 +74,20 @@ export const FACTIONS = [
 // reach a player who has just lost, so it is structurally incapable of running away. The old
 // game measured a broker at +38.8 in all 50 top armies precisely because WINNERS drew them.
 //
+// ⚠️ NO TWO BROKERS CONTEST THE SAME TARGET. The Slinger takes the bottom of the enemy line,
+// the Spy the top of it, and the Senapati never touches the enemy at all. The old game needed
+// four separate rulings to reach this shape, after finding that cards sharing a target
+// pre-empt one another and the earned card ends up doing nothing.
+//
 // ⚠️ POWER BROKERS HAVE NO ARM. They cancel nothing and nothing cancels them, so they sit
 // outside the counter ring and cannot disturb the five-fold symmetry that levels the factions.
 export const BROKERS = [
   { key: "senapati", name: "Senapati", s: 0, copies: 5,
-    text: "COPY the printed strength of the weakest unit in your own army." },
+    text: "COPY the printed strength of the strongest other unit in your own army." },
   { key: "archerbroker", name: "Slinger", s: 1, copies: 5,
     text: "KILL the weakest unit of the opposing army." },
   { key: "spy", name: "Spy", s: 2, copies: 5,
-    text: "SWAP with the weakest unit of the opposing army." },
+    text: "SWAP with the strongest unit of the opposing army." },
   { key: "sepoy", name: "Sepoy", s: 4, copies: 5,
     text: "If your army LOSES, kill every recovering unit of the winning army." },
   { key: "scout", name: "Scout", s: 6, copies: 5,

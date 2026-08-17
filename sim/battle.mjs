@@ -12,6 +12,7 @@
 import { beats } from "./cards.mjs";
 
 const weakest = (army) => army.reduce((b, u) => (!b || u.s < b.s ? u : b), null);
+const strongest = (army) => army.reduce((b, u) => (!b || u.s > b.s ? u : b), null);
 
 // ---- 1. Power Broker abilities ----------------------------------------------
 // Targets are chosen from the armies as revealed, then applied together, so two brokers
@@ -21,10 +22,10 @@ export function resolveAbilities(A, B) {
   const scan = (mine, foe) => {
     for (const u of mine) {
       if (u.broker === "archerbroker") { const t = weakest(foe); if (t) plan.push({ kind: "kill", t }); }
-      if (u.broker === "spy") { const t = weakest(foe); if (t) plan.push({ kind: "swap", u, t }); }
+      if (u.broker === "spy") { const t = strongest(foe); if (t) plan.push({ kind: "swap", u, t }); }
       if (u.broker === "senapati") {
         const others = mine.filter((x) => x !== u);
-        const t = weakest(others);
+        const t = strongest(others);
         if (t) plan.push({ kind: "copy", u, value: t.s });
       }
       // scout is information only: no battle effect
