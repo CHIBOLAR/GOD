@@ -440,3 +440,32 @@ card that punishes winning, held only by players who lost.
 under this flow. The Slinger and the Spy are exactly the effect class that broke the old game.
 The Spy at 2 — taking the enemy's strongest for a printed 2 — is the sharpest card in the set
 and the first place to look if anything is wrong.
+
+---
+
+## 2026-08-18 — D025. Power Brokers leave the game. Nothing recycles.
+
+**Ruling:** a Power Broker that is lost is **out of the game**. It does not return to the
+supply. The designer: *"game ends before pbs are recycled."*
+
+**Reason:** the supply is a one-way tap — 25 cards, and every one that leaves stays gone. No
+recycling pile to track at the table, and no rule needed for an exhausted supply beyond "it
+draws nothing".
+
+**Consistent with D024, and worth stating on the card:**
+
+* A broker committed to a **winning** army **recovers** to your hand like any other unit.
+* A broker committed to a **losing** army is **gone for good**, with the rest of that army.
+
+So a broker is only spent when it fails. Holding one is free; using one is a wager.
+
+⚠️ **This makes the supply a real clock, and it should be measured as one.** At 5 players a
+defeat draws one broker per defeated player, so 1.5–2 leave the supply per round on top of any
+lost in battle. Over a 7-round game that is comfortably inside 25 — but it is the assumption
+behind "25 is enough", and it is the number to re-check if games ever run long.
+
+⚠️ **Still undecided, and it changes the rate:** one broker per defeated **player**, or one per
+defeated **army**? The designer's wording — *"if you lose you recruit 1 power broker
+irrespective of units committed"* — reads as per player, which is the stronger catch-up. The
+old game drew one per winning **army** and gave it to the senior ally alone (Law 7.3–7.4),
+which is why 20 lasted there.
