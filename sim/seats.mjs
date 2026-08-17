@@ -11,7 +11,7 @@ import { playGame } from "./game.mjs";
 
 const GAMES = Number(process.argv[2]) || 4000;
 const COUNTS = [2, 3, 4, 5, 6, 7, 8];
-const TARGETS = [4, 5, 6, 7, 8, 9, 10, 12];
+const TARGETS = [2, 3, 4, 5, 6, 7, 8];
 
 // Deal factions to seats. A rotating deal (keys[(g+i) % 6]) looks fair and is not: at two
 // players it only ever produces the six ADJACENT pairs, so specialist-vs-specialist and

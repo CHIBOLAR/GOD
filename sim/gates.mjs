@@ -5,9 +5,9 @@
 //
 //   node sim/gates.mjs        (npm run gates)
 
-import { FACTIONS, VICTORY_TARGET, validate, GLYPH } from "./cards.mjs";
+import { FACTIONS, VICTORY_TARGET, validate, GLYPH, ARMS } from "./cards.mjs";
 import { strategies, payoffMatrix, solve } from "./solver.mjs";
-import { resolveFront, CENTRE } from "./battle.mjs";
+import { resolveBattle } from "./battle.mjs";
 import { playGame } from "./game.mjs";
 
 const GAMES = Number(process.argv[2]) || 3000;
@@ -46,17 +46,12 @@ gate("worst single faction matchup", +Math.max(...V.flat().map(Math.abs)).toFixe
 
 // ---- 2. cards and army sizes ------------------------------------------------
 console.log("\n  cards and army sizes (round-robin against a shared pool)");
-const decode = (u) => (u === 0 ? null : { t: ["HORSE", "FOOT", "GUNS"][(u >> 4) - 1], s: u & 15 });
-const ckey = (u) => `${GLYPH[["HORSE", "FOOT", "GUNS"][(u >> 4) - 1]]}${u & 15}`;
-function battle(A, B) {
-  let wa = 0, wb = 0, c = 0;
-  for (let f = 0; f < 3; f++) {
-    const r = resolveFront(A[f], B[f]);
-    if (r === 1) wa++; else if (r === -1) wb++;
-    if (f === CENTRE) c = r;
-  }
-  return wa > wb ? 1 : wb > wa ? -1 : c;
-}
+const decode = (u) => ({ t: ARMS[u >> 4], s: u & 15 });
+const ckey = (u) => `${GLYPH[ARMS[u >> 4]]}${u & 15}`;
+const battle = (A, B) => {
+  const r = resolveBattle(A, B);
+  return r.winner === "A" ? 1 : r.winner === "B" ? -1 : 0;
+};
 const allArmies = [];
 for (let i = 0; i < N; i++) for (const s of S[i]) allArmies.push(s.map(decode));
 let x = 20260817;
@@ -70,10 +65,11 @@ const pool = allArmies.slice(0, 2000);
 let worstSpread = 0, drawSum = 0, cells = 0, worstSizeBest = 100;
 for (let i = 0; i < N; i++) {
   const rows = S[i].map((s) => {
-    const slots = s.map(decode), keys = s.filter(Boolean).map(ckey);
+    const army = s.map(decode), keys = s.map(ckey);
     let w = 0, d = 0;
-    for (const b of pool) { const r = battle(slots, b); if (r === 1) w++; else if (r === 0) d++; }
-    return { keys, size: keys.length, win: (100 * w) / pool.length, draw: (100 * d) / pool.length };
+    for (const b of pool) { const r = battle(army, b); if (r === 1) w++; else if (r === 0) d++; }
+    // level totals mean BOTH armies win, so a draw scores
+    return { keys, size: keys.length, win: (100 * (w + d)) / pool.length, draw: (100 * d) / pool.length };
   });
   const avg = (xs) => (xs.length ? xs.reduce((s, r) => s + r.win, 0) / xs.length : 0);
   const cards = [...new Set(FACTIONS[i].units.map((u) => `${GLYPH[u.t]}${u.s}`))];
@@ -88,7 +84,7 @@ gate("worst card-value spread within a faction", +worstSpread.toFixed(1),
 gate("weakest army size, at its best", +worstSizeBest.toFixed(1),
   (v) => v >= 5, (v) => v < 2, "no army size is a dead choice");
 gate("draw rate (nobody takes the ground)", +(drawSum / cells).toFixed(1),
-  (v) => v <= 10, (v) => v > 15, "a draw wastes a round, so low is good");
+  (v) => v <= 10, (v) => v > 15, "level totals: both armies score");
 
 // ---- 3. whole games ---------------------------------------------------------
 console.log(`\n  whole games (${GAMES} per player count)`);
