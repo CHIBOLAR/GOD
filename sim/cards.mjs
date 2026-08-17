@@ -2,9 +2,9 @@
 
 // ---- the ring ---------------------------------------------------------------
 // Each arm cancels the NEXT TWO along the ring, and is cancelled by the two behind it.
-//   ELEPHANT -> RIFLEMAN -> WARRIOR -> HORSEMAN -> ARCHER -> back to ELEPHANT
-export const ARMS = ["ELEPHANT", "RIFLEMAN", "PALTAN", "HORSEMAN", "ARCHER"];
-export const GLYPH = { ELEPHANT: "E", RIFLEMAN: "R", PALTAN: "P", HORSEMAN: "H", ARCHER: "A" };
+//   ELEPHANT -> RIFLEMAN -> WARRIOR -> HORSEMAN -> WARRIOR -> back to ELEPHANT
+export const ARMS = ["ELEPHANT", "RIFLEMAN", "CANNON", "HORSEMAN", "WARRIOR"];
+export const GLYPH = { ELEPHANT: "E", RIFLEMAN: "R", CANNON: "C", HORSEMAN: "H", WARRIOR: "W" };
 export const armIndex = (a) => ARMS.indexOf(a);
 export const beatsIdx = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
 export const beats = (a, b) => beatsIdx(armIndex(a), armIndex(b));
@@ -23,25 +23,25 @@ export const PREY = Object.fromEntries(
 // is what an Archer-heavy faction has to overcome. 1..9 is a 9x ratio; shifting the whole
 // ladder up compresses it without touching the gaps or the odd/even broker shadow.
 // ARMSTR assigns a strength to each arm IN RING ORDER (ELEPHANT, RIFLEMAN, WARRIOR,
-// HORSEMAN, ARCHER). Which strength sits on which arm is the one lever that can level the
+// HORSEMAN, WARRIOR). Which strength sits on which arm is the one lever that can level the
 // factions without touching the ring the designer specified — the relationships stay exactly
 // as written, only the numbers move.
 export const ARMSTR = (process.env.ARMSTR || "9,3,7,5,1").split(",").map(Number);
 const S = Object.fromEntries(ARMS.map((a, i) => [a, ARMSTR[i]]));
 export const FORCE = [
-  { key: "archer", name: "Archer", arm: "ARCHER", s: S.ARCHER },
+  { key: "warrior", name: "Warrior", arm: "WARRIOR", s: S.WARRIOR },
   { key: "horseman", name: "Horseman", arm: "HORSEMAN", s: S.HORSEMAN },
-  { key: "paltan", name: "Paltan", arm: "PALTAN", s: S.PALTAN },
+  { key: "cannon", name: "Cannon", arm: "CANNON", s: S.CANNON },
   { key: "rifleman", name: "Rifleman", arm: "RIFLEMAN", s: S.RIFLEMAN },
   { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: S.ELEPHANT },
 ];
 
 export const BROKERS = [
-  { key: "slinger", name: "Slinger", arm: "ARCHER", s: S.ARCHER + 1, copies: 5,
+  { key: "slinger", name: "Slinger", arm: "WARRIOR", s: S.WARRIOR + 1, copies: 5,
     text: "REMOVE the weakest unit of the opposing army." },
   { key: "spy", name: "Spy", arm: "HORSEMAN", s: S.HORSEMAN + 1, copies: 5,
     text: "SWAP with the strongest unit of the opposing army." },
-  { key: "senapati", name: "Senapati", arm: "PALTAN", s: S.PALTAN + 1, copies: 5,
+  { key: "subhedar", name: "Subhedar", arm: "CANNON", s: S.CANNON + 1, copies: 5,
     text: "If your army LOSES, kill every recovering unit of the winning army." },
   { key: "sepoy", name: "Sepoy", arm: "RIFLEMAN", s: S.RIFLEMAN + 1, copies: 5,
     text: "While ALONE in your army, fight at double strength." },
@@ -71,9 +71,9 @@ export const PATTERN = (process.env.PATTERN || "3,2,2,2,1").split(",").map(Numbe
 const NAMES = {
   ELEPHANT: ["Qutb Shahi of Golconda", "the diamond throne"],
   RIFLEMAN: ["The Firangi", "the coastal batteries"],
-  PALTAN: ["The Mughal Host", "the Deccan campaigns"],
+  CANNON: ["The Mughal Host", "the Deccan campaigns"],
   HORSEMAN: ["The Marathas", "Ganimi Kava"],
-  ARCHER: ["The Berads", "the hill country"],
+  WARRIOR: ["The Berads", "the hill country"],
 };
 const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
 
@@ -83,13 +83,13 @@ const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
 // Hill-climbed from the pure rotation 3/2/2/2/1. Exactly one faction needed adjusting: the
 // Mughal Host trades its last Rifleman for a third Archer, which took the worst mean faction
 // deviation from 4.21 to 1.66. Rows are factions in ring order (Elephant-lead first), columns
-// are arms in ring order: ELEPHANT RIFLEMAN PALTAN HORSEMAN ARCHER.
+// are arms in ring order: ELEPHANT RIFLEMAN CANNON HORSEMAN WARRIOR.
 const DEFAULT_COUNTS = [
   [3, 2, 2, 2, 1],   // Qutb Shahi   — lead ELEPHANT
   [1, 3, 2, 2, 2],   // The Firangi  — lead RIFLEMAN
-  [2, 0, 3, 2, 3],   // Mughal Host  — lead PALTAN, and no firearms at all
+  [2, 0, 3, 2, 3],   // Mughal Host  — lead CANNON, and no firearms at all
   [2, 2, 1, 3, 2],   // The Marathas — lead HORSEMAN
-  [2, 2, 2, 1, 3],   // The Berads   — lead ARCHER
+  [2, 2, 2, 1, 3],   // The Berads   — lead WARRIOR
 ];
 const COUNTS = process.env.COUNTS ? JSON.parse(process.env.COUNTS) : DEFAULT_COUNTS;
 

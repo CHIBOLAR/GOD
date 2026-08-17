@@ -38,7 +38,7 @@ for (const n of COUNTS) {
   for (let gi = 0; gi < GAMES; gi++) {
     const keys = deal(n, gi);
     const s = playGame(keys, target, 0x9e3779b9 ^ (gi * 2654435761));
-    rounds += s.rounds; allied += s.alliedRounds; supply += s.supplyUsed; senap += s.senapati;
+    rounds += s.rounds; allied += s.alliedRounds; supply += s.supplyUsed; senap += s.subhedar;
     if (s.end === "target") onTarget++;
     for (let i = 0; i < n; i++) { satOut += s.satOut[i]; pr += s.rounds; recruits += s.recruits[i]; fg.set(keys[i], fg.get(keys[i]) + 1); }
     const share = 1 / s.winners.length;
@@ -53,7 +53,7 @@ for (const n of COUNTS) {
     facWorst: [...fw].map(([k, v]) => ({ k, p: (100 * v) / (fg.get(k) || 1) }))
       .sort((a, b) => Math.abs(b.p - exp) - Math.abs(a.p - exp))[0],
     alliedPct: (100 * allied) / rounds, satOutPct: (100 * satOut) / pr,
-    supply: supply / GAMES, senapati: senap / GAMES, recruits: recruits / GAMES,
+    supply: supply / GAMES, subhedar: senap / GAMES, recruits: recruits / GAMES,
   });
 }
 

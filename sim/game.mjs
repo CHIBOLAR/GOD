@@ -174,15 +174,15 @@ export function playRound(g, rnd) {
 
   // ---- the economy: the victorious recover, the defeated burn and recruit
   // A surviving Senapati in a beaten army kills the winner's recovering units instead.
-  const senapatiFired = result
+  const subhedarFired = result
     ? [...(result.armyA || []), ...(result.armyB || [])]
-      .some((u) => u.broker === "senapati" && losers.has(u.army))
+      .some((u) => u.broker === "subhedar" && losers.has(u.army))
     : false;
   const recruited = new Map();
   for (const a of fielded) {
     const won = winners.has(a);
     for (const u of m.armies[a]) {
-      if (won && !senapatiFired) u.ref.rest = g.round + 2;   // recovers, sits out a round
+      if (won && !subhedarFired) u.ref.rest = g.round + 2;   // recovers, sits out a round
       else u.ref.spent = true;                                // gone for good
     }
     if (won) continue;
@@ -197,7 +197,7 @@ export function playRound(g, rnd) {
   g.round++;
   g.start = (g.start + 1) % n;
   return {
-    committed, turns, awarded, recruited, result, senapatiFired,
+    committed, turns, awarded, recruited, result, subhedarFired,
     allied: m.armies.filter((a) => new Set(a.map((u) => u.owner)).size > 1).length,
   };
 }
@@ -208,7 +208,7 @@ export function playGame(factionKeys, target, seed) {
   const n = g.players.length;
   const st = {
     rounds: 0, commits: new Array(n).fill(0), satOut: new Array(n).fill(0),
-    recruits: new Array(n).fill(0), alliedRounds: 0, senapati: 0, supplyUsed: 0,
+    recruits: new Array(n).fill(0), alliedRounds: 0, subhedar: 0, supplyUsed: 0,
   };
   let quiet = 0;
 
@@ -221,7 +221,7 @@ export function playGame(factionKeys, target, seed) {
       st.recruits[i] += r.recruited.get(i) || 0;
     }
     if (r.allied) st.alliedRounds++;
-    if (r.senapatiFired) st.senapati++;
+    if (r.subhedarFired) st.subhedar++;
     quiet = r.committed === 0 ? quiet + 1 : 0;
     if (quiet >= 2) { st.end = "quiet"; break; }
     if (Math.max(...g.players.map((p) => p.vp)) >= target) { st.end = "target"; break; }
