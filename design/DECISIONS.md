@@ -405,3 +405,38 @@ Everything else reconciled clean: the counter, the strength comparison, equal st
 slots, more-fronts-takes-the-ground, the Centre tie-break, the uncontested army, per-front
 scoring, spend-on-commit, one offer per army per turn, both-armies prohibition, lapping until all
 pass, shared wins on a tie, and both ending conditions.
+
+---
+
+## 2026-08-17 — D024. The card economy, ruled
+
+**Ruling:**
+
+* **Win** — your committed units **recover**: they sit out the next round and return after it.
+* **Lose** — your committed units are **gone for good**, and you **recruit 1 Power Broker**,
+  **one per defeat whatever you committed**.
+
+**Reason:** the designer's inversion of the old flow. Its point is that Power Brokers reach
+only players who have just lost, so a broker can be made genuinely strong without creating a
+runaway — the leader never recruits one. This is the structural repair for the failure that
+ended the old game, where **winners** drew brokers and the best card measured **+38.8, present
+in all 50 of the top 50 armies**.
+
+⚠️ **I flagged this reading as a runaway risk and was wrong on the merits.** The
+"irrespective of units committed" clause defuses it, and it is the best thing in the economy:
+
+> **Losing with one unit costs one card and gains a broker — card-neutral, and quality-positive.
+> Losing with three costs three and gains the same one.**
+
+So a defeated player controls their own bleed, and the correct play when behind is to commit
+small and farm brokers, while a player who wants points must commit big enough to win. That is
+a live decision every single turn and it self-corrects without a rule saying so.
+
+**Consequence worth keeping:** the **Sepoy** is now aimed squarely at the winner's reward — a
+losing army's Sepoy kills the recovering units the victory was supposed to give back. The one
+card that punishes winning, held only by players who lost.
+
+**Still to measure, and it is the decisive number of the project:** whether removal is safe
+under this flow. The Slinger and the Spy are exactly the effect class that broke the old game.
+The Spy at 2 — taking the enemy's strongest for a printed 2 — is the sharpest card in the set
+and the first place to look if anything is wrong.
