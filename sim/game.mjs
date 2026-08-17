@@ -1,176 +1,147 @@
-// DECCAN II — the whole game: muster, battle, spoils, attrition.
+// DECCAN II — the whole game, WITH ALLIANCES.
 //
-// The round-robin and the matrix solver both look at a single battle. This is what they
-// cannot see: the economy. Units are SPENT when committed, win or lose, so a faction is a
-// life supply and the real question is not "which army is strongest" but "which points are
-// worth paying for". LESSONS.md D1 — a battle-level metric cannot see the reward economy.
+// Everything else in sim/ measures a two-player duel. This is the only model that contains
+// what the game actually is: several players, two armies, units from up to three players in
+// each, per-player scoring inside a shared army, and the recruit-on-defeat economy.
 //
-// Every player runs the SAME policy, so any asymmetry this measures is structural: it comes
+// Every player runs the SAME policy, so any asymmetry measured here is structural — it comes
 // from the seat or the faction, not from one side playing better.
 
-import { FACTIONS, byKey, ARMS, PREY, beats } from "./cards.mjs";
-import { resolveBattle, resolveUncontested, spoils } from "./battle.mjs";
+import { FACTIONS, BROKERS, ARMS, PREY, beats } from "./cards.mjs";
+import { resolveBattle, resolveUncontested } from "./battle.mjs";
 
-// ---- rng --------------------------------------------------------------------
 export function makeRng(seed) {
   let x = seed >>> 0;
   return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 
 // ---- policy knobs -----------------------------------------------------------
-// LESSONS.md: tune selection sharpness before tuning anything else.
 const TEMPERATURE = 0.4;
-const PASS_BASE = 1.6;       // the standing value of keeping a card in hand
-const OWN_WEIGHT = 0.32;     // strength I expect this unit to actually contribute
-const SILENCE_WEIGHT = 0.30; // enemy strength I expect this unit to shut down
-const STRENGTH_COST = 0.06;  // spending a big unit costs more than spending a small one
-const ALLY_TAX = 0.55;       // an ally in my army competes with me for the points
-const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger than mine
+const PASS_BASE = 1.5;       // the standing value of keeping a card in hand
+const OWN_WEIGHT = 0.30;     // strength I expect to actually contribute
+const CANCEL_WEIGHT = 0.28;  // enemy strength I expect to cancel
+const COST = 0.05;           // spending a big unit costs more than a small one
+const ALLY_TAX = 0.5;        // an ally in my army races me for the points
+const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger
 const ARMY_CAP = 3;
+const MAX_PER_ARMY = 3;      // at most three players per army
 
-// ---- state ------------------------------------------------------------------
-export function newGame(factionKeys, target, econ = "spend") {
+export function newGame(factionKeys, target, rnd) {
+  const supply = [];
+  for (const b of BROKERS) for (let i = 0; i < b.copies; i++) supply.push({ ...b, isBroker: true });
+  for (let i = supply.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [supply[i], supply[j]] = [supply[j], supply[i]];
+  }
   return {
-    target, econ, round: 0, start: 0,
+    target, round: 0, start: 0, supply,
     players: factionKeys.map((k, i) => {
-      const f = byKey(k);
-      return { seat: i, faction: f, hand: f.units.map((u) => ({ ...u, spent: false })), vp: 0 };
+      const f = FACTIONS.find((x) => x.key === k);
+      return { seat: i, faction: f, vp: 0, hand: f.units.map((u) => ({ ...u, spent: false, rest: 0 })) };
     }),
   };
 }
 
-// A unit is available unless it is gone for good or still recovering.
-const available = (p, round) => p.hand.filter((u) => !u.spent && (u.rest || 0) <= round);
+const available = (p, round) => p.hand.filter((u) => !u.spent && u.rest <= round);
 
-// THE ECONOMY. What happens to a committed unit after the battle.
-//   spend        every committed unit is gone for good, win or lose
-//   winnerburns  the winner's units are gone, the loser's recover a round  (the old game)
-//   winnerrests  the winner's units recover a round, the loser's come straight back
-//   allrest      everything recovers a round; nothing is ever lost
-const ECON = {
-  spend:       { win: "gone", lose: "gone" },
-  winnerburns: { win: "gone", lose: "rest" },
-  winnerrests: { win: "rest", lose: "back" },
-  allrest:     { win: "rest", lose: "rest" },
-};
-
-// ---- one turn's legal moves -------------------------------------------------
 function legalMoves(g, seat, m) {
   const moves = [{ pass: true }];
   const units = available(g.players[seat], g.round);
   if (!units.length) return moves;
-
   const mine = m.armyOf.get(seat);
   for (let a = 0; a < 2; a++) {
-    if (mine !== undefined && mine !== a) continue;        // never both armies
+    if (mine !== undefined && mine !== a) continue;            // never both armies
     if (m.armies[a].length >= ARMY_CAP) continue;
+    const members = new Set(m.armies[a].map((u) => u.owner));
+    if (!members.has(seat) && members.size >= MAX_PER_ARMY) continue;
     if (mine === undefined && m.leader[a] !== null && m.leader[a] !== seat
-      && m.offeredThisTurn.has(a)) continue;               // one offer per army per turn
+      && m.offered.has(a)) continue;                           // one offer per army per turn
     for (const u of units) moves.push({ unit: u, army: a });
   }
   return moves;
 }
 
-// ---- how good does a move look ----------------------------------------------
-// ⚠️ UNITS COMMIT FACE DOWN. This may read only PUBLIC information: how many units each army
-// holds, whose they are, and which units each player has already burned. It must NOT look at
-// an opposing card's type or strength.
-//
-// An earlier draft did exactly that, and the tell was unmistakable: the start player was the
-// worst seat at every player count (2p split 36/64), because whoever moved second got to
-// counter what they could see. Under an outright counter, perfect information is a landslide.
-//
-// A unit is worth two things: the strength it contributes if nothing silences it, and the
-// enemy strength it silences by being on the table at all.
+// ⚠️ Units commit FACE DOWN. This may read only public information: army sizes, whose units
+// they are, what each player has already burned, and whatever a Siege Elephant has revealed.
 function scoreMove(g, seat, m, mv) {
   if (mv.pass) return PASS_BASE;
   const u = mv.unit;
-  const foeArmy = m.armies[1 - mv.army];
-  const myArmy = m.armies[mv.army];
-
-  // five arms: each beats two and is beaten by two
-  const killers = ARMS.filter((t) => beats(t, u.t));   // arms that cancel me
-  const prey = PREY[u.t];                              // arms I cancel
-  // each unit cancels only ONE enemy, so a second canceller of the same arm adds little
-  const already = myArmy.filter((x) => prey.some((p) => PREY[x.t].includes(p))).length;
+  const foe = m.armies[1 - mv.army], mineArmy = m.armies[mv.army];
+  const killers = ARMS.filter((t) => beats(t, u.arm));
+  const prey = PREY[u.arm];
 
   let pSurvive = 1, expCancel = 0;
-  for (const foe of foeArmy) {
-    const pool = m.pools[foe.owner];
+  for (const f of foe) {
+    if (f.revealed) {                                    // a known card is judged exactly
+      if (beats(f.arm, u.arm)) pSurvive = 0;
+      if (prey.includes(f.arm)) expCancel = Math.max(expCancel, f.s);
+      continue;
+    }
+    const pool = m.pools[f.owner];
     if (!pool.length) continue;
-    let nKill = 0, preySum = 0;
+    let nKill = 0, preySum = 0, nPrey = 0;
     for (const c of pool) {
-      if (killers.includes(c.t)) nKill++;
-      if (prey.includes(c.t)) preySum += c.s;
+      if (killers.includes(c.arm)) nKill++;
+      if (prey.includes(c.arm)) { preySum += c.s; nPrey++; }
     }
     pSurvive *= 1 - nKill / pool.length;
-    expCancel += preySum / pool.length;
+    if (nPrey) expCancel = Math.max(expCancel, preySum / pool.length);
   }
-  expCancel /= 1 + already;      // diminishing: my other units already take some of these
 
-  let s = OWN_WEIGHT * u.s * pSurvive
-        + SILENCE_WEIGHT * expCancel
-        - STRENGTH_COST * u.s;
-
-  s -= ALLY_TAX * myArmy.filter((x) => x.owner !== seat).length;
-  if (foeArmy.length > myArmy.length) s += BEHIND_BONUS;
+  let s = OWN_WEIGHT * u.s * pSurvive + CANCEL_WEIGHT * expCancel - COST * u.s;
+  s -= ALLY_TAX * new Set(mineArmy.filter((x) => x.owner !== seat).map((x) => x.owner)).size;
+  if (foe.length > mineArmy.length) s += BEHIND_BONUS;
   return s;
 }
 
 function pick(moves, scores, rnd) {
   const max = Math.max(...scores);
   const w = scores.map((x) => Math.exp((x - max) / TEMPERATURE));
-  const total = w.reduce((a, b) => a + b, 0);
-  let r = rnd() * total;
+  const tot = w.reduce((a, b) => a + b, 0);
+  let r = rnd() * tot;
   for (let i = 0; i < moves.length; i++) if ((r -= w[i]) <= 0) return moves[i];
   return moves[moves.length - 1];
 }
 
-// A leader judges an offer blind — units are face down, so this cannot look at the card.
+// A leader judges an offer BLIND — the unit is face down, so this cannot look at the card.
 function accepts(m, army, rnd) {
   const mineN = m.armies[army].length, foeN = m.armies[1 - army].length;
-  return rnd() < (foeN >= mineN ? 0.7 : 0.3);
+  return rnd() < (foeN >= mineN ? 0.75 : 0.35);
 }
 
-// ---- a round ----------------------------------------------------------------
-export function playRound(g, rnd, policy) {
+export function playRound(g, rnd) {
   const n = g.players.length;
   const m = {
-    armies: [[], []],
-    leader: [null, null],
-    armyOf: new Map(),
-    offeredThisTurn: new Set(),
-    // what each player still held when the round opened — public, since every unit ever
-    // committed was revealed at a battle. This is the belief a face-down card is judged on.
-    pools: g.players.map((p) => available(p, g.round).map((u) => ({ t: u.t, s: u.s }))),
+    armies: [[], []], leader: [null, null], armyOf: new Map(), offered: new Set(),
+    pools: g.players.map((p) => available(p, g.round).map((u) => ({ arm: u.arm, s: u.s }))),
   };
-
   let passStreak = 0, seat = g.start, committed = 0;
-  const turnsTaken = new Array(n).fill(0);
+  const turns = new Array(n).fill(0);
 
   while (passStreak < n) {
-    m.offeredThisTurn.clear();
+    m.offered.clear();
     let acted = false;
-    // a turn may involve two offers: refused by one leader, you may try the other army
     for (let attempt = 0; attempt < 2 && !acted; attempt++) {
       const moves = legalMoves(g, seat, m);
-      const random = policy && policy[seat] === "random";
-      const scores = random
-        ? moves.map(() => 0)
-        : moves.map((x) => scoreMove(g, seat, m, x));
-      const mv = pick(moves, scores, rnd);
+      const mv = pick(moves, moves.map((x) => scoreMove(g, seat, m, x)), rnd);
       if (mv.pass) break;
-      const needsLeave = m.armyOf.get(seat) === undefined
+      const joining = m.armyOf.get(seat) === undefined
         && m.leader[mv.army] !== null && m.leader[mv.army] !== seat;
-      if (needsLeave && !accepts(m, mv.army, rnd)) {
-        m.offeredThisTurn.add(mv.army);       // refused; the turn is not over
-        continue;
-      }
-      mv.unit.rest = g.round + 1;              // off the table until the battle resolves
-      m.armies[mv.army].push({ t: mv.unit.t, s: mv.unit.s, owner: seat, ref: mv.unit });
+      if (joining && !accepts(m, mv.army, rnd)) { m.offered.add(mv.army); continue; }
+      mv.unit.rest = g.round + 1;
+      const card = {
+        arm: mv.unit.arm, s: mv.unit.s,
+        broker: mv.unit.isBroker ? mv.unit.key : undefined,
+        owner: seat, ref: mv.unit, army: mv.army, revealed: !!mv.unit.faceUp,
+      };
+      m.armies[mv.army].push(card);
       if (m.leader[mv.army] === null) m.leader[mv.army] = seat;
       m.armyOf.set(seat, mv.army);
-      acted = true; committed++; turnsTaken[seat]++;
+      if (card.broker === "siege") {                    // deploys face up, reveals one enemy
+        const hidden = m.armies[1 - mv.army].filter((x) => !x.revealed);
+        if (hidden.length) hidden[Math.floor(rnd() * hidden.length)].revealed = true;
+      }
+      acted = true; committed++; turns[seat]++;
     }
     passStreak = acted ? 0 : passStreak + 1;
     seat = (seat + 1) % n;
@@ -178,66 +149,88 @@ export function playRound(g, rnd, policy) {
 
   const fielded = [0, 1].filter((a) => m.armies[a].length);
   let result = null;
-  if (fielded.length === 2) result = resolveBattle(m.armies[0], m.armies[1]);
-  else if (fielded.length === 1) {
-    const a = fielded[0];
-    const r = resolveUncontested(m.armies[a]);
-    result = a === 0 ? r
-      : { totalA: 0, totalB: r.totalA, countedA: [], countedB: r.countedA, winner: "B" };
+  const winners = new Set(), losers = new Set();
+  if (fielded.length === 2) {
+    result = resolveBattle(m.armies[0], m.armies[1]);
+    if (result.winner === "both") { winners.add(0); winners.add(1); }
+    else {
+      const w = result.winner === "A" ? 0 : 1;
+      winners.add(w); losers.add(1 - w);
+    }
+  } else if (fielded.length === 1) {
+    result = resolveUncontested(m.armies[fielded[0]]);
+    winners.add(fielded[0]);
   }
 
-  const awarded = result ? spoils(result, m.armies[0], m.armies[1]) : new Map();
-  for (const [p, v] of awarded) g.players[p].vp += v;
-
-  // ---- the economy
-  const rule = ECON[g.econ] || ECON.spend;
-  const applyTo = (army, won) => {
-    const fate = won ? rule.win : rule.lose;
-    for (const u of army) {
-      if (fate === "gone") u.ref.spent = true;
-      else if (fate === "rest") u.ref.rest = g.round + 2;   // sits out the next round
-      else u.ref.rest = g.round + 1;                        // straight back
-    }
-  };
+  // ---- spoils: 1 point per SURVIVING unit of yours in a winning army
+  const awarded = new Map();
   if (result) {
-    applyTo(m.armies[0], result.winner === "A" || result.winner === "both");
-    applyTo(m.armies[1], result.winner === "B" || result.winner === "both");
-  } else {
-    for (const a of m.armies) applyTo(a, false);
+    for (const u of [...(result.armyA || []), ...(result.armyB || [])]) {
+      if (u.owner === undefined || !winners.has(u.army)) continue;
+      awarded.set(u.owner, (awarded.get(u.owner) || 0) + 1);
+    }
+    for (const [p, v] of awarded) g.players[p].vp += v;
+  }
+
+  // ---- the economy: the victorious recover, the defeated burn and recruit
+  // A surviving Senapati in a beaten army kills the winner's recovering units instead.
+  const senapatiFired = result
+    ? [...(result.armyA || []), ...(result.armyB || [])]
+      .some((u) => u.broker === "senapati" && losers.has(u.army))
+    : false;
+  const recruited = new Map();
+  for (const a of fielded) {
+    const won = winners.has(a);
+    for (const u of m.armies[a]) {
+      if (won && !senapatiFired) u.ref.rest = g.round + 2;   // recovers, sits out a round
+      else u.ref.spent = true;                                // gone for good
+    }
+    if (won) continue;
+    for (const p of new Set(m.armies[a].map((u) => u.owner))) {
+      const card = g.supply.pop();
+      if (!card) continue;
+      g.players[p].hand.push({ ...card, spent: false, rest: g.round + 1 });
+      recruited.set(p, (recruited.get(p) || 0) + 1);
+    }
   }
 
   g.round++;
   g.start = (g.start + 1) % n;
-  return { committed, turnsTaken, awarded, result, armies: m.armies };
+  return {
+    committed, turns, awarded, recruited, result, senapatiFired,
+    allied: m.armies.filter((a) => new Set(a.map((u) => u.owner)).size > 1).length,
+  };
 }
 
-// ---- a whole game -----------------------------------------------------------
-export function playGame(factionKeys, target, seed, opts = {}) {
+export function playGame(factionKeys, target, seed) {
   const rnd = makeRng(seed);
-  const g = newGame(factionKeys, target, opts.econ);
+  const g = newGame(factionKeys, target, rnd);
   const n = g.players.length;
-  const stats = {
+  const st = {
     rounds: 0, commits: new Array(n).fill(0), satOut: new Array(n).fill(0),
-    sizes: [0, 0, 0, 0], both: 0, battles: 0,
+    recruits: new Array(n).fill(0), alliedRounds: 0, senapati: 0, supplyUsed: 0,
   };
+  let quiet = 0;
 
-  for (let guard = 0; guard < 200; guard++) {
-    const r = playRound(g, rnd, opts.policy);
-    stats.rounds++;
+  for (let guard = 0; guard < 300; guard++) {
+    const r = playRound(g, rnd);
+    st.rounds++;
     for (let i = 0; i < n; i++) {
-      stats.commits[i] += r.turnsTaken[i];
-      if (r.turnsTaken[i] === 0) stats.satOut[i]++;
+      st.commits[i] += r.turns[i];
+      if (r.turns[i] === 0) st.satOut[i]++;
+      st.recruits[i] += r.recruited.get(i) || 0;
     }
-    for (const a of r.armies) if (a.length) stats.sizes[a.length]++;
-    if (r.result) { stats.battles++; if (r.result.winner === "both") stats.both++; }
-    if (r.committed === 0) { stats.end = "quiet"; break; }
-    if (Math.max(...g.players.map((p) => p.vp)) >= target) { stats.end = "target"; break; }
-    if (g.players.every((p) => available(p, g.round).length === 0)) { stats.end = "dry"; break; }
+    if (r.allied) st.alliedRounds++;
+    if (r.senapatiFired) st.senapati++;
+    quiet = r.committed === 0 ? quiet + 1 : 0;
+    if (quiet >= 2) { st.end = "quiet"; break; }
+    if (Math.max(...g.players.map((p) => p.vp)) >= target) { st.end = "target"; break; }
+    if (g.players.every((p) => available(p, g.round).length === 0)) { st.end = "dry"; break; }
   }
-  if (!stats.end) stats.end = "guard";
-
+  if (!st.end) st.end = "guard";
+  st.supplyUsed = 25 - g.supply.length;
   const top = Math.max(...g.players.map((p) => p.vp));
-  stats.winners = g.players.filter((p) => p.vp === top).map((p) => p.seat);
-  stats.vp = g.players.map((p) => p.vp);
-  return stats;
+  st.winners = g.players.filter((p) => p.vp === top).map((p) => p.seat);
+  st.vp = g.players.map((p) => p.vp);
+  return st;
 }
