@@ -1,14 +1,14 @@
-// DECCAN II — the whole game, WITH ALLIANCES.
+// DECCAN II — the whole game: THREE armies, alliances, and the recruit-on-defeat economy.
 //
-// Everything else in sim/ measures a two-player duel. This is the only model that contains
-// what the game actually is: several players, two armies, units from up to three players in
-// each, per-player scoring inside a shared army, and the recruit-on-defeat economy.
+// Three armies instead of two is what opens the player count: 3 armies x 3 units = NINE slots,
+// so eight players all get a post. It also turns the politics three-way, which is a different
+// and richer negotiation than picking a side.
 //
 // Every player runs the SAME policy, so any asymmetry measured here is structural — it comes
 // from the seat or the faction, not from one side playing better.
 
 import { FACTIONS, BROKERS, ARMS, PREY, beats } from "./cards.mjs";
-import { resolveBattle, resolveUncontested } from "./battle.mjs";
+import { resolveBattle, spoils } from "./battle.mjs";
 
 export function makeRng(seed) {
   let x = seed >>> 0;
@@ -23,8 +23,9 @@ const CANCEL_WEIGHT = 0.28;  // enemy strength I expect to cancel
 const COST = 0.05;           // spending a big unit costs more than a small one
 const ALLY_TAX = 0.5;        // an ally in my army races me for the points
 const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger
-const ARMY_CAP = 3;
-const MAX_PER_ARMY = 3;      // at most three players per army
+export const NUM_ARMIES = Number(process.env.ARMIES || 2);
+const ARMY_CAP = Number(process.env.CAP || 3);
+const MAX_PER_ARMY = ARMY_CAP;
 
 export function newGame(factionKeys, target, rnd) {
   const supply = [];
@@ -49,30 +50,31 @@ function legalMoves(g, seat, m) {
   const units = available(g.players[seat], g.round);
   if (!units.length) return moves;
   const mine = m.armyOf.get(seat);
-  for (let a = 0; a < 2; a++) {
-    if (mine !== undefined && mine !== a) continue;            // never both armies
+  for (let a = 0; a < NUM_ARMIES; a++) {
+    if (mine !== undefined && mine !== a) continue;          // only ever one army
     if (m.armies[a].length >= ARMY_CAP) continue;
     const members = new Set(m.armies[a].map((u) => u.owner));
     if (!members.has(seat) && members.size >= MAX_PER_ARMY) continue;
     if (mine === undefined && m.leader[a] !== null && m.leader[a] !== seat
-      && m.offered.has(a)) continue;                           // one offer per army per turn
+      && m.offered.has(a)) continue;                         // one offer per army per turn
     for (const u of units) moves.push({ unit: u, army: a });
   }
   return moves;
 }
 
-// ⚠️ Units commit FACE DOWN. This may read only public information: army sizes, whose units
-// they are, what each player has already burned, and whatever a Siege Elephant has revealed.
+// ⚠️ Units commit FACE DOWN. Public information only: army sizes, whose units they are, what
+// each player has already burned, and anything a Siege Elephant has revealed.
 function scoreMove(g, seat, m, mv) {
   if (mv.pass) return PASS_BASE;
   const u = mv.unit;
-  const foe = m.armies[1 - mv.army], mineArmy = m.armies[mv.army];
+  const mineArmy = m.armies[mv.army];
+  const foes = m.armies.flatMap((a, i) => (i === mv.army ? [] : a));
   const killers = ARMS.filter((t) => beats(t, u.arm));
   const prey = PREY[u.arm];
 
   let pSurvive = 1, expCancel = 0;
-  for (const f of foe) {
-    if (f.revealed) {                                    // a known card is judged exactly
+  for (const f of foes) {
+    if (f.revealed) {
       if (beats(f.arm, u.arm)) pSurvive = 0;
       if (prey.includes(f.arm)) expCancel = Math.max(expCancel, f.s);
       continue;
@@ -87,14 +89,14 @@ function scoreMove(g, seat, m, mv) {
     pSurvive *= 1 - nKill / pool.length;
     if (nPrey) expCancel = Math.max(expCancel, preySum / pool.length);
   }
-
   let s = OWN_WEIGHT * u.s * pSurvive + CANCEL_WEIGHT * expCancel - COST * u.s;
   s -= ALLY_TAX * new Set(mineArmy.filter((x) => x.owner !== seat).map((x) => x.owner)).size;
-  if (foe.length > mineArmy.length) s += BEHIND_BONUS;
+  const biggest = Math.max(...m.armies.map((a, i) => (i === mv.army ? 0 : a.length)));
+  if (biggest > mineArmy.length) s += BEHIND_BONUS;
   return s;
 }
 
-function pick(moves, scores, rnd) {
+function choose(moves, scores, rnd) {
   const max = Math.max(...scores);
   const w = scores.map((x) => Math.exp((x - max) / TEMPERATURE));
   const tot = w.reduce((a, b) => a + b, 0);
@@ -103,16 +105,19 @@ function pick(moves, scores, rnd) {
   return moves[moves.length - 1];
 }
 
-// A leader judges an offer BLIND — the unit is face down, so this cannot look at the card.
+// A leader judges an offer BLIND — the unit is face down.
 function accepts(m, army, rnd) {
-  const mineN = m.armies[army].length, foeN = m.armies[1 - army].length;
-  return rnd() < (foeN >= mineN ? 0.75 : 0.35);
+  const mineN = m.armies[army].length;
+  const biggest = Math.max(...m.armies.map((a, i) => (i === army ? 0 : a.length)));
+  return rnd() < (biggest >= mineN ? 0.75 : 0.35);
 }
 
 export function playRound(g, rnd) {
   const n = g.players.length;
   const m = {
-    armies: [[], []], leader: [null, null], armyOf: new Map(), offered: new Set(), used: [],
+    armies: Array.from({ length: NUM_ARMIES }, () => []),
+    leader: new Array(NUM_ARMIES).fill(null),
+    armyOf: new Map(), offered: new Set(), used: [],
     pools: g.players.map((p) => available(p, g.round).map((u) => ({ arm: u.arm, s: u.s }))),
   };
   let passStreak = 0, seat = g.start, committed = 0;
@@ -121,9 +126,9 @@ export function playRound(g, rnd) {
   while (passStreak < n) {
     m.offered.clear();
     let acted = false;
-    for (let attempt = 0; attempt < 2 && !acted; attempt++) {
+    for (let attempt = 0; attempt < NUM_ARMIES && !acted; attempt++) {
       const moves = legalMoves(g, seat, m);
-      const mv = pick(moves, moves.map((x) => scoreMove(g, seat, m, x)), rnd);
+      const mv = choose(moves, moves.map((x) => scoreMove(g, seat, m, x)), rnd);
       if (mv.pass) break;
       const joining = m.armyOf.get(seat) === undefined
         && m.leader[mv.army] !== null && m.leader[mv.army] !== seat;
@@ -137,8 +142,8 @@ export function playRound(g, rnd) {
       m.armies[mv.army].push(card);
       if (m.leader[mv.army] === null) m.leader[mv.army] = seat;
       m.armyOf.set(seat, mv.army);
-      if (card.broker === "siege") {                    // deploys face up, reveals one enemy
-        const hidden = m.armies[1 - mv.army].filter((x) => !x.revealed);
+      if (card.broker === "siege") {                      // face up, reveals one enemy unit
+        const hidden = m.armies.flatMap((a, i) => (i === mv.army ? [] : a)).filter((x) => !x.revealed);
         if (hidden.length) hidden[Math.floor(rnd() * hidden.length)].revealed = true;
       }
       if (card.broker) (m.used[seat] ||= new Set()).add(card.broker);
@@ -148,43 +153,24 @@ export function playRound(g, rnd) {
     seat = (seat + 1) % n;
   }
 
-  const fielded = [0, 1].filter((a) => m.armies[a].length);
-  let result = null;
-  const winners = new Set(), losers = new Set();
-  if (fielded.length === 2) {
-    result = resolveBattle(m.armies[0], m.armies[1]);
-    if (result.winner === "both") { winners.add(0); winners.add(1); }
-    else {
-      const w = result.winner === "A" ? 0 : 1;
-      winners.add(w); losers.add(1 - w);
-    }
-  } else if (fielded.length === 1) {
-    result = resolveUncontested(m.armies[fielded[0]]);
-    winners.add(fielded[0]);
-  }
-
-  // ---- spoils: 1 point per SURVIVING unit of yours in a winning army
-  const awarded = new Map();
-  if (result) {
-    for (const u of [...(result.armyA || []), ...(result.armyB || [])]) {
-      if (u.owner === undefined || !winners.has(u.army)) continue;
-      awarded.set(u.owner, (awarded.get(u.owner) || 0) + 1);
-    }
+  const fielded = m.armies.map((a, i) => (a.length ? i : -1)).filter((i) => i >= 0);
+  let result = null, awarded = new Map();
+  if (fielded.length) {
+    result = resolveBattle(m.armies);
+    awarded = spoils(result);
     for (const [p, v] of awarded) g.players[p].vp += v;
   }
 
-  // ---- the economy: the victorious recover, the defeated burn and recruit
-  // A surviving Senapati in a beaten army kills the winner's recovering units instead.
+  // ---- the economy: winners recover, the defeated burn and each recruits one broker
   const rocketsFired = result
-    ? [...(result.armyA || []), ...(result.armyB || [])]
-      .some((u) => u.broker === "rockets" && losers.has(u.army))
+    ? result.armies.some((a, i) => !result.winners.has(i) && a.some((u) => u.broker === "rockets"))
     : false;
   const recruited = new Map();
   for (const a of fielded) {
-    const won = winners.has(a);
+    const won = result.winners.has(a);
     for (const u of m.armies[a]) {
       if (won && !rocketsFired) u.ref.rest = g.round + 2;   // recovers, sits out a round
-      else u.ref.spent = true;                                // gone for good
+      else u.ref.spent = true;                              // gone for good
     }
     if (won) continue;
     for (const p of new Set(m.armies[a].map((u) => u.owner))) {
@@ -199,6 +185,7 @@ export function playRound(g, rnd) {
   g.start = (g.start + 1) % n;
   return {
     committed, turns, awarded, recruited, result, rocketsFired, used: m.used,
+    fielded: fielded.length,
     allied: m.armies.filter((a) => new Set(a.map((u) => u.owner)).size > 1).length,
   };
 }
@@ -207,22 +194,23 @@ export function playGame(factionKeys, target, seed) {
   const rnd = makeRng(seed);
   const g = newGame(factionKeys, target, rnd);
   const n = g.players.length;
+  const supplySize = BROKERS.reduce((s, b) => s + b.copies, 0);
   const st = {
     rounds: 0, commits: new Array(n).fill(0), satOut: new Array(n).fill(0),
-    recruits: new Array(n).fill(0), alliedRounds: 0, rockets: 0, supplyUsed: 0,
+    recruits: new Array(n).fill(0), alliedRounds: 0, rockets: 0, supplyUsed: 0, armiesSum: 0,
     used: Array.from({ length: n }, () => new Set()),
   };
   let quiet = 0;
 
   for (let guard = 0; guard < 300; guard++) {
     const r = playRound(g, rnd);
-    st.rounds++;
+    st.rounds++; st.armiesSum += r.fielded;
     for (let i = 0; i < n; i++) {
       st.commits[i] += r.turns[i];
       if (r.turns[i] === 0) st.satOut[i]++;
       st.recruits[i] += r.recruited.get(i) || 0;
+      for (const k of (r.used[i] || [])) st.used[i].add(k);
     }
-    for (let i = 0; i < n; i++) for (const k of (r.used[i] || [])) st.used[i].add(k);
     if (r.allied) st.alliedRounds++;
     if (r.rocketsFired) st.rockets++;
     quiet = r.committed === 0 ? quiet + 1 : 0;
@@ -231,7 +219,7 @@ export function playGame(factionKeys, target, seed) {
     if (g.players.every((p) => available(p, g.round).length === 0)) { st.end = "dry"; break; }
   }
   if (!st.end) st.end = "guard";
-  st.supplyUsed = 25 - g.supply.length;
+  st.supplyUsed = supplySize - g.supply.length;
   const top = Math.max(...g.players.map((p) => p.vp));
   st.winners = g.players.filter((p) => p.vp === top).map((p) => p.seat);
   st.vp = g.players.map((p) => p.vp);

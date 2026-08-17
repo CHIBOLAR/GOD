@@ -1,86 +1,87 @@
 // DECCAN II — the resolver. PURE: no I/O, no randomness, no global state.
 //
-//  1. Reveal. Cancellation is read off the REVEALED armies, simultaneously: each unit cancels
-//     ONE enemy unit of an arm it beats, taking the strongest such. Nothing depends on order,
-//     and a unit that is itself cancelled still cancels.
-//  2. A CANCELLED UNIT DOES NOT ACT. It contributes no strength and its ability never fires.
-//  3. Surviving abilities resolve together, targets read off what is left.
-//  4. Total the survivors. Higher total wins; level totals mean BOTH armies win.
+// THREE ARMIES contest the ground, not two. Everything is n-way:
+//
+//  1. Reveal. Cancellation is read off the revealed armies, simultaneously: each unit cancels
+//     ONE unit of an arm it beats, in ANY other army — the strongest such. A unit that is
+//     itself cancelled still cancels, so nothing depends on order.
+//  2. A CANCELLED UNIT DOES NOT ACT. No strength, and its ability never fires.
+//  3. Surviving abilities resolve together, reading what is left.
+//  4. Total the survivors. The highest total takes the ground; armies level at the top all win.
 
 import { beats } from "./cards.mjs";
 
-// Which of `army` are cancelled by `foe`. Each foe unit takes the strongest legal target, so
-// the result does not depend on the order they are considered in.
-export function cancelMask(army, foe) {
-  const dead = new Array(army.length).fill(false);
-  for (const v of [...foe].sort((a, b) => b.s - a.s)) {
-    let best = -1;
-    for (let i = 0; i < army.length; i++) {
-      if (dead[i] || !beats(v.arm, army[i].arm)) continue;
-      if (best === -1 || army[i].s > army[best].s) best = i;
+// Cancellation across every army at once. Returns a parallel array of boolean arrays,
+// true meaning that unit was cancelled.
+export function cancelMasks(armies) {
+  const all = [];
+  armies.forEach((a, ai) => a.forEach((u, ui) => all.push({ u, ai, ui })));
+  const dead = armies.map((a) => new Array(a.length).fill(false));
+  // strongest cancellers considered first, purely for determinism: because each one takes the
+  // strongest legal target, the outcome does not depend on this order
+  for (const { u, ai } of [...all].sort((x, y) => y.u.s - x.u.s)) {
+    let best = null;
+    for (const t of all) {
+      if (t.ai === ai || dead[t.ai][t.ui] || !beats(u.arm, t.u.arm)) continue;
+      if (!best || t.u.s > best.u.s) best = t;
     }
-    if (best !== -1) dead[best] = true;
+    if (best) dead[best.ai][best.ui] = true;
   }
   return dead;
 }
 
-const weakest = (a) => a.reduce((b, u) => (!b || u.s < b.s ? u : b), null);
-const strongest = (a) => a.reduce((b, u) => (!b || u.s > b.s ? u : b), null);
+const pickBy = (units, better) => units.reduce((b, u) => (!b || better(u, b) ? u : b), null);
 
 // The Sepoy doubles while alone in its army.
 const value = (u, army) => (u.broker === "sepoy" && army.length === 1 ? u.s * 2 : u.s);
 
-export function resolveBattle(rawA, rawB) {
-  let A = rawA.map((u) => ({ ...u }));
-  let B = rawB.map((u) => ({ ...u }));
+export function resolveBattle(raw) {
+  let armies = raw.map((a) => a.map((u) => ({ ...u })));
+  const dead = cancelMasks(armies);
+  armies = armies.map((a, i) => a.filter((_, j) => !dead[i][j]));
 
-  // 1-2. simultaneous cancellation; a cancelled unit is out and never acts
-  const da = cancelMask(A, B), db = cancelMask(B, A);
-  A = A.filter((_, i) => !da[i]);
-  B = B.filter((_, i) => !db[i]);
-
-  // 3. surviving abilities, targets read off what is left, applied together
+  // ---- surviving abilities, targets read off what is left, applied together
+  const others = (i) => armies.flatMap((a, j) => (j === i ? [] : a));
   const plan = [];
-  const scan = (mine, foe) => {
-    for (const u of mine) {
-      if (u.broker === "subhedar") { const t = weakest(foe); if (t) plan.push({ k: "kill", t }); }
-      if (u.broker === "spy") { const t = strongest(foe); if (t) plan.push({ k: "swap", u, t }); }
+  armies.forEach((army, i) => {
+    for (const u of army) {
+      if (u.broker === "subhedar") {
+        const t = pickBy(others(i), (x, b) => x.s < b.s);
+        if (t) plan.push({ k: "kill", t });
+      }
+      if (u.broker === "spy") {
+        const t = pickBy(others(i), (x, b) => x.s > b.s);
+        if (t) plan.push({ k: "swap", u, t, i });
+      }
     }
-  };
-  scan(A, B); scan(B, A);
+  });
   for (const p of plan) if (p.k === "kill") p.t.dead = true;
   for (const p of plan) {
     if (p.k !== "swap" || p.u.dead || p.t.dead) continue;
-    const i = A.indexOf(p.u), j = B.indexOf(p.t);
-    if (i >= 0 && j >= 0) { A[i] = p.t; B[j] = p.u; continue; }
-    const i2 = B.indexOf(p.u), j2 = A.indexOf(p.t);
-    if (i2 >= 0 && j2 >= 0) { B[i2] = p.t; A[j2] = p.u; }
+    const mine = armies[p.i];
+    const tj = armies.findIndex((a) => a.includes(p.t));
+    if (tj < 0) continue;
+    const mi = mine.indexOf(p.u), ti = armies[tj].indexOf(p.t);
+    if (mi < 0 || ti < 0) continue;
+    mine[mi] = p.t; armies[tj][ti] = p.u;
   }
-  A = A.filter((u) => !u.dead);
-  B = B.filter((u) => !u.dead);
+  armies = armies.map((a) => a.filter((u) => !u.dead));
 
-  // 4. totals
-  const totalA = A.reduce((s, u) => s + value(u, A), 0);
-  const totalB = B.reduce((s, u) => s + value(u, B), 0);
-  return {
-    armyA: A, armyB: B, totalA, totalB,
-    winner: totalA > totalB ? "A" : totalB > totalA ? "B" : "both",
-  };
+  // ---- totals; the highest takes the ground, and armies level at the top all win
+  const totals = armies.map((a) => a.reduce((s, u) => s + value(u, a), 0));
+  const fielded = raw.map((a, i) => (a.length ? i : -1)).filter((i) => i >= 0);
+  if (!fielded.length) return { armies, totals, winners: new Set() };
+  const top = Math.max(...fielded.map((i) => totals[i]));
+  return { armies, totals, winners: new Set(fielded.filter((i) => totals[i] === top)) };
 }
 
-export function resolveUncontested(army) {
-  const a = army.map((u) => ({ ...u }));
-  return { armyA: a, armyB: [], totalA: a.reduce((s, u) => s + value(u, a), 0), totalB: 0, winner: "A" };
-}
-
-// Each player in a winning army scores 1 point per surviving unit of theirs.
+// Points: each player in a winning army scores 1 for every surviving unit of theirs.
 export function spoils(result) {
   const vp = new Map();
-  const award = (army) => army.forEach((u) => {
-    if (u.owner === undefined) return;
-    vp.set(u.owner, (vp.get(u.owner) || 0) + 1);
-  });
-  if (result.winner === "A" || result.winner === "both") award(result.armyA);
-  if (result.winner === "B" || result.winner === "both") award(result.armyB);
+  for (const i of result.winners)
+    for (const u of result.armies[i]) {
+      if (u.owner === undefined) continue;
+      vp.set(u.owner, (vp.get(u.owner) || 0) + 1);
+    }
   return vp;
 }

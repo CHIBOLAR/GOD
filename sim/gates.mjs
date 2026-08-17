@@ -5,11 +5,12 @@
 //
 //   node sim/gates.mjs [games]
 
-import { FACTIONS, VICTORY_TARGET, validate, PATTERN } from "./cards.mjs";
+import { FACTIONS, VICTORY_TARGET, validate } from "./cards.mjs";
+import { NUM_ARMIES } from "./game.mjs";
 import { playGame } from "./game.mjs";
 
 const GAMES = Number(process.argv[2]) || 4000;
-const COUNTS = [2, 3, 4, 5];
+const COUNTS = [2, 3, 4, 5, 6, 7, 8];
 const results = [];
 const gate = (name, value, pass, fail, note = "") => {
   const ok = pass(value), hard = fail ? fail(value) : false;
@@ -22,11 +23,13 @@ function deal(n, g) {
   let y = (g * 2654435761) >>> 0;
   const r = () => ((y = (y * 1664525 + 1013904223) >>> 0) / 4294967296);
   for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; }
-  return keys.slice(0, n);
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(keys[i % keys.length]);   // duplicates above five seats
+  return out;
 }
 
 console.log(`DECCAN II — balance gates, whole game with alliances (${GAMES} games per count)`);
-console.log(`  pattern ${PATTERN.join("/")}\n`);
+console.log(`  ${NUM_ARMIES} armies, up to 3 units each\n`);
 gate("card data valid", validate().length, (v) => v === 0, (v) => v > 0);
 
 const rows = [];
@@ -34,11 +37,11 @@ for (const n of COUNTS) {
   const target = VICTORY_TARGET[n];
   const seat = new Array(n).fill(0);
   const fw = new Map(FACTIONS.map((f) => [f.key, 0])), fg = new Map(FACTIONS.map((f) => [f.key, 0]));
-  let rounds = 0, onTarget = 0, allied = 0, satOut = 0, pr = 0, supply = 0, senap = 0, recruits = 0;
+  let rounds = 0, onTarget = 0, allied = 0, satOut = 0, pr = 0, supply = 0, senap = 0, recruits = 0, armies = 0;
   for (let gi = 0; gi < GAMES; gi++) {
     const keys = deal(n, gi);
     const s = playGame(keys, target, 0x9e3779b9 ^ (gi * 2654435761));
-    rounds += s.rounds; allied += s.alliedRounds; supply += s.supplyUsed; senap += s.rockets;
+    rounds += s.rounds; allied += s.alliedRounds; supply += s.supplyUsed; senap += s.rockets; armies += s.armiesSum;
     if (s.end === "target") onTarget++;
     for (let i = 0; i < n; i++) { satOut += s.satOut[i]; pr += s.rounds; recruits += s.recruits[i]; fg.set(keys[i], fg.get(keys[i]) + 1); }
     const share = 1 / s.winners.length;
@@ -53,14 +56,14 @@ for (const n of COUNTS) {
     facWorst: [...fw].map(([k, v]) => ({ k, p: (100 * v) / (fg.get(k) || 1) }))
       .sort((a, b) => Math.abs(b.p - exp) - Math.abs(a.p - exp))[0],
     alliedPct: (100 * allied) / rounds, satOutPct: (100 * satOut) / pr,
-    supply: supply / GAMES, rockets: senap / GAMES, recruits: recruits / GAMES,
+    supply: supply / GAMES, rockets: senap / GAMES, recruits: recruits / GAMES, armies: armies / rounds,
   });
 }
 
 console.log("\n   n  target  rounds  ends on target  rounds with an alliance  sat out  brokers used");
 for (const r of rows)
   console.log(`   ${r.n}    ${r.target}     ${r.rounds.toFixed(1).padStart(5)}      ${r.onTarget.toFixed(0).padStart(3)}%` +
-    `             ${r.alliedPct.toFixed(0).padStart(3)}%              ${r.satOutPct.toFixed(0).padStart(3)}%      ` +
+    `        ${r.armies.toFixed(2)}       ${r.alliedPct.toFixed(0).padStart(3)}%     ${r.satOutPct.toFixed(0).padStart(3)}%      ` +
     `${r.supply.toFixed(1).padStart(4)} of 25`);
 
 console.log("\n  seat fairness, per player count");
@@ -78,6 +81,7 @@ gate("longest game (rounds)", +Math.max(...rows.map((r) => r.rounds)).toFixed(1)
 gate("games decided on the target", +Math.min(...rows.map((r) => r.onTarget)).toFixed(0), (v) => v >= 80, (v) => v < 60, "not by running dry");
 gate("rounds containing an alliance", +Math.min(...rows.slice(1).map((r) => r.alliedPct)).toFixed(0), (v) => v >= 15, (v) => v < 5, "3p+; alliances must actually happen");
 gate("Power Brokers drawn per game", +Math.max(...rows.map((r) => r.supply)).toFixed(1), (v) => v <= 22, (v) => v > 25, "the supply must not run dry");
+
 
 const failed = results.filter((r) => r.hard), warned = results.filter((r) => !r.ok && !r.hard);
 console.log(`\n  ${results.length} gates · ${results.filter((r) => r.ok).length} pass · ${warned.length} warn · ${failed.length} fail`);

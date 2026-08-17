@@ -53,7 +53,7 @@ const ABILITY = {
 };
 const ABIL = (process.env.ABIL || "siege,sepoy,rockets,spy,subhedar").split(",");
 export const BROKERS = ARMS.map((arm, i) => ({
-  key: ABIL[i], arm, s: S[arm] + 1, copies: 5, ...ABILITY[ABIL[i]],
+  key: ABIL[i], arm, s: S[arm] + 1, copies: Number(process.env.COPIES || 4), ...ABILITY[ABIL[i]],
 }));
 
 // ---- the factions -----------------------------------------------------------
@@ -71,58 +71,45 @@ export const BROKERS = ARMS.map((arm, i) => ({
 // raw totals run 40 to 70 and the ring cannot flatten a gap that wide.
 export const PATTERN = (process.env.PATTERN || "3,2,2,2,1").split(",").map(Number);
 
-const NAMES = {
-  ELEPHANT: ["Qutb Shahi of Golconda", "the diamond throne"],
-  RIFLEMAN: ["The Firangi", "the coastal batteries"],
-  CANNON: ["The Mughal Host", "the Deccan campaigns"],
-  HORSEMAN: ["The Marathas", "Ganimi Kava"],
-  WARRIOR: ["The Berads", "the hill country"],
-};
+// EIGHT FACTIONS, from two archetypes.
+//   SPECIALIST  3 of your arm, 1 of each other        (5 identities, one per arm)
+//   PAIR        2 of your arm, 2 of the NEXT arm, 1 each of the other three
+// Five arms only yield five "three of my arm" identities, so the sixth through eighth come
+// from the pair shape. Eight decks of seven is 56 cards, plus a 20-card supply = 76.
+const ROSTER = [
+  ["qutb",     "Qutb Shahi of Golconda", "the diamond throne", "ELEPHANT", "specialist"],
+  ["firangi",  "The Firangi",            "the coastal batteries", "RIFLEMAN", "specialist"],
+  ["mughal",   "The Mughal Host",        "the Deccan campaigns", "CANNON",  "specialist"],
+  ["maratha",  "The Marathas",           "Ganimi Kava",        "HORSEMAN", "specialist"],
+  ["berad",    "The Berads",             "the hill country",   "WARRIOR",  "specialist"],
+  ["adilshahi","Adil Shahi of Bijapur",  "the Malik-e-Maidan", "CANNON",   "pair"],
+  ["nizam",    "Nizam Shahi of Ahmadnagar", "Malik Ambar",     "HORSEMAN", "pair"],
+  ["siddi",    "The Siddis of Janjira",  "the island fortress","RIFLEMAN", "pair"],
+];
+const SHAPE = { specialist: [3, 1, 1, 1, 1], pair: [2, 2, 1, 1, 1] };
 const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
 
-// COUNTS, when given, sets each faction's units per arm directly instead of rotating one
-// pattern. A pure rotation equalises how MANY units a faction holds but not what they are
-// worth, and that residue is what the rotation cannot fix.
-// Hill-climbed from the pure rotation 3/2/2/2/1. Exactly one faction needed adjusting: the
-// Mughal Host trades its last Rifleman for a third Archer, which took the worst mean faction
-// deviation from 4.21 to 1.66. Rows are factions in ring order (Elephant-lead first), columns
-// are arms in ring order: ELEPHANT RIFLEMAN CANNON HORSEMAN WARRIOR.
-// SIX OF YOUR OWN ARM, ONE OF EVERYTHING ELSE. One sentence describes all five factions.
-const DEFAULT_COUNTS = [
-  [6, 1, 1, 1, 1],   // Qutb Shahi   — six ELEPHANTS
-  [1, 6, 1, 1, 1],   // The Firangi  — six RIFLEMEN
-  [1, 1, 6, 1, 1],   // Mughal Host  — six CANNONS
-  [1, 1, 1, 6, 1],   // The Marathas — six HORSEMEN
-  [1, 1, 1, 1, 6],   // The Berads   — six WARRIORS
-];
-const COUNTS = process.env.COUNTS ? JSON.parse(process.env.COUNTS) : DEFAULT_COUNTS;
-
-export const FACTIONS = ARMS.map((lead, k) => {
+export const FACTIONS = ROSTER.map(([key, name, era, lead, archetype]) => {
+  const k = armIndex(lead);
   const counts = {};
-  if (COUNTS) ARMS.forEach((a, i) => { counts[a] = COUNTS[k][i]; });
-  else PATTERN.forEach((n, g) => { counts[ARMS[(g + k) % 5]] = n; });
+  SHAPE[archetype].forEach((n, g) => { counts[ARMS[(g + k) % 5]] = n; });
   const units = [];
   for (const arm of ARMS) for (let i = 0; i < counts[arm]; i++) units.push({ ...forceByArm[arm] });
-  return {
-    key: lead.toLowerCase(), name: NAMES[lead][0], era: NAMES[lead][1], lead, counts, units,
-    total: units.reduce((s, u) => s + u.s, 0),
-  };
+  return { key, name, era, lead, archetype, counts, units,
+    total: units.reduce((s, u) => s + u.s, 0) };
 });
 
-// Two players need a longer game than the rest: with almost no alliances at two seats the
-// game collapses into a duel, where the faction asymmetry bites hardest and a short game
-// cannot regress it. Swept: target 4 gives deviation 4.96 over 3.7 rounds, target 5 gives
-// 3.82 over 4.7, target 8 drifts back to 5.42.
-export const VICTORY_TARGET = { 2: 5, 3: 4, 4: 4, 5: 4 };
+export const VICTORY_TARGET = { 2: 5, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4 };
 
 export function validate() {
   const p = [];
-  const size = PATTERN.reduce((a, b) => a + b, 0);
-  for (const f of FACTIONS) if (f.units.length !== size) p.push(`${f.key}: ${f.units.length} units`);
+  for (const f of FACTIONS) if (f.units.length !== 7) p.push(`${f.key}: ${f.units.length} units`);
+  if (new Set(FACTIONS.map((f) => f.key)).size !== 8) p.push("expected 8 distinct factions");
   for (const u of FORCE) if (u.s % 2 !== 1) p.push(`${u.name}: Force strengths must be odd`);
   for (const b of BROKERS) if (b.s % 2 !== 0) p.push(`${b.name}: broker strengths must be even`);
   if (new Set(BROKERS.map((b) => b.arm)).size !== 5) p.push("brokers do not cover all five arms");
-  if (BROKERS.reduce((s, b) => s + b.copies, 0) !== 25) p.push("the supply is not 25 cards");
+  const supply = BROKERS.reduce((s, b) => s + b.copies, 0);
+  if (supply !== Number(process.env.COPIES || 4) * 5) p.push(`the supply is ${supply} cards`);
   return p;
 }
 const bad = validate();
