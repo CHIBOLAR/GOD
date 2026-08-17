@@ -19,28 +19,32 @@ export const PREY = Object.fromEntries(
 // BROKERS ARE INSIDE THE RING. A broker can be cancelled like anything else, which is the
 // structural answer to the failure that ended the old game: a broker measured +38.8, present
 // in all 50 of the top 50 armies, because nothing could answer it.
+// The ladder is the lever on faction balance: the RATIO between the cheapest and dearest arm
+// is what an Archer-heavy faction has to overcome. 1..9 is a 9x ratio; shifting the whole
+// ladder up compresses it without touching the gaps or the odd/even broker shadow.
+export const LADDER = (process.env.LADDER || "1,3,5,7,9").split(",").map(Number);
 export const FORCE = [
-  { key: "archer", name: "Archer", arm: "ARCHER", s: 1 },
-  { key: "horseman", name: "Horseman", arm: "HORSEMAN", s: 3 },
-  { key: "warrior", name: "Warrior", arm: "WARRIOR", s: 5 },
-  { key: "rifleman", name: "Rifleman", arm: "RIFLEMAN", s: 7 },
-  { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: 9 },
+  { key: "archer", name: "Archer", arm: "ARCHER", s: LADDER[0] },
+  { key: "horseman", name: "Horseman", arm: "HORSEMAN", s: LADDER[1] },
+  { key: "warrior", name: "Warrior", arm: "WARRIOR", s: LADDER[2] },
+  { key: "rifleman", name: "Rifleman", arm: "RIFLEMAN", s: LADDER[3] },
+  { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: LADDER[4] },
 ];
 
 export const BROKERS = [
-  { key: "slinger", name: "Slinger", arm: "ARCHER", s: 2, copies: 5,
+  { key: "slinger", name: "Slinger", arm: "ARCHER", s: LADDER[0] + 1, copies: 5,
     text: "REMOVE the weakest unit of the opposing army." },
-  { key: "spy", name: "Spy", arm: "HORSEMAN", s: 4, copies: 5,
+  { key: "spy", name: "Spy", arm: "HORSEMAN", s: LADDER[1] + 1, copies: 5,
     text: "SWAP with the strongest unit of the opposing army." },
-  { key: "senapati", name: "Senapati", arm: "WARRIOR", s: 6, copies: 5,
+  { key: "senapati", name: "Senapati", arm: "WARRIOR", s: LADDER[2] + 1, copies: 5,
     text: "If your army LOSES, kill every recovering unit of the winning army." },
-  { key: "sepoy", name: "Sepoy", arm: "RIFLEMAN", s: 8, copies: 5,
+  { key: "sepoy", name: "Sepoy", arm: "RIFLEMAN", s: LADDER[3] + 1, copies: 5,
     text: "While ALONE in your army, fight at double strength." },
   // Deployed FACE UP. A hidden reveal-card is unenforceable at a real table: nobody can check
   // that you held one, so a player could simply claim the peek. Playing it face up also makes
   // it self-balancing — the strongest card in the game is the one that announces itself, and
   // an announced ELEPHANT invites every Archer and Rifleman at the table.
-  { key: "siege", name: "Siege Elephant", arm: "ELEPHANT", s: 10, copies: 5, faceUp: true,
+  { key: "siege", name: "Siege Elephant", arm: "ELEPHANT", s: LADDER[4] + 1, copies: 5, faceUp: true,
     text: "Deploy FACE UP. On deployment, REVEAL any one enemy unit." },
 ];
 

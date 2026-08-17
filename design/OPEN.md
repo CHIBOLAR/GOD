@@ -63,3 +63,33 @@ in one round. Measured as fair (50.0 / 50.0) and short (4.4 rounds), which may b
 **Nothing.** The chassis, the card list, the faction set, the victory targets and the ending
 conditions are all settled and measured. There are no abilities to design — D011 removed the
 entire category, and re-introducing one requires re-running `sim/chassis-test.mjs` first.
+
+
+---
+
+## ⚠️ THE PROOF DOES NOT COVER ALLIANCES (raised by the designer, 2026-08-18)
+
+`sim/prove.mjs` certifies the equilibrium value of every faction pairing to within 0.011, and
+reports a spread of 0.105 points per battle. **That is a proof about a TWO-PLAYER DUEL.** It
+models one faction's army against another's and nothing else.
+
+The real game is 2-5 players, an army may hold units from up to three of them, and each player
+scores per surviving unit of their own inside a winning army. None of that is in the model.
+
+**What this most likely gets wrong.** The result names the Berads (Archer-lead) the weakest
+faction at -0.065, losing ~0.095 to three others. But the Berads are three cheap Archers that
+cancel Elephants — a poor solo army and possibly the single most valuable thing anyone can
+contribute to somebody else's. A faction can be the worst duellist and the best ally, and the
+duel model cannot tell the difference.
+
+⚠️ `LESSONS.md` D1 says a battle-level metric cannot see the reward economy. It cannot see
+alliances either. **Do not quote the 0.105 as a balance figure for DECCAN** — quote it as the
+duel value, and re-prove once `sim/game.mjs` models multi-player armies.
+
+**What a real proof needs:** the whole-game simulation with alliances, offers and refusals,
+per-player scoring inside a shared army, and the recruit-on-defeat economy. That is the same
+`game.mjs` wiring that everything else is waiting on.
+
+**Also unresolved:** forcing every faction to an equal strength total (`sim/equalise.mjs`)
+collapses the design — at 10 units and 50 strength the best "lean into your lead arm" vectors
+give two identical factions and one mono-arm faction. Equal totals are not the fix.
