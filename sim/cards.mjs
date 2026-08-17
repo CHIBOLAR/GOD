@@ -77,14 +77,16 @@ export const PATTERN = (process.env.PATTERN || "3,2,2,2,1").split(",").map(Numbe
 // Five arms only yield five "three of my arm" identities, so the sixth through eighth come
 // from the pair shape. Eight decks of seven is 56 cards, plus a 20-card supply = 76.
 const ROSTER = [
-  ["qutb",     "Qutb Shahi of Golconda", "the diamond throne", "ELEPHANT", "specialist"],
-  ["firangi",  "The Firangi",            "the coastal batteries", "RIFLEMAN", "specialist"],
-  ["mughal",   "The Mughal Host",        "the Deccan campaigns", "CANNON",  "specialist"],
-  ["maratha",  "The Marathas",           "Ganimi Kava",        "HORSEMAN", "specialist"],
-  ["berad",    "The Berads",             "the hill country",   "WARRIOR",  "specialist"],
-  ["adilshahi","Adil Shahi of Bijapur",  "the Malik-e-Maidan", "CANNON",   "pair"],
-  ["nizam",    "Nizam Shahi of Ahmadnagar", "Malik Ambar",     "HORSEMAN", "pair"],
-  ["siddi",    "The Siddis of Janjira",  "the island fortress","RIFLEMAN", "pair"],
+  // --- SPECIALISTS: three of one arm, one of each other
+  ["sultan",   "The Sultan",   "war elephants of the Deccan courts",  "ELEPHANT", "specialist"],
+  ["badshah",  "The Badshah",  "the imperial gun train",              "CANNON",   "specialist"],
+  ["peshwa",   "The Peshwa",   "Ganimi Kava, and horse that never stands", "HORSEMAN", "specialist"],
+  ["governor", "The Governor", "matchlocks drilled off the ships",    "RIFLEMAN", "specialist"],
+  ["rana",     "The Rana",     "the last stand on foot",              "WARRIOR",  "specialist"],
+  // --- PAIRS: two of your arm, two of the next arm round the ring, one of each other
+  ["nizam",    "The Nizam",    "guns, and the horse that screens them", "CANNON",   "pair"],
+  ["nawab",    "The Nawab",    "a fortress of musket and cannon",     "RIFLEMAN", "pair"],
+  ["maharaja", "The Maharaja", "horse and foot, and nothing bought",  "HORSEMAN", "pair"],
 ];
 const SHAPE = { specialist: [3, 1, 1, 1, 1], pair: [2, 2, 1, 1, 1] };
 const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
