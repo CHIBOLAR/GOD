@@ -7,19 +7,14 @@
 // Rock-paper-scissors-lizard-Spock: arm i beats i+1 and i+2, and loses to i-1 and i-2.
 // Every edge below is a real thing that happened in the Deccan.
 //
-//   ARCHER   -> ELEPHANT (arrows panic them)     · WARRIOR  (shot down from range)
-//   ELEPHANT -> WARRIOR  (trampled)             · HORSEMAN (horses will not face them)
-//   WARRIOR  -> HORSEMAN (spears stop a charge) · CANNON   (gun crews overrun)
-//   HORSEMAN -> CANNON   (ridden down)          · ARCHER   (run down in the open)
-//   CANNON   -> ARCHER   (outranged, shredded)  · ELEPHANT (the one answer to them)
+//   RIFLEMAN -> ELEPHANT (a ball drops them)   · WARRIOR  (shot down before contact)
+//   ELEPHANT -> WARRIOR  (trampled)            · HORSEMAN (horses will not face them)
+//   WARRIOR  -> HORSEMAN (spears stop a charge)· ARCHER   (closed with and cut down)
+//   HORSEMAN -> ARCHER   (ridden down)         · RIFLEMAN (ridden down mid-reload)
+//   ARCHER   -> RIFLEMAN (a bow outshoots a matchlock) · ELEPHANT (arrows panic them)
 //
-// ⚠️ FIVE ARMS, NOT THREE, AND THE COUNT IS LOAD-BEARING. With three arms a three-card army
-// can hold one of each, and it then cancels the ENTIRE enemy army whatever it is: the best
-// army in the game became one-of-each at minimum strength (100%), printed strength stopped
-// mattering, and every faction matchup solved to exactly 0.000. With five arms no three cards
-// can cover the field, so that lock is structurally impossible. See DECISIONS.md D023.
-export const ARMS = ["ARCHER", "ELEPHANT", "WARRIOR", "HORSEMAN", "CANNON"];
-export const GLYPH = { ARCHER: "A", ELEPHANT: "E", WARRIOR: "W", HORSEMAN: "H", CANNON: "C" };
+export const ARMS = ["RIFLEMAN", "ELEPHANT", "WARRIOR", "HORSEMAN", "ARCHER"];
+export const GLYPH = { RIFLEMAN: "R", ELEPHANT: "E", WARRIOR: "W", HORSEMAN: "H", ARCHER: "A" };
 
 export const armIndex = (a) => ARMS.indexOf(a);
 export const beatsIdx = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
@@ -72,29 +67,29 @@ const F = (key, name, era, blurb, archetype, lead) => {
 };
 
 export const FACTIONS = [
-  // --- THE SPECIALISTS ------------------------------------------------------
+  // --- THE SPECIALISTS. The top of the ladder in one arm, very little behind it. ---
   F("maratha", "The Marathas", "Ganimi Kava",
     "The finest horse in the Deccan, and it knows it.", "specialist", "HORSEMAN"),
   F("mughal", "The Mughal Host", "the Deccan campaigns",
     "The great infantry mass. It does not manoeuvre; it does not have to.", "specialist", "WARRIOR"),
-  F("adilshahi", "Adil Shahi of Bijapur", "the Malik-e-Maidan",
-    "Guns cast on a scale nobody else attempts.", "specialist", "CANNON"),
+  F("firangi", "The Firangi", "the coastal batteries",
+    "Matchlocks off the ships, drilled to fire in ranks nobody here has seen.", "specialist", "RIFLEMAN"),
   F("qutbshahi", "Qutb Shahi of Golconda", "the diamond throne",
     "War elephants bought with diamond money, and howdahs to match.", "specialist", "ELEPHANT"),
-  F("berad", "The Berads", "the hill matchlocks",
+  F("berad", "The Berads", "the hill country",
     "Bowmen out of the ravines who shoot better than anyone has a right to.", "specialist", "ARCHER"),
 
-  // --- THE TWIN ARMS. Two strong adjacent arms, and a real hole behind them. -----
+  // --- THE TWIN ARMS. Two strong arms side by side, and a real hole behind them. ---
   F("nizamshahi", "Nizam Shahi of Ahmadnagar", "Malik Ambar",
-    "Malik Ambar's horse, and the guns they ride down, in the same army.", "twinarms", "HORSEMAN"),
-  F("firangi", "The Firangi", "the coastal batteries",
-    "Drilled foot off the ships, with the horse to finish what they start.", "twinarms", "WARRIOR"),
+    "Malik Ambar's horse, and the bowmen who ride with them.", "twinarms", "HORSEMAN"),
+  F("adilshahi", "Adil Shahi of Bijapur", "the Malik-e-Maidan",
+    "Bijapuri foot and the heavy horse that finishes what they start.", "twinarms", "WARRIOR"),
   F("siddi", "The Siddis of Janjira", "the island fortress",
-    "Abyssinian admirals, fortress guns, and bowmen along the walls.", "twinarms", "CANNON"),
+    "Abyssinian admirals, wall guns, and the elephants that land with them.", "twinarms", "RIFLEMAN"),
   F("rajput", "The Rajput Contingents", "sworn to the Deccan war",
     "A beast line that will not turn, and the spears that follow it in.", "twinarms", "ELEPHANT"),
   F("banjara", "The Banjara Caravans", "the grain roads",
-    "Everything an army eats, escorted by people who know every ravine.", "twinarms", "ARCHER"),
+    "Everything an army eats, escorted by bows and matchlocks that know every ravine.", "twinarms", "ARCHER"),
 ];
 
 // ---- the victory target -----------------------------------------------------
