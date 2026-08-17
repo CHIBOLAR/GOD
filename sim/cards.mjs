@@ -36,22 +36,25 @@ export const FORCE = [
   { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: S.ELEPHANT },
 ];
 
-export const BROKERS = [
-  { key: "slinger", name: "Slinger", arm: "WARRIOR", s: S.WARRIOR + 1, copies: 5,
-    text: "REMOVE the weakest unit of the opposing army." },
-  { key: "spy", name: "Spy", arm: "HORSEMAN", s: S.HORSEMAN + 1, copies: 5,
-    text: "SWAP with the strongest unit of the opposing army." },
-  { key: "subhedar", name: "Subhedar", arm: "CANNON", s: S.CANNON + 1, copies: 5,
-    text: "If your army LOSES, kill every recovering unit of the winning army." },
-  { key: "sepoy", name: "Sepoy", arm: "RIFLEMAN", s: S.RIFLEMAN + 1, copies: 5,
-    text: "While ALONE in your army, fight at double strength." },
-  // Deployed FACE UP. A hidden reveal-card is unenforceable at a real table: nobody can check
-  // that you held one, so a player could simply claim the peek. Playing it face up also makes
-  // it self-balancing — the strongest card in the game is the one that announces itself, and
-  // an announced ELEPHANT invites every Archer and Rifleman at the table.
-  { key: "siege", name: "Siege Elephant", arm: "ELEPHANT", s: S.ELEPHANT + 1, copies: 5, faceUp: true,
-    text: "Deploy FACE UP. On deployment, REVEAL any one enemy unit." },
-];
+// Each ability is a (name, effect) pair. WHICH ARM it is printed on decides its strength,
+// because a broker is always +1 over its arm's Force unit — so moving an ability between arms
+// re-prices it. ABIL assigns them in ring order: ELEPHANT RIFLEMAN CANNON HORSEMAN WARRIOR.
+//
+// ⚠️ This is not cosmetic. When the strengths were rearranged to balance the factions, every
+// ability moved with its arm and was silently re-priced: "double while alone" fell from a
+// printed 8 to a printed 4, halving a lone Subhedar from 16 to 8. Abilities must be assigned
+// deliberately AFTER the numbers settle, not inherited from before.
+const ABILITY = {
+  siege:    { name: "Siege Elephant", faceUp: true, text: "Deploy FACE UP. On deployment, REVEAL any one enemy unit." },
+  rockets: { name: "Sultan Rockets", text: "If your army LOSES, burn every recovering unit of the winning army." },
+  spy:      { name: "Spy", text: "SWAP with the strongest unit of the opposing army." },
+  slinger:  { name: "Slinger", text: "REMOVE the weakest unit of the opposing army." },
+  subhedar: { name: "Subhedar", text: "While ALONE in your army, fight at double strength." },
+};
+const ABIL = (process.env.ABIL || "siege,subhedar,rockets,spy,slinger").split(",");
+export const BROKERS = ARMS.map((arm, i) => ({
+  key: ABIL[i], arm, s: S[arm] + 1, copies: 5, ...ABILITY[ABIL[i]],
+}));
 
 // ---- the factions -----------------------------------------------------------
 // ASYMMETRIC DISTRIBUTION. A faction is defined by HOW MANY of each arm it holds, counted

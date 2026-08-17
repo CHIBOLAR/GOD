@@ -28,7 +28,7 @@ const weakest = (a) => a.reduce((b, u) => (!b || u.s < b.s ? u : b), null);
 const strongest = (a) => a.reduce((b, u) => (!b || u.s > b.s ? u : b), null);
 
 // The Sepoy doubles while alone in its army.
-const value = (u, army) => (u.broker === "sepoy" && army.length === 1 ? u.s * 2 : u.s);
+const value = (u, army) => (u.broker === "subhedar" && army.length === 1 ? u.s * 2 : u.s);
 
 export function resolveBattle(rawA, rawB) {
   let A = rawA.map((u) => ({ ...u }));

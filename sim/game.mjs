@@ -112,7 +112,7 @@ function accepts(m, army, rnd) {
 export function playRound(g, rnd) {
   const n = g.players.length;
   const m = {
-    armies: [[], []], leader: [null, null], armyOf: new Map(), offered: new Set(),
+    armies: [[], []], leader: [null, null], armyOf: new Map(), offered: new Set(), used: [],
     pools: g.players.map((p) => available(p, g.round).map((u) => ({ arm: u.arm, s: u.s }))),
   };
   let passStreak = 0, seat = g.start, committed = 0;
@@ -141,6 +141,7 @@ export function playRound(g, rnd) {
         const hidden = m.armies[1 - mv.army].filter((x) => !x.revealed);
         if (hidden.length) hidden[Math.floor(rnd() * hidden.length)].revealed = true;
       }
+      if (card.broker) (m.used[seat] ||= new Set()).add(card.broker);
       acted = true; committed++; turns[seat]++;
     }
     passStreak = acted ? 0 : passStreak + 1;
@@ -174,15 +175,15 @@ export function playRound(g, rnd) {
 
   // ---- the economy: the victorious recover, the defeated burn and recruit
   // A surviving Senapati in a beaten army kills the winner's recovering units instead.
-  const subhedarFired = result
+  const rocketsFired = result
     ? [...(result.armyA || []), ...(result.armyB || [])]
-      .some((u) => u.broker === "subhedar" && losers.has(u.army))
+      .some((u) => u.broker === "rockets" && losers.has(u.army))
     : false;
   const recruited = new Map();
   for (const a of fielded) {
     const won = winners.has(a);
     for (const u of m.armies[a]) {
-      if (won && !subhedarFired) u.ref.rest = g.round + 2;   // recovers, sits out a round
+      if (won && !rocketsFired) u.ref.rest = g.round + 2;   // recovers, sits out a round
       else u.ref.spent = true;                                // gone for good
     }
     if (won) continue;
@@ -197,7 +198,7 @@ export function playRound(g, rnd) {
   g.round++;
   g.start = (g.start + 1) % n;
   return {
-    committed, turns, awarded, recruited, result, subhedarFired,
+    committed, turns, awarded, recruited, result, rocketsFired, used: m.used,
     allied: m.armies.filter((a) => new Set(a.map((u) => u.owner)).size > 1).length,
   };
 }
@@ -208,7 +209,8 @@ export function playGame(factionKeys, target, seed) {
   const n = g.players.length;
   const st = {
     rounds: 0, commits: new Array(n).fill(0), satOut: new Array(n).fill(0),
-    recruits: new Array(n).fill(0), alliedRounds: 0, subhedar: 0, supplyUsed: 0,
+    recruits: new Array(n).fill(0), alliedRounds: 0, rockets: 0, supplyUsed: 0,
+    used: Array.from({ length: n }, () => new Set()),
   };
   let quiet = 0;
 
@@ -220,8 +222,9 @@ export function playGame(factionKeys, target, seed) {
       if (r.turns[i] === 0) st.satOut[i]++;
       st.recruits[i] += r.recruited.get(i) || 0;
     }
+    for (let i = 0; i < n; i++) for (const k of (r.used[i] || [])) st.used[i].add(k);
     if (r.allied) st.alliedRounds++;
-    if (r.subhedarFired) st.subhedar++;
+    if (r.rocketsFired) st.rockets++;
     quiet = r.committed === 0 ? quiet + 1 : 0;
     if (quiet >= 2) { st.end = "quiet"; break; }
     if (Math.max(...g.players.map((p) => p.vp)) >= target) { st.end = "target"; break; }
