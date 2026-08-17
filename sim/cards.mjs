@@ -1,82 +1,101 @@
 // DECCAN II — the single source of truth for all card data.
-// rules/CARDS.md is GENERATED from this file (npm run cards). Never hand-edit that file.
 
 // ---- the ring ---------------------------------------------------------------
-// Each arm beats the NEXT TWO along the ring, and loses to the two behind it.
-//
+// Each arm cancels the NEXT TWO along the ring, and is cancelled by the two behind it.
 //   ELEPHANT -> RIFLEMAN -> WARRIOR -> HORSEMAN -> ARCHER -> back to ELEPHANT
-//
-// Every edge is real: a ball drops an elephant · elephants trample infantry · horses will not
-// face elephants · spears stop a charge · warriors close with bowmen · cavalry rides down
-// archers and rides down riflemen mid-reload · and a bow outshoots a matchlock.
 export const ARMS = ["ELEPHANT", "RIFLEMAN", "WARRIOR", "HORSEMAN", "ARCHER"];
 export const GLYPH = { ELEPHANT: "E", RIFLEMAN: "R", WARRIOR: "W", HORSEMAN: "H", ARCHER: "A" };
 export const armIndex = (a) => ARMS.indexOf(a);
 export const beatsIdx = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
 export const beats = (a, b) => beatsIdx(armIndex(a), armIndex(b));
-export const PREY = Object.fromEntries(ARMS.map((a, i) => [a, [ARMS[(i + 1) % 5], ARMS[(i + 2) % 5]]]));
+export const PREY = Object.fromEntries(
+  ARMS.map((a, i) => [a, [ARMS[(i + 1) % 5], ARMS[(i + 2) % 5]]]));
 
-// ---- the Force --------------------------------------------------------------
-// COUNTERING IS A BONUS, NOT A CANCELLATION. A unit that faces either of the arms it beats
-// gains its bonus. The bonuses are set so that EVERY unit counters at exactly 10.
+// ---- the Force and the supply, one card per arm each -------------------------
+// Strength is a property of the ARM. The supply is an upgraded shadow of the Force: one Power
+// Broker per arm, each exactly +1 over its Force counterpart, each carrying an ability. Force
+// strengths are odd and broker strengths even, so a Force unit and a broker can never tie.
 //
-// ⚠️ THE BONUSES HAVE TO BE THIS BIG. An earlier draft used 5/4/3/2/1, which lifted the
-// boosted ladder to 6,7,8,9,10 — the same ORDER as the base ladder 1,3,5,7,9. Three of the ten
-// counters then lost anyway: a boosted Archer at 6 still lost to a Rifleman at 7 and an
-// Elephant at 9, and a boosted Horseman at 7 still lost to an Elephant. The Archer never beat
-// either thing it was written to counter. Levelling every counter at 10 is what makes a
-// counter mean anything. See DECISIONS.md D027.
+// BROKERS ARE INSIDE THE RING. A broker can be cancelled like anything else, which is the
+// structural answer to the failure that ended the old game: a broker measured +38.8, present
+// in all 50 of the top 50 armies, because nothing could answer it.
 export const FORCE = [
-  { key: "archer",   name: "Archer",   arm: "ARCHER",   s: 1, bonus: 9 },
-  { key: "horseman", name: "Horseman", arm: "HORSEMAN", s: 3, bonus: 7 },
-  { key: "warrior",  name: "Warrior",  arm: "WARRIOR",  s: 5, bonus: 5 },
-  { key: "rifleman", name: "Rifleman", arm: "RIFLEMAN", s: 7, bonus: 3 },
-  { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: 9, bonus: 1 },
+  { key: "archer", name: "Archer", arm: "ARCHER", s: 1 },
+  { key: "horseman", name: "Horseman", arm: "HORSEMAN", s: 3 },
+  { key: "warrior", name: "Warrior", arm: "WARRIOR", s: 5 },
+  { key: "rifleman", name: "Rifleman", arm: "RIFLEMAN", s: 7 },
+  { key: "elephant", name: "Elephant", arm: "ELEPHANT", s: 9 },
 ];
-export const COUNTER_AT = 10;
 
-// ---- Power Brokers ----------------------------------------------------------
-// 5 kinds, 5 copies each. Recruited by LOSING — one per defeated PLAYER, whatever they
-// committed. That flow is what makes them safe to make strong: a broker can only ever reach a
-// player who has just lost, so it cannot run away. The old game measured a broker at +38.8,
-// present in all 50 of the top 50 armies, precisely because WINNERS drew them.
-//
-// ⚠️ BROKERS HAVE NO ARM. They neither give nor take a counter bonus, so they sit outside the
-// ring entirely and cannot disturb its symmetry.
-//
-// ⚠️ Force strengths are ODD (1,3,5,7,9) and broker strengths are EVEN (2,4,6,8,10), so a
-// Force unit and a broker can never tie, and every broker slots between two Force units.
 export const BROKERS = [
-  { key: "slinger", name: "Slinger", s: 2, copies: 5,
+  { key: "slinger", name: "Slinger", arm: "ARCHER", s: 2, copies: 5,
     text: "REMOVE the weakest unit of the opposing army." },
-  { key: "spy", name: "Spy", s: 4, copies: 5,
+  { key: "spy", name: "Spy", arm: "HORSEMAN", s: 4, copies: 5,
     text: "SWAP with the strongest unit of the opposing army." },
-  { key: "senapati", name: "Senapati", s: 6, copies: 5,
+  { key: "senapati", name: "Senapati", arm: "WARRIOR", s: 6, copies: 5,
     text: "If your army LOSES, kill every recovering unit of the winning army." },
-  { key: "sepoy", name: "Sepoy", s: 8, copies: 5,
+  { key: "sepoy", name: "Sepoy", arm: "RIFLEMAN", s: 8, copies: 5,
     text: "While ALONE in your army, fight at double strength." },
-  { key: "siege", name: "Siege Elephant", s: 10, copies: 5,
-    text: "On deployment, REVEAL any one enemy unit." },
+  // Deployed FACE UP. A hidden reveal-card is unenforceable at a real table: nobody can check
+  // that you held one, so a player could simply claim the peek. Playing it face up also makes
+  // it self-balancing — the strongest card in the game is the one that announces itself, and
+  // an announced ELEPHANT invites every Archer and Rifleman at the table.
+  { key: "siege", name: "Siege Elephant", arm: "ELEPHANT", s: 10, copies: 5, faceUp: true,
+    text: "Deploy FACE UP. On deployment, REVEAL any one enemy unit." },
 ];
+
+// ---- the factions -----------------------------------------------------------
+// ASYMMETRIC DISTRIBUTION. A faction is defined by HOW MANY of each arm it holds, counted
+// from its lead arm and going round the ring. All five factions are the same pattern rotated.
+//
+// Because strength is fixed to the arm, rotating a faction changes its raw total — so the
+// five-fold symmetry no longer PROVES the factions level, as it did when every faction shared
+// one strength multiset. Balance here is measured, not guaranteed. The hope is that the ring
+// self-balances it: an Elephant-heavy faction has huge raw strength and is shredded by cheap
+// Archers, while an Archer-heavy faction is weak on paper and cancels giants.
+// Measured across eight candidate patterns. 3/2/2/2/1 is the only one that is genuinely
+// asymmetric AND lands inside the gate: faction spread 3.5 against a target of 5. Steeper
+// patterns fail badly — 4/3/2/1/0 spreads 11.9, because with strength welded to the arm the
+// raw totals run 40 to 70 and the ring cannot flatten a gap that wide.
+export const PATTERN = (process.env.PATTERN || "3,2,2,2,1").split(",").map(Number);
+
+const NAMES = {
+  ELEPHANT: ["Qutb Shahi of Golconda", "the diamond throne"],
+  RIFLEMAN: ["The Firangi", "the coastal batteries"],
+  WARRIOR: ["The Mughal Host", "the Deccan campaigns"],
+  HORSEMAN: ["The Marathas", "Ganimi Kava"],
+  ARCHER: ["The Berads", "the hill country"],
+};
+const forceByArm = Object.fromEntries(FORCE.map((u) => [u.arm, u]));
+
+export const FACTIONS = ARMS.map((lead, k) => {
+  const counts = {};
+  PATTERN.forEach((n, g) => { counts[ARMS[(g + k) % 5]] = n; });
+  const units = [];
+  for (const arm of ARMS) for (let i = 0; i < counts[arm]; i++) units.push({ ...forceByArm[arm] });
+  return {
+    key: lead.toLowerCase(), name: NAMES[lead][0], era: NAMES[lead][1], lead, counts, units,
+    total: units.reduce((s, u) => s + u.s, 0),
+  };
+});
 
 export const VICTORY_TARGET = { 2: 4, 3: 4, 4: 4, 5: 4 };
 
-// ---- validation -------------------------------------------------------------
 export function validate() {
-  const problems = [];
-  if (FORCE.length !== 5) problems.push(`Force is ${FORCE.length} units, expected 5`);
-  for (const u of FORCE) {
-    if (u.s + u.bonus !== COUNTER_AT)
-      problems.push(`${u.name}: counters at ${u.s + u.bonus}, expected ${COUNTER_AT}`);
-    if (u.s % 2 !== 1) problems.push(`${u.name}: Force strengths must be odd`);
-  }
-  if (new Set(FORCE.map((u) => u.arm)).size !== 5) problems.push("the Force does not cover all five arms");
-  for (const b of BROKERS) if (b.s % 2 !== 0) problems.push(`${b.name}: broker strengths must be even`);
-  const supply = BROKERS.reduce((s, b) => s + b.copies, 0);
-  if (supply !== 25) problems.push(`the supply is ${supply} cards, expected 25`);
-  return problems;
+  const p = [];
+  const size = PATTERN.reduce((a, b) => a + b, 0);
+  for (const f of FACTIONS) if (f.units.length !== size) p.push(`${f.key}: ${f.units.length} units`);
+  for (const u of FORCE) if (u.s % 2 !== 1) p.push(`${u.name}: Force strengths must be odd`);
+  for (const b of BROKERS) if (b.s % 2 !== 0) p.push(`${b.name}: broker strengths must be even`);
+  if (new Set(BROKERS.map((b) => b.arm)).size !== 5) p.push("brokers do not cover all five arms");
+  if (BROKERS.reduce((s, b) => s + b.copies, 0) !== 25) p.push("the supply is not 25 cards");
+  return p;
 }
 const bad = validate();
-if (bad.length) { console.error("CARD DATA INVALID:"); bad.forEach((p) => console.error("  " + p)); process.exit(1); }
+if (bad.length) {
+  console.error("CARD DATA INVALID:");
+  bad.forEach((x) => console.error("  " + x));
+  process.exit(1);
+}
 
-export const label = (u) => `${GLYPH[u.arm] || "*"}${u.s}`;
+export const label = (u) => `${GLYPH[u.arm]}${u.s}`;

@@ -536,3 +536,67 @@ one less thing on the card.
 **Kept, and worth protecting:** the Force is **odd** (1,3,5,7,9) and the brokers are **even**
 (2,4,6,8,10). A Force unit and a broker can never tie, and every broker slots between two Force
 units.
+
+
+---
+
+## 2026-08-18 — D029. Asymmetric arms, brokers in the ring, cancelled units do not act
+
+**Ruling:** back to cancellation (RPS), with three changes the designer proposed together:
+
+* **Factions differ by how many of each arm they hold**, not by strength. Strength is fixed to
+  the arm: an Archer is always 1, an Elephant always 9.
+* **Power Brokers are inside the ring.** Each has an arm and can be cancelled like anything else.
+* **A cancelled unit does not act** — no strength, and its ability never fires.
+
+**Reason:** with a symmetric Force both players always hold every answer, so the ring collapses
+into pure guessing — which is why the counter measured so flat there (card-value spread 4.1 on
+the bonus rule, 8.1 on cancellation). Asymmetry turns the question from *what will they guess*
+into *do I even have the answer*, which is where identity and negotiation live.
+
+Brokers inside the ring is the structural fix for the failure that ended the old game: a broker
+measured **+38.8, in all 50 of the top 50 armies**, because nothing could answer it. A broker
+with an arm is answerable.
+
+**The supply became an upgraded shadow of the Force — one broker per arm, each +1 over its
+counterpart:** Archer 1 / Slinger 2 · Horseman 3 / Spy 4 · Warrior 5 / Senapati 6 ·
+Rifleman 7 / Sepoy 8 · Elephant 9 / Siege Elephant 10. Odd and even, so the two can never tie.
+
+⚠️ **The cost, stated plainly: balance is no longer PROVEN.** When every faction shared one
+strength multiset, rotating a faction preserved its total and the five-fold symmetry guaranteed
+the matchups level. With strength welded to the arm, rotating changes the total, and balance
+has to be measured.
+
+**Measured** across eight distribution patterns:
+
+| pattern | faction spread | raw totals | |
+| --- | ---: | --- | --- |
+| 4,3,2,1,0 | 11.9 | 70 50 40 40 50 | fail |
+| 3,3,2,1,1 | 7.1 | 62 52 42 42 52 | warn |
+| 4,2,2,1,1 | 6.5 | 64 54 44 44 44 | warn |
+| **3,2,2,2,1** | **3.5** | 58 48 48 48 48 | **adopted** |
+| 3,3,2,2,0 | 8.1 | — | fail |
+| 2,2,2,2,2 | 0.0 | all 50 | passes, but symmetric — no asymmetry left |
+| 4,3,1,1,1 | 9.1 | — | fail |
+| 3,3,3,1,0 | 12.7 | — | fail |
+
+**The ring compresses raw strength hard but not completely.** Under 4/3/2/1/0 the richest
+faction had **75% more raw strength** and scored only **14% better**, and two factions on an
+identical raw 50 scored 57.3% and 51.7% — so composition already matters more than total. It
+just cannot absorb a 30-point gap, which is what rules out the steep patterns.
+
+---
+
+## 2026-08-18 — D030. The Siege Elephant deploys FACE UP
+
+**Ruling:** the Siege Elephant is played face up. Its reveal happens in the open.
+
+**Reason — the designer's, and it is the physical-components test that `LESSONS.md` E6 records
+as the most valuable kind of objection.** A hidden reveal-card is **unenforceable**: nobody at
+the table can check that you actually held one, so a player could simply claim the peek and
+take it. The same argument killed a card in the old game that had survived three rounds of
+analysis.
+
+**And it makes the card self-balancing.** The strongest card in the game is now the one that
+announces itself — an ELEPHANT face up on the table invites every Archer and Rifleman present,
+both of which cancel it. You buy information by giving information away.
