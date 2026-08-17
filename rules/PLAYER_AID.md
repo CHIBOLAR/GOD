@@ -1,92 +1,107 @@
 # DECCAN — Player Aid
 
+## The ring
+
+> ### ELEPHANT → RIFLEMAN → CANNON → HORSEMAN → WARRIOR → back to ELEPHANT
+> **You cancel the next two along. You are cancelled by the two behind you.**
+
+| | | cancels | | cancelled by |
+| --- | ---: | --- | --- | --- |
+| **Elephant** | 9 | Rifleman · Cannon | | Horseman · Warrior |
+| **Cannon** | 7 | Horseman · Warrior | | Elephant · Rifleman |
+| **Horseman** | 5 | Warrior · Elephant | | Rifleman · Cannon |
+| **Rifleman** | 3 | Cannon · Horseman | | Elephant · Warrior |
+| **Warrior** | 1 | Elephant · Rifleman | | Cannon · Horseman |
+
+---
+
 ## The round
 
 | | |
 | --- | --- |
 | **1 · MUSTER** | Clockwise from the start player: **commit one unit face down**, or **pass**. Keep going round until **everyone passes in a row**. |
 | **2 · CHARGE** | Turn every unit face up. |
-| **3 · BATTLE** | Settle each front. **More fronts takes the ground.** |
-| **4 · SPOILS** | Score, then **every committed unit is gone for good**. Start player moves left. |
+| **3 · BATTLE** | **Ring, then abilities, then count.** |
+| **4 · SPOILS** | Score, settle the armies, pass the start player left. |
 
-## Settling a front
+## Settling a battle
 
-> ### HORSE rides down GUNS · GUNS break FOOT · FOOT holds HORSE
+1. **Every unit cancels one** unit of an arm it beats — the **strongest** it can reach.
+2. Work it all out from the armies **as revealed**. A cancelled unit still cancels.
+3. **A cancelled unit does nothing** — no strength, and its ability never happens.
+4. Surviving Power Brokers resolve.
+5. **Higher surviving total takes the ground.** Level, and both armies take it.
 
-1. **Countered?** That unit loses, whatever its strength.
-2. **Otherwise** the higher **strength** wins the front.
-3. **Equal strength** — nobody wins the front.
-4. **Empty slot** — loses to any unit.
+## Scoring and the aftermath
 
-## Taking the ground
+**You score 1 point per surviving unit of yours, if your army took the ground.**
 
 | | |
 | --- | --- |
-| More fronts won | That army takes the ground. |
-| **Fronts level** | **Whoever won the Centre** takes the ground. |
-| Level, and neither won the Centre | Nobody takes it. |
-| Only one army fielded | It takes the ground and wins every front it filled. |
+| **Took the ground** | Units **recover** — back in hand after the next round. |
+| **Did not** | Units are **gone for good**, and you **recruit 1 Power Broker** — one each, whatever you committed. |
 
-## Scoring
-
-**You score 1 point per front YOU won — but only if YOUR army took the ground.**
-
-The beaten army scores nothing. A ground nobody takes pays nobody.
+---
 
 ## Committing
 
-* **Two armies only.** Three slots each — so **three units and at most three players**.
-* First player into an army is its **leader**.
-* Joining an army **you are not already in**: **offer it; the leader accepts or refuses blind.**
-  Already in? Reinforce freely.
-* **Refused? Your turn continues.** Try the other army, or open it yourself. One offer per army
-  per turn. Refused by both — you pass.
+* **Two armies.** Three units and at most three players each.
+* First into an army is its **leader**.
+* Joining an army **you are not already in**: offer it, and the leader accepts or refuses
+  **blind**. Already in? Reinforce freely.
+* **Refused? Your turn continues.** Try the other army, or open it. One offer per army per turn.
 * **Never both armies.** Passing is not folding.
 
 ## Points to win
 
 | Players | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| **Target** | 6 | 6 | 6 | 5 | 5 | 5 | 4 |
+| **Target** | 5 | 4 | 4 | 4 | 4 | 4 | 4 |
 
-Game also ends if a whole round passes with nothing committed, or nobody can commit. Most points
-wins.
+Game also ends if two rounds pass with nothing committed, or nobody can commit. Most points wins.
 
 ---
 
-## The nine factions
+## The eight rulers
 
-Every faction holds **the same twelve numbers** — 1 · 2 · 3 · 4 · 4 · 5 · 5 · 6 · 6 · 7 · 8 · 9 —
-and four units of each type. Only the allocation differs.
+Seven units each. **A specialist** holds three of one arm; **a pair** holds two of its arm and
+two of the next arm round the ring. Everyone holds at least one of every arm.
 
-| Faction | Shape | Lead arm |
+| Ruler | | Force |
 | --- | --- | --- |
-| **The Marathas** | specialist | elite HORSE |
-| **The Mughal Host** | specialist | elite FOOT |
-| **Adil Shahi of Bijapur** | specialist | elite GUNS |
-| **Nizam Shahi of Ahmadnagar** | blind spot | strong HORSE, **no GUNS** |
-| **The Firangi** | blind spot | strong FOOT, **no HORSE** |
-| **Qutb Shahi of Golconda** | blind spot | strong GUNS, **no FOOT** |
-| **The Rajput Contingents** | champion | the best HORSE in the game |
-| **The Berads** | champion | the best FOOT in the game |
-| **The Siddis of Janjira** | champion | the best GUNS in the game |
+| **The Sultan** | three elephant | E9 E9 E9 · C7 H5 R3 W1 |
+| **The Badshah** | three cannon | C7 C7 C7 · E9 H5 R3 W1 |
+| **The Peshwa** | three horseman | H5 H5 H5 · E9 C7 R3 W1 |
+| **The Governor** | three rifleman | R3 R3 R3 · E9 C7 H5 W1 |
+| **The Rana** | three warrior | W1 W1 W1 · E9 C7 H5 R3 |
+| **The Nizam** | two cannon + two horseman | C7 C7 H5 H5 · E9 R3 W1 |
+| **The Nawab** | two rifleman + two cannon | R3 R3 C7 C7 · E9 H5 W1 |
+| **The Maharaja** | two horseman + two warrior | H5 H5 W1 W1 · E9 C7 R3 |
 
-**specialist** — the top four numbers in one arm, and the dregs everywhere else.
-**blind spot** — two arms that can fight anybody, and one that cannot fight at all.
-**champion** — the three best units in the game in one arm, a dud beside them, and two
-dependable arms.
+## The supply — 4 of each, 20 cards, recruited by losing
+
+| | | |
+| --- | ---: | --- |
+| **Siege Elephant** | 10 | Deploy **face up**. Look at one committed enemy unit; it stays face up. |
+| **Sultan Rockets** | 8 | If your army **loses**, burn the winner's recovering units. |
+| **Spy** | 6 | Swap with their strongest unit. **Permanent** — the cards change hands for good. |
+| **Sepoy** | 4 | While **alone** in your army, fight at double strength. |
+| **Subhedar** | 2 | Remove the weakest unit of the opposing army. |
+
+Only the Siege Elephant's look survives being cancelled — it happens as you deploy.
 
 ---
 
 ## Advice for a first game
 
-**One unit cannot take a contested ground.** One front is never a majority of three.
+**Your best card is the first one shot at.** Cancelling always takes the strongest thing it can
+reach, so an Elephant draws fire a Warrior never would.
 
-**Two units is a real army** — win both fronts you contest and the ground is yours. Two cards for
-two points, where three cards buy three. Certainty costs cards.
+**Losing is how you get stronger.** Only the defeated recruit Power Brokers. The player in front
+is the one who can never buy them.
 
-**Sitting out costs nothing but the round.** Every unit you commit is gone forever, so the player
-who wins most is the player who runs dry first.
+**A cheap unit is not a weak play.** A Warrior 1 cancels an Elephant 9 — you are not choosing the
+biggest number, you are guessing what they will bring.
 
-**Everyone knows what your faction cannot do.** They do not know which unit you just put on the
-Van.
+**Two armies, three slots.** At five players and up someone is always left outside, so the
+question is not only what to commit but whether to commit at all.

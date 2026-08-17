@@ -1,5 +1,5 @@
 {
-  "name": "deccan2",
+  "name": "deccan",
   "version": "0.1.0",
   "private": true,
   "description": "DECCAN II — design and balance model for the card game. No app.",
@@ -7,11 +7,7 @@
   "scripts": {
     "cards": "node sim/cardsdoc.mjs",
     "gates": "node sim/gates.mjs",
-    "rr": "node sim/rr.mjs",
-    "seats": "node sim/seats.mjs",
-    "factions": "node sim/factions.mjs",
-    "chassis": "node sim/chassis-test.mjs",
-    "patterns": "node sim/pattern-search.mjs"
+    "prove": "node sim/prove.mjs"
   },
   "engines": {
     "node": ">=18"

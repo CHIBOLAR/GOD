@@ -1,95 +1,72 @@
 # OPEN QUESTIONS
 
-*Questions awaiting a ruling. When one closes it moves to `DECISIONS.md` and is deleted from
-here. Everything left in this file is flagged to the user rather than left to be discovered.*
+*What is still unanswered. Everything here is flagged deliberately rather than left to be
+discovered. The design itself is settled and measured — these are things a simulation cannot
+decide.*
 
 ---
 
-## Closed since this file was written
+## Reconciliation: the rulebook agrees with the resolver
 
-| | Question | Where it went |
-| --- | --- | --- |
-| Q2 | Is victory still a race to a fixed target? | Yes, and it **scales with the player count** — D017 |
-| Q3 | What does a skipped round buy? | Nothing is needed. Committed units are **SPENT win or lose**, so sitting out simply preserves your faction. Measured: 2% of rounds at 2 players rising to 44% at 8 — `CHASSIS.md` §5, D007 |
-| Q4 | How many factions? | **Nine** — three archetypes × three arms, so 8 seats need no duplicates — D016 |
-| Q5 | Does anything still commit face down? | Yes, and it is **load-bearing rather than decorative** — D019 |
+Checked line by line, 2026-08-18. Every rule in `rules/RULEBOOK.md` is implemented in
+`sim/battle.mjs` and `sim/game.mjs`, and every behaviour in those files is a stated rule:
+
+the ring and its five arms · one cancel per unit, strongest reachable target · simultaneity, so
+a cancelled unit still cancels · a cancelled unit contributing nothing and firing nothing ·
+abilities resolving only for survivors · highest total taking the ground and level totals paying
+both · one point per surviving unit of yours · winners recovering after one round · the defeated
+burning and recruiting one broker each · brokers leaving the game for good · the Siege Elephant
+deploying face up and looking on deployment · the Spy's permanent exchange · two armies of three
+units and three players · blind acceptance, a refusal not ending your turn, one offer per army
+per turn · never both armies · the victory targets · both ending conditions.
+
+**Nothing diverges.** This is the check the old project went eight versions without doing.
 
 ---
 
-## Q1. Wall-clock length, and weight *(the only one a simulation cannot answer)*
+## The one gate that warns
 
-`BRIEF.md` assumed ~30–45 minutes at medium-light weight. The simulation has settled everything
-about it except the minutes:
+**Faction deviation is 6.1 at two players**, against a self-imposed gate of 5. At three players
+it is 3.8 and by eight it is 2.0.
 
-* **Rounds are measured:** 4.4 at two players to 8.5 at seven.
-* **Weight is measured** as far as a document can measure it: 127 lines of rules, 9 glossary
-  terms, 0 exceptions.
-* **Minutes are not measured and cannot be.** The unknown is the *muster*, which laps until every
-  player passes and involves an offer-and-refusal negotiation at every seat. At eight players that
-  is where all the time will go, and it is also where all the fun is meant to be.
+This is a deliberate trade, recorded in `DECISIONS.md` D032: the alternative was a hill-climb
+that reached 3.4 by dissolving the factions into each other. Two players is also where the game
+is least itself — alliances fire in 4% of two-seat rounds against 83% at three or more.
 
-**Not blocking.** If a real game runs long, the lever is the victory target in `sim/cards.mjs`,
-and `npm run gates` re-verifies the whole design against a changed one in about a minute.
+**Not blocking. Worth re-checking if anything moves.**
 
 ---
 
 ## Playtest items — things the model cannot see
 
-**1. Does the muster drag at 7–8 players?** See Q1. The specific risk is the offer-and-refusal
-loop: each turn can involve two offers and two leader decisions.
+**1. Is the Spy too quiet?** A theft completes in 12% of two-player games rising to 31% at
+eight (D036). A rare card that permanently rewrites two decks may be exactly right, or may feel
+absent. **The lever is its arm, not its strength** — Horseman is cancelled by Rifleman and
+Cannon, two of the most-played cards. Moving it would buff it twice at once, so feel it first.
 
-**2. Does sitting out feel like plotting or like waiting?** D007's stated failure mode. The
-numbers say abstention is a real and frequent choice (44% of player-rounds at eight seats). They
-cannot say whether the player enjoys it.
+**2. Does the muster drag at seven and eight players?** Turns lap until everyone passes, and each
+turn can involve two offers and two blind decisions. The simulation counts rounds, not minutes.
 
-**3. Is a 44% abstention rate at eight players too high?** Two of eight players are forced out by
-the six slots; the rest is chosen. That may read as elegant scarcity or as being locked out.
+**3. Does sitting out feel like plotting or like waiting?** Two armies hold six units, so from
+five players up somebody is always outside. Measured as a real and frequent choice; whether it is
+an enjoyable one is a table question.
 
-**4. Are nine factions distinguishable at the table?** They share the same twelve numbers by
-design — that is what makes them provably level (D014). The risk is that "specialist HORSE" and
-"champion HORSE" feel like the same faction to a player who is not counting.
+**4. Is "the loser gets the better card" satisfying or annoying?** It is the spine of the
+economy and it is what makes strong brokers safe. It also means the player in front watches
+everyone else arm themselves.
 
-**5. Does the champion archetype read as a fourth-best faction?** It measures +0.008 mean, i.e.
-level. But it holds the game's only 9-with-a-2-beside-it arm, and players judge a faction by its
-best card, not its integral.
+**5. Do eight rulers feel distinct in play?** Three of one arm out of seven cards is a real
+identity on paper. Whether a Peshwa feels different from a Maharaja across a whole game is not
+something the numbers can answer.
 
-**6. Is one point per front too swingy at two players?** A 3–0 ground is half a 2-player target
-in one round. Measured as fair (50.0 / 50.0) and short (4.4 rounds), which may be *too* short.
-
----
-
-## Not yet designed, and deliberately so
-
-**Nothing.** The chassis, the card list, the faction set, the victory targets and the ending
-conditions are all settled and measured. There are no abilities to design — D011 removed the
-entire category, and re-introducing one requires re-running `sim/chassis-test.mjs` first.
-
+**6. Is a permanent Spy theft too personal?** Cards change hands for good, and with eight
+distinct rulers a stolen Elephant is visibly foreign in your hand. That is either the best moment
+in the game or the one that starts an argument.
 
 ---
 
-## ⚠️ THE PROOF DOES NOT COVER ALLIANCES (raised by the designer, 2026-08-18)
+## Not designed, deliberately
 
-`sim/prove.mjs` certifies the equilibrium value of every faction pairing to within 0.011, and
-reports a spread of 0.105 points per battle. **That is a proof about a TWO-PLAYER DUEL.** It
-models one faction's army against another's and nothing else.
-
-The real game is 2-5 players, an army may hold units from up to three of them, and each player
-scores per surviving unit of their own inside a winning army. None of that is in the model.
-
-**What this most likely gets wrong.** The result names the Berads (Archer-lead) the weakest
-faction at -0.065, losing ~0.095 to three others. But the Berads are three cheap Archers that
-cancel Elephants — a poor solo army and possibly the single most valuable thing anyone can
-contribute to somebody else's. A faction can be the worst duellist and the best ally, and the
-duel model cannot tell the difference.
-
-⚠️ `LESSONS.md` D1 says a battle-level metric cannot see the reward economy. It cannot see
-alliances either. **Do not quote the 0.105 as a balance figure for DECCAN** — quote it as the
-duel value, and re-prove once `sim/game.mjs` models multi-player armies.
-
-**What a real proof needs:** the whole-game simulation with alliances, offers and refusals,
-per-player scoring inside a shared army, and the recruit-on-defeat economy. That is the same
-`game.mjs` wiring that everything else is waiting on.
-
-**Also unresolved:** forcing every faction to an equal strength total (`sim/equalise.mjs`)
-collapses the design — at 10 units and 50 strength the best "lean into your lead arm" vectors
-give two identical factions and one mono-arm faction. Equal totals are not the fix.
+**Nothing.** The ring, the card list, the eight rulers, the supply, the economy, the victory
+targets and the ending conditions are all settled and measured. Every change from here should
+start by running `npm run gates`.
