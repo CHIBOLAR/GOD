@@ -52,11 +52,17 @@ On your turn you take **exactly one** of these. Then play passes to your left.
 | --- | --- |
 | **DEPLOY** | Put one unit from your hand **face down** into an army. |
 | **WITHDRAW** | Take one of your units off the ground and back into your hand. |
+| **DEFECT** | Move **all** your units from the army they stand in to the other one. |
 | **CALL THE CHARGE** | If you are a **senior partner**, the armies charge at once. |
 | **HOLD** | Do nothing. |
 
 **You may only ever be in ONE army.** Once a unit of yours stands in an army, every unit you
 deploy afterwards joins that same army, until you have none left there.
+
+**That is why defection is all or nothing.** You cannot leave a foot in both camps — changing
+sides takes your whole contingent with you. The army you abandon loses that strength and the
+army you join gains it, both at once, and after a charge the front is face up, so everybody sees
+exactly what you did and exactly what it cost them.
 
 **An army holds four units and four players.** Anyone may join an army that has room.
 
