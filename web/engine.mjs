@@ -344,6 +344,20 @@ export function apply(s, seat, action) {
   return s;
 }
 
+// ---- declarations -----------------------------------------------------------
+// A DECLARATION IS A CLAIM, NOT A RULE. When you commit face down you may say what you sent,
+// and you may be lying. It touches no rule, changes no total and needs no rebalance — it is the
+// social half of a blind commitment, and the old client had it while this one did not.
+// Stored on the committed card itself so it travels with the unit and dies with the round.
+export function declare(s, seat, arm) {
+  const mine = s.m.armies.flat().filter((c) => c.owner === seat);
+  const card = mine[mine.length - 1];
+  if (!card) return false;
+  card.claim = arm;                       // overwriting is allowed: you may change your story
+  note(s, `${nm(s, seat)} declares ${arm ? arm[0] + arm.slice(1).toLowerCase() : "nothing"}`, "declare");
+  return true;
+}
+
 // ---- the bot ----------------------------------------------------------------
 // Every decision goes through the model's own scorer and chooser, so a bot in the online game
 // plays exactly the policy the 12,000-game gates were run against.
@@ -387,6 +401,8 @@ export function view(s, seat) {
     const open = showFaces || c.owner === seat || c.revealed;
     return {
       owner: c.owner, revealed: !!c.revealed,
+      // the claim is always visible — it is a statement made to the table, true or not
+      ...(c.claim ? { claim: c.claim } : {}),
       ...(open ? { arm: c.arm, s: c.s, broker: c.broker } : {}),
     };
   };
@@ -406,6 +422,13 @@ export function view(s, seat) {
       count: a.length,
       full: a.length >= ARMY_CAP,
       members: [...new Set(a.map((u) => u.owner))],
+      // Units per owner in this army. PUBLIC by §0 (army sizes, and whose units they are), and
+      // it is the single most important number a player needs before committing: the ground pays
+      // its largest contributor, so "how many have I got in here against how many have they" IS
+      // the decision. Withholding it made the scoring rule invisible.
+      contrib: [...new Set(a.map((u) => u.owner))]
+        .map((o) => ({ owner: o, units: a.filter((u) => u.owner === o).length }))
+        .sort((x, y) => y.units - x.units),
       // ⚠️ totals are a strength leak and exist only once the armies are face up
       ...(showFaces && s.lastRound ? { total: s.lastRound.totals[i] } : {}),
     })),

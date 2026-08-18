@@ -12,8 +12,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, normalize, extname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { FACTIONS } from "../sim/cards.mjs";
-import { createGame, apply, botAction, view, legalActions, PHASE } from "./engine.mjs";
+import { FACTIONS, ARMS, ARMSTR, FORCE, BROKERS } from "../sim/cards.mjs";
+import { createGame, apply, botAction, view, legalActions, declare, PHASE } from "./engine.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, "public");
@@ -49,6 +49,9 @@ const http = createServer(async (req, res) => {
 
 // ---- rooms -------------------------------------------------------------------
 const rooms = new Map();
+// Everyone who is connected but not yet at a table: presence and a matchmaking queue.
+const foyer = { queue: [] };
+const ctx = new Map();          // ws -> { room, seat }; matchmaking must reach across sockets
 const CODE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";           // no look-alikes
 const code4 = () => Array.from({ length: 4 }, () => CODE[Math.floor(Math.random() * CODE.length)]).join("");
 
@@ -74,6 +77,22 @@ function lobbyOf(room) {
     rulers: FACTIONS.map((f) => ({ key: f.key, name: f.name, era: f.era,
       taken: takenFactions(room).has(f.key) })),
   };
+}
+
+function pushFoyer() {
+  const msg = {
+    t: "foyer",
+    online: [...ctx.keys()].filter((w) => w.readyState === 1).length,
+    waiting: foyer.queue.length,
+    tables: [...rooms.values()].filter((r) => !r.started)
+      .map((r) => ({ code: r.code, seats: r.seats.length })),
+    // onboarding is GENERATED from sim/cards.mjs and cannot drift from the game. The old
+    // client hard-coded a copy of the card list and it went stale.
+    ring: ARMS.map((a, i) => ({ arm: a, s: ARMSTR[i] })),
+    force: FORCE.map((u) => ({ arm: u.arm, s: u.s })),
+    brokers: BROKERS.map((b) => ({ name: b.name, arm: b.arm, s: b.s, when: b.when, text: b.text })),
+  };
+  for (const w of ctx.keys()) if (w.readyState === 1 && !ctx.get(w).room) send(w, msg);
 }
 
 function broadcast(room) {
@@ -132,7 +151,9 @@ function startGame(room) {
 const wss = new WebSocketServer({ server: http });
 
 wss.on("connection", (ws) => {
-  let room = null, seatIndex = -1;
+  const c = { room: null, seat: -1 };
+  ctx.set(ws, c);
+  pushFoyer();
 
   const fail = (msg) => send(ws, { t: "error", msg });
 
@@ -141,11 +162,11 @@ wss.on("connection", (ws) => {
 
     switch (m.t) {
       case "create": {
-        room = newRoom();
-        seatIndex = 0;
-        room.seats.push({ id: randomUUID(), name: (m.name || "Player").slice(0, 16), ws, bot: false, faction: null });
-        send(ws, { t: "seated", code: room.code, seat: 0, id: room.seats[0].id });
-        broadcast(room);
+        c.room = newRoom();
+        c.seat = 0;
+        c.room.seats.push({ id: randomUUID(), name: (m.name || "Player").slice(0, 16), ws, bot: false, faction: null });
+        send(ws, { t: "seated", code: c.room.code, seat: 0, id: c.room.seats[0].id });
+        broadcast(c.room);
         break;
       }
 
@@ -155,7 +176,7 @@ wss.on("connection", (ws) => {
         // reconnect first: a returning player reclaims their own seat, mid-game included
         const back = m.id ? r.seats.findIndex((s) => s.id === m.id) : -1;
         if (back >= 0) {
-          room = r; seatIndex = back; r.seats[back].ws = ws; r.seats[back].bot = false;
+          c.room = r; c.seat = back; r.seats[back].ws = ws; r.seats[back].bot = false;
           send(ws, { t: "seated", code: r.code, seat: back, id: r.seats[back].id });
           if (r.started) send(ws, { t: "started", code: r.code });
           broadcast(r);
@@ -163,58 +184,94 @@ wss.on("connection", (ws) => {
         }
         if (r.started) return fail("that game has already started");
         if (r.seats.length >= 8) return fail("table is full");
-        room = r; seatIndex = r.seats.length;
+        c.room = r; c.seat = r.seats.length;
         r.seats.push({ id: randomUUID(), name: (m.name || "Player").slice(0, 16), ws, bot: false, faction: null });
-        send(ws, { t: "seated", code: r.code, seat: seatIndex, id: r.seats[seatIndex].id });
+        send(ws, { t: "seated", code: r.code, seat: c.seat, id: r.seats[c.seat].id });
         broadcast(r);
         break;
       }
 
       case "pick": {
-        if (!room || room.started) return fail("cannot change ruler now");
-        if (takenFactions(room).has(m.faction)) return fail("someone has taken that ruler");
+        if (!c.room || c.room.started) return fail("cannot change ruler now");
+        if (takenFactions(c.room).has(m.faction)) return fail("someone has taken that ruler");
         if (!FACTIONS.some((f) => f.key === m.faction)) return fail("unknown ruler");
-        room.seats[seatIndex].faction = m.faction;
-        broadcast(room);
+        c.room.seats[c.seat].faction = m.faction;
+        broadcast(c.room);
         break;
       }
 
       case "addBot": {
-        if (!room || room.started) return fail("cannot add a bot now");
-        if (room.seats.length >= 8) return fail("table is full");
-        room.seats.push({ id: randomUUID(), name: `Bot ${room.seats.length}`, ws: null, bot: true, faction: null });
-        broadcast(room);
+        if (!c.room || c.room.started) return fail("cannot add a bot now");
+        if (c.room.seats.length >= 8) return fail("table is full");
+        c.room.seats.push({ id: randomUUID(), name: `Bot ${c.room.seats.length}`, ws: null, bot: true, faction: null });
+        broadcast(c.room);
         break;
       }
 
       case "removeSeat": {
-        if (!room || room.started || seatIndex !== 0) return fail("only the host can do that");
-        const s = room.seats[m.seat];
+        if (!c.room || c.room.started || c.seat !== 0) return fail("only the host can do that");
+        const s = c.room.seats[m.seat];
         if (!s || !s.bot) return fail("only bots can be removed");
-        room.seats.splice(m.seat, 1);
-        broadcast(room);
+        c.room.seats.splice(m.seat, 1);
+        broadcast(c.room);
         break;
       }
 
       case "start": {
-        if (!room || room.started) return fail("already started");
-        if (seatIndex !== 0) return fail("only the host can start");
-        if (room.seats.length < 2) return fail("needs at least two players");
-        if (!room.seats[seatIndex].faction) return fail("choose your ruler first");
-        startGame(room);
+        if (!c.room || c.room.started) return fail("already started");
+        if (c.seat !== 0) return fail("only the host can start");
+        if (c.room.seats.length < 2) return fail("needs at least two players");
+        if (!c.room.seats[c.seat].faction) return fail("choose your ruler first");
+        startGame(c.room);
+        break;
+      }
+
+      // A claim about a face-down unit. Non-binding by design — see engine.declare.
+      case "declare": {
+        if (!c.room || !c.room.started) return fail("no game running");
+        if (m.arm !== null && !ARMS.includes(m.arm)) return fail("not an arm");
+        if (!declare(c.room.state, c.seat, m.arm)) return fail("you have nothing committed");
+        broadcast(c.room);
+        break;
+      }
+
+      // Matchmaking: sit in the foyer until enough people are waiting, then open a table for
+      // them and fill any remaining seats with bots.
+      case "quick": {
+        ws.__name = (m.name || "Player").slice(0, 16);
+        if (!foyer.queue.includes(ws)) foyer.queue.push(ws);
+        pushFoyer();
+        if (foyer.queue.length >= 2) {
+          const take = foyer.queue.splice(0, Math.min(4, foyer.queue.length));
+          const r = newRoom();
+          take.forEach((sock, i) => {
+            r.seats.push({ id: randomUUID(), name: sock.__name || `Player ${i + 1}`,
+              ws: sock, bot: false, faction: null });
+            send(sock, { t: "seated", code: r.code, seat: i, id: r.seats[i].id });
+            const c = ctx.get(sock); if (c) { c.c.room = r; c.seat = i; }
+          });
+          broadcast(r);
+          pushFoyer();
+        }
+        break;
+      }
+
+      case "unqueue": {
+        foyer.queue = foyer.queue.filter((s) => s !== ws);
+        pushFoyer();
         break;
       }
 
       case "act": {
-        if (!room || !room.started) return fail("no game running");
-        const s = room.state;
+        if (!c.room || !c.room.started) return fail("no game running");
+        const s = c.room.state;
         // the server re-derives legality; a client can never talk the engine into an illegal move
-        const legal = legalActions(s, seatIndex);
+        const legal = legalActions(s, c.seat);
         const ok = legal.some((a) => a.type === m.action?.type
           && (a.type !== "commit" || (a.uid === m.action.uid && a.army === m.action.army)));
         if (!ok) return fail("not a legal move right now");
-        apply(s, seatIndex, m.action);
-        step(room);
+        apply(s, c.seat, m.action);
+        step(c.room);
         break;
       }
 
@@ -223,21 +280,24 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    if (!room) return;
-    const seat = room.seats[seatIndex];
+    foyer.queue = foyer.queue.filter((x) => x !== ws);
+    ctx.delete(ws);
+    pushFoyer();
+    if (!c.room) return;
+    const seat = c.room.seats[c.seat];
     if (!seat) return;
     seat.ws = null;
     // Before the game starts, a leaver frees the seat. Mid-game the seat is KEPT so the player
     // can reclaim it with their id; the engine has no concept of an absent player, so a bot
     // plays the seat meanwhile and hands it straight back on reconnect.
-    if (!room.started) {
-      room.seats.splice(seatIndex, 1);
-      if (!room.seats.length) { clearTimeout(room.timer); rooms.delete(room.code); return; }
+    if (!c.room.started) {
+      c.room.seats.splice(c.seat, 1);
+      if (!c.room.seats.length) { clearTimeout(c.room.timer); rooms.delete(c.room.code); return; }
     } else {
       seat.bot = true;
-      step(room);
+      step(c.room);
     }
-    broadcast(room);
+    broadcast(c.room);
   });
 });
 

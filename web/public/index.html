@@ -225,6 +225,44 @@
     .pc.sel{transform:none}
   }
 
+
+  /* ---- commitment preview & declarations ------------------------------ */
+  .preview{margin-top:7px;font-size:12px;color:var(--gold-hi);font-style:italic;line-height:1.35}
+  .preview.dim2{color:#6B7396;font-style:normal}
+  .mem .cmine{color:var(--gold-hi)}
+  .claimlab{position:absolute;top:6px;left:8px;font-family:var(--f-disp);font-size:8px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ochre);max-width:70%}
+  .decl{padding:8px 14px;border-top:1px solid rgba(201,162,39,.18);display:flex;gap:6px;
+    overflow-x:auto;align-items:center;scrollbar-width:none;background:rgba(8,12,30,.35)}
+  .decl::-webkit-scrollbar{display:none}
+  .decl .cap{flex:0 0 auto;padding-right:4px}
+  .decl button{min-height:40px;font-size:10px;padding:0 9px;flex:0 0 auto}
+  .decl button.on{border-color:var(--ochre);color:var(--ochre)}
+  /* ---- foyer ----------------------------------------------------------- */
+  .foyer{display:flex;gap:14px;justify-content:center;font-size:13px;color:var(--ivory-dim);
+    padding:2px 0 6px}
+  .foyer b{color:var(--gold-hi);font-weight:600}
+  .tables{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+  .tables button{min-height:40px;font-size:10px;padding:0 10px;flex:0 0 auto}
+  /* ---- onboarding ------------------------------------------------------ */
+  .ob{position:fixed;inset:0;z-index:30;background:rgba(6,9,22,.94);display:flex;
+    flex-direction:column;padding:18px 16px calc(18px + env(safe-area-inset-bottom));overflow:auto}
+  .ob h2{font-family:var(--f-disp);color:var(--gold-hi);font-size:20px;margin:0 0 2px;letter-spacing:.06em}
+  .ob ul{margin:10px 0 0;padding-left:18px}
+  .ob li{margin-bottom:7px;color:var(--ivory)}
+  .ob .dots{display:flex;gap:6px;justify-content:center;margin:14px 0}
+  .ob .dot{width:7px;height:7px;border-radius:50%;background:#3A4570}
+  .ob .dot.on{background:var(--gold-hi)}
+  .obcards{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center}
+  .obc{width:74px;border:1px solid rgba(201,162,39,.34);border-radius:2px;padding:8px 3px 5px;
+    text-align:center;background:radial-gradient(90% 70% at 50% 25%,#22346D,#0F1938);position:relative}
+  .obc .s{position:absolute;top:-9px;left:-6px;width:25px;height:25px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-family:var(--f-disp);
+    font-weight:700;font-size:13px;color:var(--ink);
+    background:radial-gradient(70% 70% at 35% 30%,var(--gold-hi),var(--gold));border:1px solid #6E5717}
+  .obc .n{font-family:var(--f-disp);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ivory-dim);margin-top:3px}
+
   /* ---- sheets / lobby -------------------------------------------------- */
   .sheet{position:fixed;inset:auto 0 0 0;z-index:22;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
     background:linear-gradient(180deg,#1D2C5E,#0C1330);border-top:2px solid var(--gold)}
@@ -287,6 +325,7 @@
   <span class="brand" id="brand">GOD</span>
   <span style="display:flex;align-items:center;gap:8px">
     <span class="st" id="status">connecting</span>
+    <button id="how" title="How to play" style="background:none;border:0;color:var(--gold);font-size:11px;font-family:var(--f-disp);letter-spacing:.12em;cursor:pointer;padding:4px 6px;min-height:0">HOW TO PLAY</button>
     <button id="snd" title="Sound">♪</button>
   </span>
 </header>
@@ -315,6 +354,7 @@ let lobby=null,v=null,sel=null,err="",stage=3,timer=null,sheet=null;
 let seenLog=0,lastPhase=null;
 // reveal staging: how many kills have fired, the rolling totals, the current callout line
 let killStep=0,roll=null,callout="",shakeMag=1;
+let foyerD=null,ob=null,declRow=null;   // foyer presence, onboarding page index
 
 /* ---- synthesised audio: no assets, one oscillator per hit ------------- */
 let AC=null,muted=localStorage.getItem("god.mute")==="1";
@@ -336,7 +376,8 @@ const S={
   win:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.36,"triangle",.13),i*130)),
 };
 $("snd").onclick=()=>{muted=!muted;localStorage.setItem("god.mute",muted?"1":"0");
-  $("snd").textContent=muted?"♪̸":"♪";if(!muted)S.tap()};
+  $("snd").textContent=muted?"♪̸":"♪";
+$("how").onclick=()=>{S.tap();ob=0;paint()};if(!muted)S.tap()};
 $("snd").textContent=muted?"♪̸":"♪";
 
 function connect(){
@@ -347,6 +388,8 @@ function connect(){
   ws.onmessage=(e)=>{const m=JSON.parse(e.data);
     if(m.t==="seated"){me.seat=m.seat;me.code=m.code;me.id=m.id;
       localStorage.setItem("god.id",m.id);localStorage.setItem("god.code",m.code)}
+    if(m.t==="foyer"){foyerD=m;
+      if(ob===null&&!localStorage.getItem("god.seen")){ob=0;localStorage.setItem("god.seen","1")}}
     if(m.t==="lobby"){lobby=m;v=null}
     if(m.t==="view"){
       const prev=v;v=m.view;
@@ -416,11 +459,60 @@ document.addEventListener("pointerdown",()=>{
 
 const svg=(arm,h)=>`<svg class="pcsvg" width="${Math.round(h*.833)}" height="${h}" aria-hidden="true"><use href="#s-${arm}"/></svg>`;
 
+
+/* ---- onboarding: one line per idea, and the cards it deals you, drawn from the real deck --- */
+function obPages(){
+  const f=(foyerD&&foyerD.force)||[],b=(foyerD&&foyerD.brokers)||[];
+  const ring=(foyerD&&foyerD.ring)||[];
+  const chain=ring.map(r=>`${r.arm[0]+r.arm.slice(1).toLowerCase()} ${r.s}`).join(" → ");
+  return [
+    {h:"Two armies, one ground",ul:[
+      "Every round, two armies form on one piece of ground.",
+      "You do not command an army — you put units into one.",
+      "Up to three units and three players in each.",
+      "The higher surviving total takes the ground."]},
+    {h:"The ring decides everything",ul:[
+      "Each arm cancels the NEXT TWO along the ring:",
+      chain+" → back to the start.",
+      "So a Warrior 1 cancels an Elephant 9. The cheapest kills the biggest.",
+      "A cancelled unit adds nothing — but it still cancels."],ring:true},
+    {h:"Your Force",ul:["Eight units. Every ruler holds at least one of every arm.",
+      "Strength is printed on the unit and fixed to its arm."],cards:f},
+    {h:"You commit blind",ul:[
+      "Units go down FACE DOWN. Nobody sees what you sent.",
+      "You may DECLARE what it was — and you may be lying.",
+      "Send into an army someone else leads and they answer blind: accept, or refuse."]},
+    {h:"Losing is how you get stronger",ul:[
+      "The ground pays ONE POINT to its largest contributor — most units committed, ties share.",
+      "Win and your units come home after a round. Lose and they burn for good.",
+      "But every defeated player recruits a Power Broker. Only the defeated ever get one."],cards:b},
+  ];
+}
+function obHTML(){
+  const pages=obPages(),i=Math.max(0,Math.min(ob,pages.length-1)),pg=pages[i];
+  const cards=(pg.cards||[]).map(c=>`<div class="obc"><span class="s">${c.s}</span>`+
+    `<svg class="pcsvg" width="30" height="36"><use href="#s-${c.arm}"/></svg>`+
+    `<div class="n">${c.name?c.name.split(" ")[0]:SHORT[c.arm]}</div></div>`).join("");
+  return `<div class="ob"><div class="cap">How to play — ${i+1} of ${pages.length}</div>
+    <h2>${pg.h}</h2><ul>${pg.ul.map(x=>`<li>${x}</li>`).join("")}</ul>
+    ${pg.ring?`<div style="display:flex;justify-content:center;margin-top:12px">${ringSVG(-1)}</div>`:""}
+    ${cards?`<div class="obcards">${cards}</div>`:""}
+    <div class="dots">${pages.map((_,k)=>`<span class="dot${k===i?" on":""}"></span>`).join("")}</div>
+    <div style="display:flex;gap:9px;margin-top:auto">
+      ${i>0?`<button style="flex:1" onclick="window.__ob(${i-1})">Back</button>`:""}
+      ${i<pages.length-1?`<button class="go" style="flex:2" onclick="window.__ob(${i+1})">Next</button>`
+        :`<button class="go" style="flex:2" onclick="window.__ob(null)">Begin</button>`}
+      ${i<pages.length-1?`<button style="flex:1" onclick="window.__ob(null)">Skip</button>`:""}
+    </div></div>`;
+}
+window.__ob=(n)=>{S.tap();ob=n;paint()};
+
 function paint(){
   const main=$("main"),bar=$("bar"),side=$("side"),right=$("right");
   main.innerHTML="";bar.innerHTML="";side.innerHTML="";right.innerHTML="";
   $("handband").hidden=true;right.className=v?"m":"";
-  $("sheet").innerHTML=sheet?sheetHTML():"";
+  if(declRow){declRow.remove();declRow=null}
+  $("sheet").innerHTML=(ob!==null&&ob!==undefined)?obHTML():sheet?sheetHTML():"";
   if(err)main.append(el("div","err center",err));
   if(v)return game(main,bar,side,right);
   if(lobby)return lob(main,bar);
@@ -518,7 +610,10 @@ function game(main,bar,side,right){
   const army=(ai)=>{
     const a=v.armies[ai],wrap=el("div","panel armywrap");
     const head=el("div","armyhead");
-    const mem=a.members.map(s2=>in2(v.players[s2].name)).join(" · ");
+    // contribution is how the ground pays, so it is printed, not implied
+    const mem=(a.contrib||[]).map(c=>
+      `<span class="${c.owner===v.you?"cmine":""}">${c.owner===v.you?"you":in2(v.players[c.owner].name)} ${c.units}</span>`
+    ).join(" · ");
     head.append(el("span","",`<span class="ttl">Army ${ai?"II":"I"}</span>`+
       (mem?` <span class="mem">${mem}</span>`:"")));
     const won=showAll&&stage>=2&&rev&&!roll&&rev.winners.includes(ai);
@@ -543,12 +638,33 @@ function game(main,bar,side,right){
           body:`Cancels ${RING.filter((_,j)=>beats(RING.indexOf(u.arm),j)).map(x=>SHORT[x]).join(" and ")}. `+
             `Cancelled by ${RING.filter((_,j)=>beats(j,RING.indexOf(u.arm))).map(x=>SHORT[x]).join(" and ")}.`};paint()};
       }else s2.append(el("span","lbl-fd","face down"));
+      if(u.claim)s2.append(el("span","claimlab",`"${SHORT[u.claim]}"`));
       s2.append(el("span","init",in2(v.players[u.owner].name)));
       if(dead)s2.insertAdjacentHTML("beforeend",
         `<svg class="x" viewBox="0 0 100 140"><line x1="16" y1="20" x2="84" y2="120"/></svg>`);
       sl.append(s2);
     }
-    wrap.append(head,sl);return wrap;
+    wrap.append(head,sl);
+    // ---- the commitment preview: exactly what sending this unit here would do.
+    // Every number here is public. Nothing about the enemy's cards is revealed — only what the
+    // player is entitled to know and previously had to work out in their head.
+    if(selU&&v.toAct===v.you){
+      const legal=v.actions.find(x=>x.type==="commit"&&x.uid===selU.uid&&x.army===ai);
+      if(legal){
+        const mineNow=((a.contrib||[]).find(c=>c.owner===v.you)||{units:0}).units;
+        const others=(a.contrib||[]).filter(c=>c.owner!==v.you).map(c=>c.units);
+        const best=others.length?Math.max(...others):0;
+        const after=mineNow+1;
+        const verdict=after>best?"you would be the largest contributor"
+          :after===best?"you would tie for largest — you both score"
+          :"you would not be the largest contributor";
+        const bits=[`${after} of ${a.count+1} units yours`,verdict];
+        if(a.count+1>=3)bits.push("this closes the army");
+        if(legal.offer)bits.push("answered blind by "+v.players[a.leader].name);
+        wrap.append(el("div","preview",bits.join(" — ")));
+      }else if(a.full)wrap.append(el("div","preview dim2","full"));
+    }
+    return wrap;
   };
   const mid=el("div","clash");mid.append(ring(selU),note(selU));
   main.append(army(0),mid,army(1));
@@ -589,6 +705,26 @@ function game(main,bar,side,right){
     hand.append(c);
   }
 
+
+  // ---- declarations. A claim about a face-down unit, and it may be a lie. Words, not cards:
+  // the old client learned that offering a second row of CARDS read as playing another one.
+  const myOnBoard=v.armies.flatMap(a=>a.units.filter(u=>u.owner===v.you));
+  const lastMine=myOnBoard[myOnBoard.length-1];
+  if(lastMine&&(v.phase==="muster"||v.phase==="offer")){
+    const row=el("div","decl");
+    row.append(el("span","cap","Say what it was"));
+    for(const arm of RING){
+      const b=el("button",lastMine.claim===arm?"on":"",SHORT[arm]);
+      b.onclick=()=>send({t:"declare",arm});
+      row.append(b);
+    }
+    const none=el("button",lastMine.claim?"":"on","Say nothing");
+    none.onclick=()=>send({t:"declare",arm:null});
+    row.append(none);
+    $("handband").after(row);
+    declRow=row;
+  }
+
   // ---- actions
   if(v.phase==="offer"&&v.actions.some(a=>a.type==="accept")){
     main.append(el("div","panel center",
@@ -614,11 +750,10 @@ function game(main,bar,side,right){
   }else bar.append(el("div","cap center",showAll?"the ring resolves":"waiting"));
 }
 
-function ring(u){
+function ringSVG(mi){
   const R=34,cx=46,cy=44;
   const p=RING.map((_,i)=>{const t=-Math.PI/2+i*(2*Math.PI/5);
     return [cx+R*Math.cos(t),cy+R*Math.sin(t)]});
-  const mi=u?RING.indexOf(u.arm):-1;
   let s=`<svg width="92" height="88" viewBox="0 0 92 88" role="img" aria-label="the ring of five arms">`;
   for(let i=0;i<5;i++){const j=(i+1)%5;
     s+=`<line class="edge" x1="${p[i][0]}" y1="${p[i][1]}" x2="${p[j][0]}" y2="${p[j][1]}"/>`}
@@ -626,8 +761,9 @@ function ring(u){
     if(mi>=0){if(i===mi)c+=" me";else if(beats(mi,i))c+=" kil";else if(beats(i,mi))c+=" thr"}
     s+=`<circle class="${c}" cx="${p[i][0]}" cy="${p[i][1]}" r="10"/>`;
     s+=`<text class="nlbl${mi===i?" on":""}" x="${p[i][0]}" y="${p[i][1]+3}">${RING[i][0]}</text>`}
-  return el("div","",s+"</svg>");
+  return s+"</svg>";
 }
+function ring(u){return el("div","",ringSVG(u?RING.indexOf(u.arm):-1))}
 function note(u){
   if(!u)return el("div","ringnote","<b>The ring</b><br>each arm cancels<br>the next two");
   const i=RING.indexOf(u.arm);
