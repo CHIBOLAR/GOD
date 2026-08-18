@@ -29,7 +29,9 @@ import { FACTIONS, BROKERS, ARMS, PREY, beats } from "./cards.mjs";
 export const NUM_ARMIES = 2;
 export const ARMY_CAP = Number(process.env.CAP || 4);
 export const MAX_PER_ARMY = ARMY_CAP;
-export const TARGET = Number(process.env.TARGET || 8);
+// Four kills wins. Measured across 3-6: at four, every game from four players up reaches the
+// target; higher targets only lengthen an already long game without improving fairness.
+export const TARGET = Number(process.env.TARGET || 4);
 
 // ---- policy knobs ------------------------------------------------------------
 const TEMPERATURE = 0.4;

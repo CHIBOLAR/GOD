@@ -10,7 +10,8 @@
     "prove": "node sim/prove.mjs",
     "start": "node web/server.mjs",
     "serve": "node web/server.mjs",
-    "parity": "node web/parity.mjs"
+    "parity": "node web/parity.mjs",
+    "gates:round": "node sim/gates-round.mjs"
   },
   "engines": {
     "node": ">=18"

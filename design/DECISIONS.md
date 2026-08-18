@@ -1257,3 +1257,43 @@ it (13.1 of 15).
 ⚠️ **METHOD, and it nearly shipped a false result.** An intermediate roster read **4.7 at 6,000
 games and 6.4 at 12,000** — a pass and a warn from the same design. **Three samples are the
 minimum** before a gate result is believed, exactly as `OPEN.md` warns.
+
+---
+
+## 2026-08-19 — D048. THE CHARGE. The ground is no longer won, and the ring became the scoring
+
+**The game changed shape.** There is no round, no higher total, no victor and no defeat. There is
+a front line, and there is killing, and you are paid for what you kill.
+
+* Units commit **face down** into one of two armies and **stand there**.
+* A **senior partner may CALL THE CHARGE**. Everything reveals, the ring fires once, the cancelled
+  die, and every survivor stays on the ground **face up**.
+* **One Victory Point per enemy unit your units cancelled.** Four kills wins.
+* **Lose units and you recruit a Power Broker** — compensation for CASUALTIES now, not for defeat,
+  because there is no defeat left to have. "Losers get the better cards" survives intact.
+* Deploy, withdraw, charge and pass are **separate actions**; a turn is exactly one of them.
+
+**Why it is better, measured:** faction deviation **4.1**, against a best of 4.7 for the old
+round-and-ground game — and it holds at 2.0–4.1 across every player count. **Scoring by kills is
+structurally fairer than scoring by winning**, because every ruler can kill whatever it holds,
+whereas winning a ground rewarded whoever drew the better arms for that contest.
+
+⚠️ **EQUILIBRIUM IS ALSO DEADLOCK, and withdraw is not optional.** After a charge every survivor
+is by definition unable to cancel anything opposite it — that quiet front is the design's whole
+appeal. But equilibrium on a FULL board means no kills are possible and no unit can enter.
+Measured without withdrawal, **roughly half of all games stalled at every victory target**. Adding
+it took completion from ~50% to 100% at four players and up. The mechanic that looked like a
+nicety in the old game is load-bearing here.
+
+⚠️ **The target is four and was chosen, not inherited.** Measured at 3, 4, 5, 6 and 8: four is
+where every game from four players up reaches the target. Higher targets only lengthen an already
+long game without improving fairness.
+
+⚠️ **THE OPEN PROBLEM IS LENGTH.** 206 turns at eight players, against roughly 56 for the old
+game. The withdrawal churn that unjams the board is exactly what inflates it. This is the one
+gate still warning and the next thing to solve.
+
+**What this obsoletes.** `sim/game.mjs` and `sim/gates-round.mjs` keep the old round-and-ground
+game for reference. The rulebook, `CARDS.md`, `PLAYER_AID.md`, `web/STATE_INVENTORY.md` and the
+whole online client still describe that game — **the deployed game and the designed game have
+diverged**, and closing that gap is the work that follows this entry.
