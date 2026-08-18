@@ -36,16 +36,16 @@ fields warriors. The counts are set by measurement, one ruler at a time, not by 
 
 | Ruler | | Force | Total |
 | --- | --- | --- | ---: |
-| **The Sultan** | three elephant + two warrior | E9 E9 E9 C7 H5 R3 W1 W1 | 44 |
+| **The Sultan** | two elephant + two rifleman + two warrior | E9 E9 C7 H5 R3 R3 W1 W1 | 38 |
 | **The Badshah** | three cannon + two warrior | E9 C7 C7 C7 H5 R3 W1 W1 | 40 |
 | **The Peshwa** | four horseman | E9 C7 H5 H5 H5 H5 R3 W1 | 40 |
 | **The Governor** | three rifleman + two warrior | E9 C7 H5 R3 R3 R3 W1 W1 | 32 |
 | **The Rana** | three warrior + two horseman | E9 C7 H5 H5 R3 W1 W1 W1 | 32 |
 | **The Nizam** | three cannon + two horseman | E9 C7 C7 C7 H5 H5 R3 W1 | 44 |
-| **The Nawab** | three rifleman + two cannon | E9 C7 C7 H5 R3 R3 R3 W1 | 38 |
+| **The Nawab** | three cannon + two rifleman | E9 C7 C7 C7 H5 R3 R3 W1 | 42 |
 | **The Maharaja** | three horseman + two warrior | E9 C7 H5 H5 H5 R3 W1 W1 | 36 |
 
-*The Sultan — war elephants, and the foot that walks beside them.*  
+*The Sultan — war elephants, and the muskets and foot that walk beside them.*  
 *The Badshah — the imperial gun train and its levies.*  
 *The Peshwa — Ganimi Kava, and horse that never stands.*  
 *The Governor — matchlocks drilled off the ships.*  
@@ -78,13 +78,13 @@ did not take it.
 
 | Deck | Cards |
 | --- | --- |
-| The Sultan | E9 E9 E9 C7 H5 R3 W1 W1 |
+| The Sultan | E9 E9 C7 H5 R3 R3 W1 W1 |
 | The Badshah | E9 C7 C7 C7 H5 R3 W1 W1 |
 | The Peshwa | E9 C7 H5 H5 H5 H5 R3 W1 |
 | The Governor | E9 C7 H5 R3 R3 R3 W1 W1 |
 | The Rana | E9 C7 H5 H5 R3 W1 W1 W1 |
 | The Nizam | E9 C7 C7 C7 H5 H5 R3 W1 |
-| The Nawab | E9 C7 C7 H5 R3 R3 R3 W1 |
+| The Nawab | E9 C7 C7 C7 H5 R3 R3 W1 |
 | The Maharaja | E9 C7 H5 H5 H5 R3 W1 W1 |
 | Siege Elephant ×3 | E10 |
 | Sultan Rockets ×3 | C8 |
