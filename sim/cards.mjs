@@ -213,7 +213,11 @@ export const FACTIONS = ACTIVE_ROSTER.map(([key, name, era, lead, shape]) => {
     total: units.reduce((s, u) => s + u.s, 0) };
 });
 
-export const VICTORY_TARGET = { 2: 5, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4 };
+// TARGET=<n> overrides every count, for tuning the target against a new scoring rule.
+const T = Number(process.env.TARGET || 0);
+export const VICTORY_TARGET = T
+  ? Object.fromEntries([2,3,4,5,6,7,8].map((k) => [k, k === 2 ? T + 1 : T]))
+  : { 2: 5, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4 };
 
 export function validate() {
   const p = [];

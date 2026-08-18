@@ -121,12 +121,37 @@ const WITHDRAW = process.env.WITHDRAW !== "0";
 // armies are BLIND — you are reading unit counts, not cards, so defecting is a bet rather than
 // a calculation. Whether that is enough is exactly what the measurement is for.
 const BETRAY = process.env.BETRAY === "1";
+
+// ---- CALL THE CHARGE (CHARGE=1) --------------------------------------------------------------
+// A SENIOR PARTNER may end the muster on their turn. The armies charge as they stand.
+//
+// Ra gives a player the power to call the auction, which turns TIMING into a resource; GOD had
+// none — the muster simply stopped when everyone ran out of things to do, so nobody ever chose
+// the moment. Under CAPTURE scoring the choice bites hard, because the pot IS the enemy's
+// committed units: strike at three against two and you win easily for two points; wait for four
+// against four and the prize doubles while the enemy arms to take it from you.
+const CHARGE = process.env.CHARGE === "1";
+
+// ---- RUINED (ELIMINATED=1) ---------------------------------------------------------------
+// When a player has NO UNITS LEFT ANYWHERE, every other player takes 2 VP.
+//
+// Knizia's rule for auctions is that a player who overbids must "hurt themselves and be limited
+// by the system" rather than be eliminated outright — High Society does it by disqualifying
+// whoever spent the most, so you can win every auction and still lose. GOD had NOTHING here:
+// burning your whole hand cost you only the ability to act, which is idleness, not a penalty.
+//
+// This is the same idea without removing anyone from the table: ruin yourself and you hand the
+// room points. Units STANDING on the ground still count as yours, so ruin takes genuine total
+// attrition — it cannot be manufactured cheaply the way "lose one unit alone" could.
+const ELIMINATED = process.env.ELIMINATED === "1";
+export let st_ruined = 0;
+export let st_charged = 0;
 export let st_betrayed = 0;
 export let st_withdrew = 0;
 const FOLD = process.env.FOLD === "1";
 const FOLD_BURN = process.env.FOLDBURN === "1";
 export let st_relieved = 0, st_actions = 0;
-export const resetRelief = () => { st_relieved = 0; st_actions = 0; st_withdrew = 0; st_betrayed = 0; };
+export const resetRelief = () => { st_relieved = 0; st_actions = 0; st_withdrew = 0; st_betrayed = 0; st_charged = 0; st_ruined = 0; };
 export const HOLDS_GROUND = GARRISON;
 
 // ---- THE OFFER (BROKEROFFER=1) -----------------------------------------------------------
@@ -167,6 +192,7 @@ export function newGame(factionKeys, target, rnd) {
   const offer = BROKER_OFFER ? supply.splice(-OFFER_SIZE) : [];
   return {
     target, round: 0, start: 0, supply, offer,
+    ruined: new Set(),                                    // players with nothing left at all
     held: Array.from({ length: NUM_ARMIES }, () => []),   // units standing on the ground
     senior: new Array(NUM_ARMIES).fill(null),             // who admits newcomers
     players: factionKeys.map((k, i) => {
@@ -191,6 +217,9 @@ export function legalMoves(g, seat, m) {
     if (mine === undefined && m.leader[a] !== null && m.leader[a] !== seat
       && m.offered.has(a)) continue;                         // one offer per army per turn
     for (const u of units) moves.push({ unit: u, army: a });
+  }
+  if (CHARGE && mine !== undefined && m.leader[mine] === seat && m.armies[mine].length) {
+    moves.push({ charge: true, army: mine });
   }
   if (BETRAY && mine !== undefined) {
     for (const c of m.armies[mine].filter((x) => x.owner === seat)) {
@@ -296,6 +325,14 @@ export function scoreMove(g, seat, m, mv) {
     const st = standing(m.armies[a], seat);
     const scoring = SHARE_ALL ? st.mine > 0 : st.mine > st.best;
     return PASS_BASE + (scoring ? CONTRIB_WEIGHT * 0.6 : 0);
+  }
+  if (mv.charge) {
+    // Charge when you are ahead on the ground and the prize already justifies it. Waiting is
+    // only worth it while the enemy is still smaller than you — every unit they add enriches
+    // the pot but also buys them the ground.
+    const mineN = m.armies[mv.army].length;
+    const foe = Math.max(...m.armies.map((a, i) => (i === mv.army ? 0 : a.length)));
+    return PASS_BASE + (mineN > foe ? 0.9 + 0.3 * foe : -1.5);
   }
   if (mv.betray) {
     // Worth it when the army you are leaving is losing and the one you are joining is not.
@@ -495,7 +532,7 @@ export function settleRound(g, m, rnd) {
   let result = null, awarded = new Map();
   if (fielded.length) {
     result = resolveBattle(m.armies);
-    awarded = spoils(result);
+    awarded = spoils(result, m.leader);
     for (const [p, v] of awarded) g.players[p].vp += v;
   }
 
@@ -594,10 +631,10 @@ export function newMuster(g) {
 export function playRound(g, rnd) {
   const n = g.players.length;
   const m = newMuster(g);
-  let passStreak = 0, seat = g.start, committed = 0;
+  let passStreak = 0, seat = g.start, committed = 0, charged = false;
   const turns = new Array(n).fill(0);
 
-  while (passStreak < n) {
+  while (passStreak < n && !charged) {
     m.offered.clear();
     let acted = false;
     for (let attempt = 0; attempt < NUM_ARMIES && !acted; attempt++) {
@@ -605,6 +642,7 @@ export function playRound(g, rnd) {
       const mv = choose(moves, moves.map((x) => scoreMove(g, seat, m, x)), rnd);
       if (mv.pass) break;
       st_actions++;
+      if (mv.charge) { st_charged++; charged = true; acted = true; turns[seat]++; break; }
       if (mv.betray) { betrayWith(g, m, seat, mv); acted = true; turns[seat]++; break; }
       if (mv.withdraw) { withdrawUnit(g, m, seat, mv); acted = true; turns[seat]++; break; }
       if (mv.relieve) { relieveUnit(g, m, seat, mv, rnd); acted = true; turns[seat]++; break; }
@@ -632,6 +670,17 @@ export function playRound(g, rnd) {
 
   if (GARRISON) for (let a = 0; a < NUM_ARMIES; a++) {
     if (!fielded.includes(a)) { g.held[a] = []; g.senior[a] = null; }
+  }
+
+  // ---- ruin: a player with nothing left anywhere pays the whole table
+  if (ELIMINATED) {
+    for (const p of g.players) {
+      if (g.ruined.has(p.seat)) continue;
+      if (p.hand.some((u) => !u.spent)) continue;          // still has something, held or in hand
+      g.ruined.add(p.seat);
+      st_ruined++;
+      for (const q of g.players) if (q.seat !== p.seat) q.vp += 2;
+    }
   }
 
   g.round++;

@@ -109,8 +109,49 @@ export function resolveBattle(raw) {
 // what makes the bluff pay — you can take the point with a unit the ring then kills.
 const SHARE_ALL = process.env.SPOILS !== "largest";
 
-export function spoils(result) {
+// ---- SPOILS OF WAR (CAPTURE=1) --------------------------------------------------------------
+// The ground is worth ONE VICTORY POINT FOR EVERY ENEMY UNIT COMMITTED TO IT. You are paid for
+// what you beat, never for what you brought — so the prize is set entirely by what the other
+// side chose to risk, which is Modern Art's principle: a thing is worth what the table decided.
+//
+// Three consequences fall straight out of it and all three are wanted:
+//   · AN UNOPPOSED GROUND PAYS NOTHING. There was no enemy to defeat, so slipping one unit into
+//     an uncontested army and collecting — the degenerate line under flat scoring — pays zero.
+//   · THE CAP IS NOT IMPOSED, it is the army cap. Four enemies is four points, and no more.
+//   · The richest grounds are the most contested ones, so the muster finally has an arc.
+//
+// The winning army SHARES the pot, and the SENIOR PARTNER divides it — they chose whom to
+// recruit and whom to turn away, so they answer for it. The model pays by contribution, largest
+// first and senior first on ties, until the pot runs out; a human client can make it a free
+// choice, which is where the politics of this rule actually lives.
+const CAPTURE = process.env.CAPTURE === "1";
+
+export function spoils(result, leaders = []) {
   const vp = new Map();
+  if (CAPTURE) {
+    for (const i of result.winners) {
+      // the pot: every unit the OTHER armies committed to this ground
+      const pot = result.committed.reduce((n, a, j) => n + (j === i ? 0 : a.length), 0);
+      if (!pot) continue;                       // nobody showed up; nothing was won
+      const by = new Map();
+      for (const u of result.committed[i]) {
+        if (u.owner === undefined || u.garrison || u.forfeit) continue;
+        by.set(u.owner, (by.get(u.owner) || 0) + 1);
+      }
+      if (!by.size) continue;
+      const senior = leaders[i];
+      const order = [...by.entries()].sort((a, b) =>
+        b[1] - a[1] || (a[0] === senior ? -1 : b[0] === senior ? 1 : 0));
+      let left = pot;
+      for (const [owner, units] of order) {
+        if (left <= 0) break;
+        const take = Math.min(units, left);     // paid for what you brought, while the pot lasts
+        vp.set(owner, (vp.get(owner) || 0) + take);
+        left -= take;
+      }
+    }
+    return vp;
+  }
   for (const i of result.winners) {
     const by = new Map();
     for (const u of result.committed[i]) {
