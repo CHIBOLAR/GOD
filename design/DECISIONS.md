@@ -1204,3 +1204,56 @@ Two comparisons in this session flipped sign between seeds while a dedicated 2-p
 80,000 duels, 8× the samples per matchup — was unanimous. **RMS across all cells is the stable
 statistic and should be quoted alongside the max.** Any conclusion drawn from a single seed's
 gate value is unsafe.
+
+---
+
+## 2026-08-18 — D047. THE VICTORY POINT RESTORED, and the roster retuned to it. ALL GATES PASS
+
+**The rule:** one point per ground, to the **largest contributor**, ties share. Contribution
+counts **units committed** — not strength, and not survivors.
+
+**Why:** D046 shipped one point per *surviving unit*. That paid three points for three survivors,
+so a four-point target was reachable in **two battles**. It measured *well* on fairness while
+being a worse game, and a player report caught it, not a gate: no time for a read on anyone, and
+contribution stopped meaning what you dared to commit.
+
+| | per-survivor (D046) | contributor (this) |
+| --- | ---: | ---: |
+| shortest game | 4.4 rounds | **6.5** |
+| longest game | 7.9 rounds | **7.1** |
+| two-round games | yes | none |
+
+⚠️ **UNITS, NOT STRENGTH — and this is the part worth keeping.** The original game measured
+contribution by base Strength, and that was fair *there* because every player held an identical
+Force. Eight asymmetric rulers break it: a ruler holding a second Elephant commits 25 in a round
+where another can only reach 21, so it takes the point almost every time. **Measured 10.9
+deviation against a gate of 5.** Equalising deck totals reached only 9.5. Equalising the top three
+commitables reached 7.4 and stopped — because on the 9/7/5/3/1 ladder **no sum of three spare
+cards is shared by more than two decks**, so eight near-symmetric rulers do not exist. Counting
+units is immune to all of it. `SPOILS=strength` restores the original measure for comparison.
+
+**The retune, each slot swept over all 28 legal decks:**
+
+* **Governor** four Riflemen → **3R 2W** — ranked 13th of 28, now 1st
+* **Nawab** 3R 2C → **2R 3C**
+* **Sultan** three Elephants → **2E 2R 2W** — this one came from the designer, not the sweep.
+  Three Elephants was wrong for the game regardless of what it measured; of the ten legal
+  two-Elephant decks the sweep then confirmed this is the best.
+
+**Result: 9 pass · 0 warn · 0 fail** — the first in the project's history. Faction deviation
+**4.8 / 4.8 / 4.7** at 7,000, 9,000 and 15,000 games. The Power Broker supply warning cleared with
+it (13.1 of 15).
+
+**Two bugs found in the online client while doing this, both worth recording:**
+
+1. **Recovery was invisible.** `rest` alone cannot distinguish "on the ground now" from
+   "recovering": a unit committed this round is set to `round + 1`, and a unit that won is set to
+   `round + 2` before the round advances — so both read as `round + 1` at view time. Every
+   recovering unit was labelled *committed*, so recovery looked like it never happened. The board
+   is now the discriminator. Burning was always correct.
+2. **A recruited Power Broker arrived silently.** There was no event feed at all. There is now,
+   and it narrates every action and every battle beat.
+
+⚠️ **METHOD, and it nearly shipped a false result.** An intermediate roster read **4.7 at 6,000
+games and 6.4 at 12,000** — a pass and a warn from the same design. **Three samples are the
+minimum** before a gate result is believed, exactly as `OPEN.md` warns.
