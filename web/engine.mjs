@@ -24,6 +24,7 @@
 //   }
 
 import { FACTIONS, VICTORY_TARGET } from "../sim/cards.mjs";
+import { cancelMasks } from "../sim/battle.mjs";
 import {
   NUM_ARMIES, ARMY_CAP, MAX_PER_ARMY,
   makeRng, newGame, available, legalMoves, commitUnit,
@@ -111,10 +112,21 @@ function endTurn(s, seat, acted) {
 function resolveRound(s) {
   const { g } = s;
   const roundNo = g.round;
+
+  // Snapshot BEFORE the settle. `resolveBattle` returns only survivors, so a client that wants
+  // to stage the reveal — face up, then strike the cancelled, then total — needs the full
+  // committed board and the cancellation mask. `resolveBattle` copies its input, so reading
+  // m.armies here is safe and shows exactly what was on the ground.
+  const committedBoard = s.m.armies.map((a) =>
+    a.map((u) => ({ owner: u.owner, arm: u.arm, s: u.s, broker: u.broker, revealed: !!u.revealed })));
+  const dead = cancelMasks(s.m.armies);
+
   const summary = settleRound(g, s.m, s.rnd);
 
   s.lastRound = {
     round: roundNo,
+    board: committedBoard,
+    dead,
     armies: summary.result ? summary.result.armies : [],
     totals: summary.result ? summary.result.totals : [],
     winners: summary.result ? [...summary.result.winners] : [],
