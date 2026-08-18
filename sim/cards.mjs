@@ -90,12 +90,16 @@ export const TIMING = { DEPLOY: "ON DEPLOY", REVEAL: "ON REVEAL", DEFEAT: "ON DE
 const ROCKETS_FACE_UP = process.env.ROCKETSUP !== "0";
 
 const ABILITY = {
-  siege:    { name: "Siege Elephant", faceUp: true, when: TIMING.DEPLOY, text: "Deploy FACE UP. LOOK at one enemy unit — it stays face up." },
-  rockets: { name: "Sultan Rockets", when: TIMING.DEFEAT, ...(ROCKETS_FACE_UP ? { faceUp: true } : {}),
-    text: (ROCKETS_FACE_UP ? "Deploy FACE UP. " : "") + "Burn the winning army's recovering units." },
-  spy:      { name: "Spy", when: TIMING.REVEAL, text: "EXCHANGE with the enemy's strongest unit. PERMANENT — each card joins the other force for good." },
-  subhedar: { name: "Subhedar", when: TIMING.REVEAL, text: "REMOVE the enemy's weakest unit." },
-  sepoy:    { name: "Sepoy", when: TIMING.REVEAL, text: "ALONE in your army: double strength." },
+  siege:    { name: "Siege Elephant", faceUp: true, when: TIMING.DEPLOY,
+    text: "Deploy FACE UP. LOOK at one enemy unit — it stays face up." },
+  rockets:  { name: "Sultan Rockets", faceUp: true, when: TIMING.DEFEAT,
+    text: "Deploy FACE UP. If this is cancelled, the unit that cancelled it dies too." },
+  spy:      { name: "Spy", when: TIMING.REVEAL,
+    text: "If it survives the charge, EXCHANGE with the enemy's strongest survivor. PERMANENT." },
+  subhedar: { name: "Subhedar", when: TIMING.REVEAL,
+    text: "If it survives the charge, DESTROY the enemy's weakest survivor. That is a kill." },
+  sepoy:    { name: "Sepoy", when: TIMING.REVEAL,
+    text: "Cancels TWO enemy units instead of one." },
 };
 const ABIL = (process.env.ABIL || "siege,sepoy,rockets,spy,subhedar").split(",");
 export const BROKERS = ARMS.map((arm, i) => ({

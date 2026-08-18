@@ -76,15 +76,52 @@ export function resolveCharge(armies) {
   armies.forEach((a, ai) => a.forEach((u, ui) => all.push({ u, ai, ui })));
   const dead = armies.map((a) => new Array(a.length).fill(false));
   const kills = [];
-  for (const k of [...all].sort((x, y) => y.u.s - x.u.s || x.ai - y.ai || x.ui - y.ui)) {
+  const pick = (k) => {
     let best = null;
     for (const t of all) {
       if (t.ai === k.ai || dead[t.ai][t.ui] || !beats(k.u.arm, t.u.arm)) continue;
       if (!best || t.u.s > best.u.s) best = t;
     }
-    if (best) { dead[best.ai][best.ui] = true; kills.push({ by: k, hit: best }); }
+    return best;
+  };
+  for (const k of [...all].sort((x, y) => y.u.s - x.u.s || x.ai - y.ai || x.ui - y.ui)) {
+    // THE SEPOY CANCELS TWO. Everything else takes one target, strongest it can reach.
+    const swings = k.u.broker === "sepoy" ? 2 : 1;
+    for (let n = 0; n < swings; n++) {
+      const t = pick(k);
+      if (!t) break;
+      dead[t.ai][t.ui] = true;
+      kills.push({ by: k, hit: t });
+      // SULTAN ROCKETS take their killer with them. The scorch is a deterrent: cancel it and
+      // you lose the unit that did it, so a Rockets standing face up is a threat, not a target.
+      if (t.u.broker === "rockets" && !dead[k.ai][k.ui]) {
+        dead[k.ai][k.ui] = true;
+        kills.push({ by: t, hit: k, revenge: true });
+      }
+    }
   }
-  return { dead, kills };
+
+  // ---- survivors act. Only what lives through the ring gets to do anything.
+  const alive = (t) => !dead[t.ai][t.ui];
+  const survivors = all.filter(alive);
+  const others = (ai) => survivors.filter((t) => t.ai !== ai && alive(t));
+
+  // THE SUBHEDAR removes the enemy's weakest survivor, and that counts as a kill.
+  for (const k of survivors) {
+    if (k.u.broker !== "subhedar" || !alive(k)) continue;
+    const t = others(k.ai).reduce((b, x) => (!b || x.u.s < b.u.s ? x : b), null);
+    if (t) { dead[t.ai][t.ui] = true; kills.push({ by: k, hit: t, ability: "subhedar" }); }
+  }
+
+  // THE SPY exchanges with the enemy's strongest survivor — permanently, so the two cards
+  // change hands for the rest of the game. Recorded for the caller to carry out.
+  const swaps = [];
+  for (const k of survivors) {
+    if (k.u.broker !== "spy" || !alive(k)) continue;
+    const t = others(k.ai).reduce((b, x) => (!b || x.u.s > b.u.s ? x : b), null);
+    if (t) swaps.push({ spy: k, taken: t });
+  }
+  return { dead, kills, swaps };
 }
 
 // ---- creation -----------------------------------------------------------------
@@ -154,12 +191,17 @@ export function commit(g, seat, unit, army) {
     broker: unit.isBroker ? unit.key : undefined, revealed: !!unit.faceUp };
   g.armies[army].push(card);
   if (g.leader[army] === null) g.leader[army] = seat;
+  // THE SIEGE ELEPHANT LOOKS on deployment — one enemy unit turns face up for the whole table.
+  if (card.broker === "siege") {
+    const hidden = g.armies.flatMap((a, i) => (i === army ? [] : a)).filter((c) => !c.revealed);
+    if (hidden.length) hidden[0].revealed = true;
+  }
   return card;
 }
 
 // ---- the charge -----------------------------------------------------------------
 export function charge(g) {
-  const { dead, kills } = resolveCharge(g.armies);
+  const { dead, kills, swaps } = resolveCharge(g.armies);
 
   // paid for what you killed
   const scored = new Map();
@@ -204,8 +246,17 @@ export function charge(g) {
     recruited.set(seat, 1);
   }
 
+  // the Spy's exchange: the two cards change owner for good
+  for (const { spy, taken } of swaps) {
+    if (!g.armies[spy.ai].includes(spy.u) || !g.armies[taken.ai].includes(taken.u)) continue;
+    const i = g.armies[spy.ai].indexOf(spy.u), j = g.armies[taken.ai].indexOf(taken.u);
+    const a = spy.u.owner, b = taken.u.owner;
+    spy.u.owner = b; taken.u.owner = a;
+    g.armies[spy.ai][i] = taken.u; g.armies[taken.ai][j] = spy.u;
+  }
+
   g.charge++;
-  return { kills, scored, lost, recruited };
+  return { kills, scored, lost, recruited, swaps };
 }
 
 // ---- the policy ------------------------------------------------------------------
