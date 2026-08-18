@@ -113,6 +113,10 @@ export function spoils(result) {
     const by = new Map();
     for (const u of result.committed[i]) {
       if (u.owner === undefined) continue;
+      // A unit left standing on the ground by a previous win never counts as contribution — see
+      // GARRISON in game.mjs. Holding earns nothing; you must keep committing to keep scoring,
+      // which is what stops a held ground from paying its holder a point a round for free.
+      if (u.garrison) continue;
       // CONTRIBUTION IS COUNTED IN UNITS COMMITTED, not strength committed.
       //
       // ⚠️ The original game measured contribution by base Strength, and that was fair there

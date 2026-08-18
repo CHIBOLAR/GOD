@@ -21,7 +21,11 @@ const PASS_BASE = 1.5;       // the standing value of keeping a card in hand
 const OWN_WEIGHT = 0.30;     // strength I expect to actually contribute
 const CANCEL_WEIGHT = 0.28;  // enemy strength I expect to cancel
 const COST = 0.05;           // spending a big unit costs more than a small one
-const ALLY_TAX = 0.5;        // an ally in my army races me for the points
+const ALLY_TAX = 0.5;        // an ally who can out-commit me takes my point outright
+// What being the army's largest contributor is worth. It is the ONLY route to a point, so this
+// is not a flavour knob — it is the policy's objective. CONTRIB=0 restores the old blind policy
+// for comparison.
+const CONTRIB_WEIGHT = Number(process.env.CONTRIB ?? 1.2);
 const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger
 export const NUM_ARMIES = Number(process.env.ARMIES || 2);
 export const ARMY_CAP = Number(process.env.CAP || 3);
@@ -45,6 +49,52 @@ const PERMANENT_SWAP = process.env.PERMSWAP !== "0";
 // "is another army already bigger than mine?" The fork asks "would another army be bigger than
 // mine ONCE MY REFUSAL LANDS THERE?" — a single increment, which is exactly what the rule adds.
 const REFUSAL_FORK = process.env.REFUSALFORK === "1";
+
+// ---- HOLD THE GROUND (GARRISON=1) --------------------------------------------------------
+// Baseline: a winning army's units all come home after a round. So winning costs nothing, and
+// no commitment is ever agonising — the opposite of every good auction game, where the resource
+// you spend is the resource you score and spending it hurts.
+//
+// The rule: SURVIVING UNITS STAY ON THE GROUND. They do not return to hand. The army cap is
+// still THREE, so a held ground cannot grow into an unbeatable stack — it gets FULLER, which
+// locks the holder out of their own army. Cancelled units still come home; lose the ground and
+// EVERYTHING in that army burns, standing units included.
+//
+// Two consequences make it work rather than snowball:
+//   1. A STANDING UNIT NEVER COUNTS AS CONTRIBUTION. The point goes to whoever commits most
+//      units THIS round, so holding earns nothing — the holder must keep spending to keep
+//      scoring, and an opportunist who takes the last slot out-contributes them and steals it.
+//   2. SENIORITY CHANGES HANDS. The first to commit is senior partner; after a win the partner
+//      with the greatest surviving STRENGTH becomes senior. Seniority controls admission, so
+//      allying into someone's ground can be a takeover — you arrive a guest and leave the
+//      landlord. Points and control are deliberately measured differently: units for one,
+//      strength for the other.
+const GARRISON = process.env.GARRISON === "1";
+
+// ---- RELIEF IN PLACE (FOLD=1) --------------------------------------------------------------
+// One action, once per turn: pull one of your STANDING units back and put another in its place.
+// The field keeps its size, so this is not an escape from a collapsing ground — it is how you
+// IMPROVE what stands on one. Swap a Rifleman out for an Elephant.
+//
+// THE COST IS TEMPO, NOT MATERIAL. The unit pulled back returns to hand RESTING — gone for the
+// remainder of the round — and the move costs your whole turn. Charging a card instead was
+// considered and rejected on the numbers: attrition is already the tightest pressure in the game
+// (a lost ground burns everything standing on it, and at two players 7% of games already end by
+// exhaustion), so another permanent sink pushes more games to die of attrition rather than on the
+// target. Tempo also reuses `rest`, which players already understand from recovery.
+//
+// FOLDBURN=1 restores the material cost — additionally burn your cheapest card. If relief fires
+// on more than roughly a fifth of turns, tempo was too cheap and the burn is the right price.
+//
+// ⚠️ WHEN THERE IS A SACRIFICE IT IS ALWAYS THE CHEAPEST AVAILABLE CARD. Burning anything dearer
+// is strictly dominated — a sacrificed card has no effect beyond being spent — so the generator
+// only offers the weakest, which keeps the move space at (standing x replacements) rather than
+// cubing it, without removing any choice a rational player would make.
+const FOLD = process.env.FOLD === "1";
+const FOLD_BURN = process.env.FOLDBURN === "1";
+export let st_relieved = 0, st_actions = 0;
+export const resetRelief = () => { st_relieved = 0; st_actions = 0; };
+export const HOLDS_GROUND = GARRISON;
 
 // ---- THE OFFER (BROKEROFFER=1) -----------------------------------------------------------
 // Baseline: the supply is face down and a defeated player draws BLIND. Broker identity is
@@ -84,6 +134,8 @@ export function newGame(factionKeys, target, rnd) {
   const offer = BROKER_OFFER ? supply.splice(-OFFER_SIZE) : [];
   return {
     target, round: 0, start: 0, supply, offer,
+    held: Array.from({ length: NUM_ARMIES }, () => []),   // units standing on the ground
+    senior: new Array(NUM_ARMIES).fill(null),             // who admits newcomers
     players: factionKeys.map((k, i) => {
       const f = FACTIONS.find((x) => x.key === k);
       return { seat: i, faction: f, vp: 0, hand: f.units.map((u) => ({ ...u, spent: false, rest: 0 })) };
@@ -91,7 +143,7 @@ export function newGame(factionKeys, target, rnd) {
   };
 }
 
-export const available = (p, round) => p.hand.filter((u) => !u.spent && u.rest <= round);
+export const available = (p, round) => p.hand.filter((u) => !u.spent && !u.held && u.rest <= round);
 
 export function legalMoves(g, seat, m) {
   const moves = [{ pass: true }];
@@ -107,13 +159,67 @@ export function legalMoves(g, seat, m) {
       && m.offered.has(a)) continue;                         // one offer per army per turn
     for (const u of units) moves.push({ unit: u, army: a });
   }
+  if (FOLD && mine !== undefined && units.length >= (FOLD_BURN ? 2 : 1)) {
+    const standing = m.armies[mine].filter((c) => c.owner === seat);
+    const give = FOLD_BURN ? units.reduce((lo, u) => (u.s < lo.s ? u : lo), units[0]) : null;
+    for (const c of standing) {
+      for (const put of units) {
+        if (put === give) continue;
+        moves.push({ relieve: c, give, put, army: mine });
+      }
+    }
+  }
   return moves;
+}
+
+// Pull `relieve` back to hand RESTING, optionally burn `give`, and put `put` in the freed slot.
+export function relieveUnit(g, m, seat, mv, rnd) {
+  const army = m.armies[mv.army];
+  const i = army.indexOf(mv.relieve);
+  if (i < 0) return null;
+  mv.relieve.ref.held = false;
+  mv.relieve.ref.rest = g.round + 1;      // back in hand, but gone for the rest of this round
+  if (mv.give) mv.give.spent = true;      // FOLDBURN only: burned for good
+  army.splice(i, 1);
+  st_relieved++;
+  const card = commitUnit(g, m, seat, mv.put, mv.army, rnd ?? m.__rnd ?? (() => 0.5));
+  return card;
 }
 
 // ⚠️ Units commit FACE DOWN. Public information only: army sizes, whose units they are, what
 // each player has already burned, and anything a Siege Elephant has revealed.
+// How many units each player has in an army, and how many the best rival has. Contribution is
+// counted in UNITS, and it is the only route to a point, so the policy has to see it.
+function standing(army, seat) {
+  let mine = 0;
+  const others = new Map();
+  for (const x of army) {
+    if (x.owner === seat) mine++;
+    else others.set(x.owner, (others.get(x.owner) || 0) + 1);
+  }
+  return { mine, others, best: others.size ? Math.max(...others.values()) : 0 };
+}
+
 export function scoreMove(g, seat, m, mv) {
-  if (mv.pass) return PASS_BASE;
+  if (mv.pass) {
+    // ⚠️ PASSING CAN BE THE SCORING MOVE. Under contribution scoring, a player who already
+    // leads their army's contribution banks the point by doing nothing — adding another unit
+    // cannot improve a lead they already hold. Without this the policy commits units it has no
+    // reason to spend, which is the Taj Mahal "fold and keep what you earned" decision.
+    const a = m.armyOf.get(seat);
+    if (a === undefined) return PASS_BASE;
+    const st = standing(m.armies[a], seat);
+    return PASS_BASE + (st.mine > st.best ? CONTRIB_WEIGHT * 0.6 : 0);
+  }
+  if (mv.relieve) {
+    // Worth it when what goes in is dearer than what comes out, less the tempo of losing the
+    // pulled unit for the rest of the round — and less the burned card when FOLDBURN is on.
+    // Reuses the commit weights, so relief introduces no new tuned constant.
+    const gain = mv.put.s - mv.relieve.s;
+    let v = OWN_WEIGHT * gain - COST * mv.relieve.s;
+    if (mv.give) v -= COST * mv.give.s * 3;
+    return gain > 0 ? v : v - 2;
+  }
   const u = mv.unit;
   const mineArmy = m.armies[mv.army];
   const foes = m.armies.flatMap((a, i) => (i === mv.army ? [] : a));
@@ -138,7 +244,20 @@ export function scoreMove(g, seat, m, mv) {
     if (nPrey) expCancel = Math.max(expCancel, preySum / pool.length);
   }
   let s = OWN_WEIGHT * u.s * pSurvive + CANCEL_WEIGHT * expCancel - COST * u.s;
-  s -= ALLY_TAX * new Set(mineArmy.filter((x) => x.owner !== seat).map((x) => x.owner)).size;
+
+  // ---- CONTRIBUTION: the only way to score --------------------------------------------------
+  // The ground pays one point to the army's largest contributor by units committed, ties share.
+  // Strength wins the ground; COUNT wins the point. A policy blind to this optimises the wrong
+  // quantity entirely — it was written for one-point-per-surviving-unit and never updated.
+  const st = standing(mineArmy, seat);
+  const after = st.mine + 1;
+  s += CONTRIB_WEIGHT * (after > st.best ? 1 : after === st.best ? 0.5 : 0);
+
+  // ⚠️ An ally is not a flat cost, as ALLY_TAX assumed. An ally who out-commits you takes the
+  // WHOLE point — and one who cannot is close to free, because they add strength for nothing.
+  // So the penalty applies only to allies who match or beat your count once this unit is down.
+  s -= ALLY_TAX * [...st.others.values()].filter((n) => n >= after).length;
+
   const biggest = Math.max(...m.armies.map((a, i) => (i === mv.army ? 0 : a.length)));
   if (biggest > mineArmy.length) s += BEHIND_BONUS;
   return s;
@@ -281,9 +400,32 @@ export function settleRound(g, m, rnd) {
   const recruited = new Map();
   for (const a of fielded) {
     const won = result.winners.has(a);
+    // Survivors, by REFERENCE: resolveBattle works on copies, so identity has to come from .ref
+    const survRefs = new Set((result && result.armies[a] ? result.armies[a] : []).map((x) => x.ref));
+    const stay = [];
     for (const u of m.armies[a]) {
-      if (won && !rocketsFired) u.ref.rest = g.round + 2;   // recovers, sits out a round
-      else u.ref.spent = true;                              // gone for good
+      if (!won || rocketsFired) { u.ref.spent = true; u.ref.held = false; continue; }
+      if (GARRISON && survRefs.has(u.ref)) {
+        u.ref.held = true;                                  // stands on the ground, out of hand
+        u.garrison = true;                                  // and never counts as contribution
+        u.claim = undefined;
+        stay.push(u);
+      } else {
+        u.ref.held = false;
+        u.ref.rest = g.round + 2;                           // driven off; home after a round
+      }
+    }
+    if (GARRISON) {
+      g.held[a] = stay;
+      // SENIORITY: the partner with the greatest surviving STRENGTH admits newcomers from now on.
+      // Deliberately a different measure from contribution, so control and points can diverge.
+      if (stay.length) {
+        const by = new Map();
+        for (const u of stay) by.set(u.owner, (by.get(u.owner) || 0) + u.s);
+        let top = -1, who = null;
+        for (const [owner, str] of by) if (str > top) { top = str; who = owner; }
+        g.senior[a] = who;
+      } else g.senior[a] = null;
     }
     if (won) continue;
     for (const p of new Set(m.armies[a].map((u) => u.owner))) {
@@ -305,14 +447,31 @@ export function settleRound(g, m, rnd) {
   return { fielded, result, awarded, recruited, rocketsFired };
 }
 
-export function playRound(g, rnd) {
-  const n = g.players.length;
+// THE MUSTER, built once and shared. The online engine used to construct this itself, which is
+// exactly the kind of duplication that lets the two drift apart.
+export function newMuster(g) {
   const m = {
     armies: Array.from({ length: NUM_ARMIES }, () => []),
     leader: new Array(NUM_ARMIES).fill(null),
     armyOf: new Map(), offered: new Set(), used: [],
-    pools: g.players.map((p) => available(p, g.round).map((u) => ({ arm: u.arm, s: u.s }))),
+    pools: null,
   };
+  if (GARRISON) {
+    for (let a = 0; a < NUM_ARMIES; a++) {
+      for (const c of g.held[a]) {
+        m.armies[a].push(c);
+        m.armyOf.set(c.owner, a);          // your units are on the ground; you are in this army
+      }
+      if (g.held[a].length) m.leader[a] = g.senior[a] ?? g.held[a][0].owner;
+    }
+  }
+  m.pools = g.players.map((p) => available(p, g.round).map((u) => ({ arm: u.arm, s: u.s })));
+  return m;
+}
+
+export function playRound(g, rnd) {
+  const n = g.players.length;
+  const m = newMuster(g);
   let passStreak = 0, seat = g.start, committed = 0;
   const turns = new Array(n).fill(0);
 
@@ -323,6 +482,8 @@ export function playRound(g, rnd) {
       const moves = legalMoves(g, seat, m);
       const mv = choose(moves, moves.map((x) => scoreMove(g, seat, m, x)), rnd);
       if (mv.pass) break;
+      st_actions++;
+      if (mv.relieve) { relieveUnit(g, m, seat, mv, rnd); acted = true; turns[seat]++; break; }
       const joining = m.armyOf.get(seat) === undefined
         && m.leader[mv.army] !== null && m.leader[mv.army] !== seat;
       // A refused unit either vanishes (baseline) or lands in the other army (REFUSAL_FORK).
@@ -344,6 +505,10 @@ export function playRound(g, rnd) {
   }
 
   const { fielded, result, awarded, recruited, rocketsFired } = settleRound(g, m, rnd);
+
+  if (GARRISON) for (let a = 0; a < NUM_ARMIES; a++) {
+    if (!fielded.includes(a)) { g.held[a] = []; g.senior[a] = null; }
+  }
 
   g.round++;
   g.start = (g.start + 1) % n;
