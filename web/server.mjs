@@ -19,7 +19,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, "public");
 const PORT = Number(process.env.PORT ?? 3000);
 const BOT_DELAY = Number(process.env.BOT_DELAY ?? 700);   // ms, so a bot turn is watchable
-const REVEAL_HOLD = Number(process.env.REVEAL_HOLD ?? 4000);
+// Long enough for the client's staged reveal to finish: one beat per cancellation (~340ms each,
+// up to six), then the totals roll, then the point flare. Tapping skips it client-side.
+const REVEAL_HOLD = Number(process.env.REVEAL_HOLD ?? 6500);
 
 const MIME = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript",
                ".mjs": "text/javascript", ".json": "application/json", ".svg": "image/svg+xml" };

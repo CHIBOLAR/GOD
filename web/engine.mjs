@@ -194,7 +194,12 @@ function resolveRound(s) {
     round: roundNo,
     board: committedBoard,
     dead,
-    kills: pairs.map(({ by, hit }) => ({ by: { ...by.u, army: by.ai }, hit: { ...hit.u, army: hit.ai } })),
+    // slot indices travel with the pairing so a client can stage the reveal one kill at a time,
+    // in order, rather than striking everything at once — the player has to be able to see WHY
+    kills: pairs.map(({ by, hit }) => ({
+      by: { ...by.u, army: by.ai, slot: by.ui },
+      hit: { ...hit.u, army: hit.ai, slot: hit.ui },
+    })),
     armies: summary.result ? summary.result.armies : [],
     totals: summary.result ? summary.result.totals : [],
     winners: summary.result ? [...summary.result.winners] : [],

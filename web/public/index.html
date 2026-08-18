@@ -2,162 +2,265 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GOD — Gambit of Deccan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 
 <!--
-  GOD — the client.
-  Built against web/STATE_INVENTORY.md.
-
-  Three things drive this layout, all from competitor practice:
-    · Hearthstone — the numbers break the frame. Strength is the largest thing on a piece.
-    · Poker HUDs  — a read on an opponent is public behaviour, shown as stats. Ours are derived
-                    from public information only, so displaying them leaks nothing.
-    · BGA         — an event log is baseline, not an extra. Nothing may happen silently.
-  Desktop is a real layout (board centre, reads left, log right), not a stretched phone column.
+  GOD — Gambit of Deccan.
+  Art direction: Deccani manuscript — lapis and indigo grounds, gold leaf rules, ochre and
+  vermilion accents, jali-screen ornament, inscriptional caps. Painted, not glossy.
+  Feel: rich. Pieces settle with weight, the reveal is staged, kills slash, totals count up,
+  points flare. Synthesised audio, no assets.
+  Rule taken from the Balatro-likes: everything needed for a decision stays on screen. No
+  hovering to find a number.
+  Information architecture is unchanged and deliberate — reads left, ground centre, log right.
 -->
 
 <style>
   :root{
-    --bg:#0b0c0d; --panel:#111213; --panel2:#161718;
-    --line:#2c2f32; --line-lit:#4a4e52;
-    --txt:#e9e7e2; --dim:#868a8d; --faint:#4b4f52;
-    --act:#c9a227; --kill:#c0563a; --good:#6f9f7e; --info:#6f8ea8;
-    --pc:#d2d6d8;
+    --night:#0C1330; --lapis:#16234C; --lapis2:#1D2C5E; --panel:#1A2750;
+    --gold:#C9A227; --gold-hi:#E7C55E; --gold-dim:#8A6F22;
+    --ivory:#EFE6CF; --ivory-dim:#B9AE93; --ochre:#C8763C;
+    --verm:#B03A2C; --jade:#4E8062;
+    --ink:#080C1E;
+    --f-disp:"Cinzel",Georgia,serif;
+    --f-body:"EB Garamond",Georgia,serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{
-    margin:0;background:var(--bg);color:var(--txt);
-    font:13px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-    height:100svh;display:flex;flex-direction:column;overflow:hidden
+    margin:0;color:var(--ivory);font-family:var(--f-body);font-size:15px;line-height:1.45;
+    height:100svh;display:flex;flex-direction:column;overflow:hidden;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #24356E 0%, var(--lapis) 45%, var(--night) 100%);
   }
-  .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
-  .num{font-variant-numeric:tabular-nums}
+  /* jali screen — a real geometric lattice, used sparingly as ornament */
+  .jali{
+    background-image:
+      linear-gradient(45deg,rgba(201,162,39,.13) 25%,transparent 25%,transparent 75%,rgba(201,162,39,.13) 75%),
+      linear-gradient(45deg,rgba(201,162,39,.13) 25%,transparent 25%,transparent 75%,rgba(201,162,39,.13) 75%);
+    background-size:12px 12px;background-position:0 0,6px 6px;
+  }
+  .rule{height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim) 15%,var(--gold) 50%,var(--gold-dim) 85%,transparent);opacity:.8}
+
+  .cap{font-family:var(--f-disp);letter-spacing:.18em;text-transform:uppercase;font-size:10px;
+    color:var(--gold);opacity:.85}
+  .num{font-variant-numeric:tabular-nums lining-nums}
 
   header{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px;
-    padding:9px 12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.13em}
+    padding:10px 14px;border-bottom:1px solid rgba(201,162,39,.28);background:rgba(8,12,30,.5)}
+  header .brand{font-family:var(--f-disp);font-weight:700;letter-spacing:.22em;font-size:13px;
+    color:var(--gold-hi)}
+  header .st{font-family:var(--f-disp);letter-spacing:.14em;font-size:10px;text-transform:uppercase;
+    color:var(--ivory-dim)}
+  header .st.you{color:var(--gold-hi)}
+  #snd{background:none;border:0;color:var(--gold);font-size:15px;cursor:pointer;padding:4px 6px;min-height:0}
+
   #shell{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
-  #main{flex:1 1 auto;min-height:0;overflow:auto;padding:10px 12px;display:flex;
-    flex-direction:column;gap:8px}
-  #side{display:none}
-  #handband{flex:0 0 auto;border-top:1px solid var(--line);padding:7px 0 7px 12px}
-  #bar{flex:0 0 auto;display:flex;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));
-    border-top:1px solid var(--line)}
+  #main{flex:1 1 auto;min-height:0;overflow:auto;padding:12px 14px;display:flex;
+    flex-direction:column;gap:10px}
+  #side,#right{display:none}
+  #handband{flex:0 0 auto;padding:8px 0 8px 14px;border-top:1px solid rgba(201,162,39,.22);
+    background:rgba(8,12,30,.42)}
+  #bar{flex:0 0 auto;display:flex;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    border-top:1px solid rgba(201,162,39,.28);background:rgba(8,12,30,.62)}
   #bar>*{flex:1}
 
-  button{font:inherit;letter-spacing:.1em;text-transform:uppercase;font-size:11px;color:var(--txt);
-    background:transparent;border:1px solid var(--line);padding:0 10px;min-height:48px;cursor:pointer}
-  button:disabled{color:var(--faint);border-color:#1c1e20;cursor:default}
-  button.go:not(:disabled){border-color:var(--act);color:var(--act)}
-  button.no:not(:disabled){border-color:var(--kill);color:var(--kill)}
-  button:focus-visible{outline:1px solid var(--act);outline-offset:2px}
-  input{font:inherit;color:var(--txt);background:transparent;border:1px solid var(--line);
-    padding:0 10px;min-height:48px;width:100%}
-  input::placeholder{color:var(--faint)}
+  /* ---- gilt controls ------------------------------------------------- */
+  button{
+    font-family:var(--f-disp);font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    font-size:11px;color:var(--ivory);min-height:50px;padding:0 12px;cursor:pointer;
+    background:linear-gradient(180deg,var(--lapis2),var(--lapis));
+    border:1px solid rgba(201,162,39,.4);border-radius:2px;position:relative;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 0 rgba(0,0,0,.45);
+    transition:transform .08s ease,box-shadow .08s ease,border-color .15s ease
+  }
+  button:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 0 rgba(0,0,0,.4)}
+  button:disabled{color:#5C6484;border-color:rgba(201,162,39,.12);box-shadow:none;cursor:default;
+    background:rgba(12,19,48,.6)}
+  button.go:not(:disabled){color:var(--ink);border-color:var(--gold-hi);
+    background:linear-gradient(180deg,var(--gold-hi),var(--gold));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 0 #6E5717}
+  button.no:not(:disabled){color:#F3DCD6;border-color:rgba(176,58,44,.75);
+    background:linear-gradient(180deg,#8E3025,#6E2419);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 3px 0 #4A170F}
+  button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+  input{font-family:var(--f-body);font-size:16px;color:var(--ivory);background:rgba(8,12,30,.55);
+    border:1px solid rgba(201,162,39,.35);border-radius:2px;padding:0 12px;min-height:50px;width:100%}
+  input::placeholder{color:#6B7396}
 
-  /* ---- the read: a poker HUD per opponent ---------------------------- */
-  .hud{display:flex;flex-direction:column;gap:6px}
-  .who{border:1px solid var(--line);padding:6px 8px;display:grid;
-    grid-template-columns:3px 1fr auto;gap:8px;align-items:center}
-  .who.act{border-color:var(--act)}
-  .who.out{opacity:.55}
-  .who .hue{grid-row:1/3;align-self:stretch;background:var(--h)}
-  .who .nm{font-size:12px}
-  .who .vp{font-size:15px;font-weight:600}
-  .who .stats{grid-column:2/4;display:flex;gap:10px;font-size:10px;color:var(--dim)}
-  .who .stats b{color:var(--txt);font-weight:400}
-  .who .stats .hot{color:var(--kill)}
+  /* ---- panels: painted, gilt-framed ---------------------------------- */
+  .panel{background:linear-gradient(180deg,rgba(29,44,94,.82),rgba(14,21,48,.82));
+    border:1px solid rgba(201,162,39,.3);border-radius:2px;
+    box-shadow:inset 0 0 0 1px rgba(8,12,30,.7),0 6px 18px rgba(0,0,0,.45)}
 
-  /* ---- the ground ---------------------------------------------------- */
-  .armyhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-  .armyhead .tot{font-size:18px;font-weight:600}
-  .armyhead .tot.win{color:var(--act)}
-  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-  .slot{border:1px solid var(--line);aspect-ratio:5/7;position:relative;display:flex;
-    align-items:center;justify-content:center;cursor:default}
-  .slot.empty{border-style:dashed;border-color:#1c1e20}
-  .slot.mine{box-shadow:inset 0 0 0 1px var(--line-lit)}
-  .slot.hid{background:repeating-linear-gradient(45deg,transparent 0 5px,#18191a 5px 10px)}
-  .slot.dead{border-color:var(--kill)}
-  .slot .hue{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--h)}
-  .slot .init{position:absolute;bottom:3px;right:5px;font-size:9px;color:var(--dim)}
-  /* Hearthstone: the number breaks the frame. It is the first thing read. */
-  .slot .s{position:absolute;top:-9px;left:-6px;min-width:24px;height:24px;border-radius:2px;
-    background:var(--bg);border:1px solid var(--line-lit);display:flex;align-items:center;
-    justify-content:center;font-size:14px;font-weight:600}
-  .slot.dead .s{border-color:var(--kill);color:var(--kill)}
-  .slot .brk{position:absolute;top:4px;right:5px;width:6px;height:6px;border:1px solid var(--act)}
-  .slot .x{position:absolute;inset:0;stroke:var(--kill);stroke-width:2}
-  .pcsvg{fill:var(--pc);display:block}
-  .clash{display:flex;align-items:center;justify-content:center;gap:14px;padding:4px 0}
-  .node{fill:var(--panel);stroke:var(--line)}
-  .node.me{stroke:var(--act)} .node.kil{stroke:var(--kill)}
-  .node.thr{stroke:var(--kill);stroke-dasharray:2 2}
-  .nlbl{fill:var(--dim);font-size:8px;text-anchor:middle}
-  .nlbl.on{fill:var(--txt)}
-  .edge{stroke:var(--line);fill:none}
-  .ringnote{font-size:10px;color:var(--dim);line-height:1.5}
-  .ringnote b{color:var(--txt);font-weight:400}
-  .ringnote .k{color:var(--kill)}
+  /* ---- the read ------------------------------------------------------- */
+  .who{display:grid;grid-template-columns:4px 1fr auto;gap:9px;align-items:center;
+    padding:7px 10px;margin-bottom:7px}
+  .who.act{border-color:var(--gold-hi);box-shadow:inset 0 0 0 1px rgba(231,197,94,.3),0 0 14px rgba(201,162,39,.18)}
+  .who.out{opacity:.5}
+  .who .hue{grid-row:1/3;align-self:stretch;background:var(--h);border-radius:1px}
+  .who .nm{font-size:14px;font-weight:600}
+  .who .rl{font-family:var(--f-disp);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ivory-dim)}
+  .who .vp{font-family:var(--f-disp);font-size:20px;font-weight:700;color:var(--gold-hi)}
+  .who .stats{grid-column:2/4;display:flex;flex-wrap:wrap;gap:9px;font-size:12px;color:var(--ivory-dim)}
+  .who .stats b{color:var(--ivory);font-weight:600}
+  .who .stats .hot{color:var(--ochre)}
+
+  /* ---- the ground ----------------------------------------------------- */
+  .armywrap{padding:9px 10px 11px}
+  .armyhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px}
+  .armyhead .ttl{font-family:var(--f-disp);font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+  .armyhead .mem{font-size:12px;color:var(--ivory-dim)}
+  .armyhead .tot{font-family:var(--f-disp);font-size:24px;font-weight:700;line-height:1}
+  .armyhead .tot.win{color:var(--gold-hi);text-shadow:0 0 16px rgba(231,197,94,.55)}
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .slot{aspect-ratio:5/7;position:relative;border-radius:2px;display:flex;align-items:center;
+    justify-content:center;overflow:visible;
+    background:radial-gradient(90% 70% at 50% 30%,#22346D,#0F1938);
+    border:1px solid rgba(201,162,39,.34);
+    box-shadow:inset 0 0 22px rgba(8,12,30,.9),0 3px 10px rgba(0,0,0,.5)}
+  .slot.empty{background:rgba(8,12,30,.35);border-style:dashed;border-color:rgba(201,162,39,.16)}
+  .slot.mine{border-color:var(--gold-hi);box-shadow:inset 0 0 22px rgba(8,12,30,.85),0 0 14px rgba(201,162,39,.25)}
+  .slot.hid{background:
+      repeating-linear-gradient(45deg,rgba(201,162,39,.07) 0 5px,transparent 5px 10px),
+      radial-gradient(90% 70% at 50% 30%,#1A2750,#0C1330)}
+  .slot.dead{border-color:var(--verm)}
+  .slot .hue{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--h);border-radius:1px 0 0 1px}
+  .slot .init{position:absolute;bottom:4px;right:6px;font-family:var(--f-disp);font-size:9px;
+    letter-spacing:.1em;color:var(--ivory-dim)}
+  /* the numeral overhangs the frame — it is the first thing read */
+  .slot .s{position:absolute;top:-11px;left:-8px;min-width:30px;height:30px;padding:0 4px;
+    display:flex;align-items:center;justify-content:center;border-radius:50%;
+    font-family:var(--f-disp);font-weight:700;font-size:16px;color:var(--ink);
+    background:radial-gradient(70% 70% at 35% 30%,var(--gold-hi),var(--gold));
+    border:1px solid #6E5717;box-shadow:0 2px 6px rgba(0,0,0,.6)}
+  .slot.dead .s{background:radial-gradient(70% 70% at 35% 30%,#C4685A,var(--verm));color:#2A0B06}
+  .slot .brk{position:absolute;top:5px;right:6px;width:9px;height:9px;transform:rotate(45deg);
+    border:1px solid var(--gold-hi);background:rgba(231,197,94,.18)}
+  .slot .x{position:absolute;inset:0;pointer-events:none}
+  .slot .x line{stroke:var(--verm);stroke-width:3;stroke-linecap:round;
+    filter:drop-shadow(0 0 4px rgba(176,58,44,.8))}
+  .pcsvg{fill:var(--ivory);filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+  .slot.hid .lbl-fd{font-family:var(--f-disp);font-size:9px;letter-spacing:.14em;color:var(--ivory-dim)}
+
+  .clash{display:flex;align-items:center;justify-content:center;gap:16px;padding:2px 0}
+  .node{fill:rgba(8,12,30,.7);stroke:rgba(201,162,39,.45)}
+  .node.me{stroke:var(--gold-hi);fill:rgba(201,162,39,.22)}
+  .node.kil{stroke:var(--verm);fill:rgba(176,58,44,.2)}
+  .node.thr{stroke:var(--ochre);stroke-dasharray:2.5 2.5}
+  .nlbl{fill:var(--ivory-dim);font-family:var(--f-disp);font-size:8.5px;text-anchor:middle}
+  .nlbl.on{fill:var(--gold-hi)}
+  .edge{stroke:rgba(201,162,39,.3);fill:none}
+  .ringnote{font-size:13px;color:var(--ivory-dim);line-height:1.5}
+  .ringnote b{color:var(--ivory);font-weight:600}
+  .ringnote .k{color:var(--verm)} .ringnote .t{color:var(--ochre)}
 
   /* ---- log ------------------------------------------------------------ */
-  .log{display:flex;flex-direction:column-reverse;gap:3px;overflow:auto;font-size:11px;
-    border:1px solid var(--line);padding:7px 8px;min-height:0}
-  .log div{color:var(--dim);line-height:1.4}
-  .log .kill{color:var(--kill)} .log .ground{color:var(--txt)}
-  .log .score{color:var(--act)} .log .recruit{color:var(--good)}
-  .log .rockets{color:var(--kill);font-weight:600}
-  .log .offer,.log .accept,.log .refuse{color:var(--info)}
+  .log{display:flex;flex-direction:column-reverse;gap:4px;overflow:auto;font-size:13px;
+    padding:9px 11px;min-height:0}
+  .log div{color:var(--ivory-dim);line-height:1.4;animation:slidein .28s ease}
+  .log .kill{color:#D98274} .log .ground{color:var(--ivory);font-weight:600}
+  .log .score{color:var(--gold-hi)} .log .recruit{color:#82B394}
+  .log .rockets{color:var(--verm);font-weight:600;letter-spacing:.04em}
+  .log .offer,.log .accept,.log .refuse{color:#9FB4D8}
+  @keyframes slidein{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
 
   /* ---- hand ----------------------------------------------------------- */
-  .hand{display:flex;gap:8px;overflow-x:auto;padding-right:12px;scroll-snap-type:x proximity;
+  .hand{display:flex;gap:9px;overflow-x:auto;padding:6px 14px 6px 0;scroll-snap-type:x proximity;
     touch-action:pan-x;overscroll-behavior-x:contain;scrollbar-width:none}
   .hand::-webkit-scrollbar{display:none}
-  .pc{flex:0 0 62px;min-height:92px;border:1px solid var(--line);scroll-snap-align:start;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-    padding:8px 2px 4px;position:relative;cursor:pointer}
-  .pc.sel{border-color:var(--act)}
-  .pc.rest{border-style:dashed;cursor:default}
-  .pc.rest .pcsvg{fill:var(--faint)}
-  .pc.burn{border-style:dotted;border-color:#1c1e20;cursor:default}
-  .pc.burn .pcsvg{fill:#232527}
-  .pc .s{position:absolute;top:-8px;left:-5px;min-width:22px;height:22px;background:var(--bg);
-    border:1px solid var(--line-lit);display:flex;align-items:center;justify-content:center;
-    font-size:13px;font-weight:600}
-  .pc.rest .s,.pc.burn .s{border-color:#1c1e20;color:var(--faint)}
-  .pc .tag{font-size:9px;color:var(--dim);text-align:center;line-height:1.25}
-  .pc .brk{position:absolute;top:4px;right:5px;width:6px;height:6px;border:1px solid var(--act)}
+  .pc{flex:0 0 68px;min-height:100px;scroll-snap-align:start;position:relative;border-radius:2px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:10px 3px 5px;cursor:pointer;
+    background:radial-gradient(90% 70% at 50% 25%,#22346D,#0F1938);
+    border:1px solid rgba(201,162,39,.34);
+    box-shadow:inset 0 0 16px rgba(8,12,30,.85),0 3px 8px rgba(0,0,0,.5);
+    transition:transform .14s cubic-bezier(.2,1.4,.4,1),box-shadow .14s ease,border-color .14s ease}
+  .pc:active{transform:translateY(-2px)}
+  .pc.sel{transform:translateY(-10px);border-color:var(--gold-hi);
+    box-shadow:inset 0 0 16px rgba(8,12,30,.7),0 0 20px rgba(201,162,39,.45),0 8px 14px rgba(0,0,0,.55)}
+  .pc.rest{opacity:.55;cursor:default}
+  .pc.rest:active,.pc.burn:active{transform:none}
+  .pc.burn{opacity:.35;cursor:default;filter:grayscale(.7)}
+  .pc .s{position:absolute;top:-10px;left:-7px;min-width:27px;height:27px;padding:0 4px;
+    display:flex;align-items:center;justify-content:center;border-radius:50%;
+    font-family:var(--f-disp);font-weight:700;font-size:14px;color:var(--ink);
+    background:radial-gradient(70% 70% at 35% 30%,var(--gold-hi),var(--gold));
+    border:1px solid #6E5717;box-shadow:0 2px 5px rgba(0,0,0,.6)}
+  .pc .nmm{font-family:var(--f-disp);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ivory-dim);text-align:center;line-height:1.25}
+  .pc .rst{font-size:11px;color:var(--ochre);text-align:center;line-height:1.2}
+  .pc .brk{position:absolute;top:5px;right:6px;width:9px;height:9px;transform:rotate(45deg);
+    border:1px solid var(--gold-hi);background:rgba(231,197,94,.18)}
 
-  /* ---- sheets / misc --------------------------------------------------- */
-  .sheet{position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--act);
-    padding:14px 14px calc(14px + env(safe-area-inset-bottom));z-index:9}
-  .sheet h3{margin:0 0 6px;font-size:13px;font-weight:600}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .cell{border:1px solid var(--line);padding:10px;text-align:left;min-height:56px}
-  .cell.on{border-color:var(--act);color:var(--act)}
-  .err{color:var(--kill);font-size:11px}
+  /* ---- flourishes ----------------------------------------------------- */
+  @keyframes land{0%{transform:scale(.7) translateY(-16px);opacity:0}
+    60%{transform:scale(1.06) translateY(0);opacity:1}100%{transform:none;opacity:1}}
+  .land{animation:land .42s cubic-bezier(.2,1.5,.4,1)}
+  /* shake scales with what died — magnitude read before any number, as Balatro does */
+  @keyframes shake{0%,100%{transform:none}
+    20%{transform:translateX(calc(-4px * var(--mag,1)))}
+    40%{transform:translateX(calc(4px * var(--mag,1)))}
+    60%{transform:translateX(calc(-2px * var(--mag,1)))}
+    80%{transform:translateX(calc(2px * var(--mag,1)))}}
+  .shake{animation:shake .34s ease}
+  /* the unit doing the killing flares gold, so cause and effect are both visible */
+  @keyframes strike{0%{box-shadow:inset 0 0 22px rgba(8,12,30,.9),0 3px 10px rgba(0,0,0,.5)}
+    45%{box-shadow:inset 0 0 22px rgba(8,12,30,.6),0 0 26px rgba(231,197,94,.85)}
+    100%{box-shadow:inset 0 0 22px rgba(8,12,30,.9),0 3px 10px rgba(0,0,0,.5)}}
+  .strike{animation:strike .34s ease}
+  .callout{font-family:var(--f-disp);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+    color:#E0A090;text-align:center;min-height:18px;animation:slidein .2s ease}
+  @keyframes slash{from{stroke-dashoffset:180}to{stroke-dashoffset:0}}
+  .slot .x line{stroke-dasharray:180;animation:slash .3s ease forwards}
+  @keyframes flare{0%{opacity:0;transform:scale(.6)}30%{opacity:1;transform:scale(1.15)}
+    100%{opacity:0;transform:scale(1.5)}}
+  .flare{position:fixed;inset:0;pointer-events:none;z-index:20;display:flex;align-items:center;
+    justify-content:center}
+  .flare span{font-family:var(--f-disp);font-weight:700;font-size:12vw;color:var(--gold-hi);
+    text-shadow:0 0 40px rgba(231,197,94,.8);animation:flare 1.1s ease forwards}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .pc.sel{transform:none}
+  }
+
+  /* ---- sheets / lobby -------------------------------------------------- */
+  .sheet{position:fixed;inset:auto 0 0 0;z-index:22;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,#1D2C5E,#0C1330);border-top:2px solid var(--gold)}
+  .sheet h3{font-family:var(--f-disp);margin:0 0 4px;font-size:17px;color:var(--gold-hi);letter-spacing:.06em}
+  .sheet p{margin:8px 0 14px;color:var(--ivory-dim);font-size:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .cell{text-align:left;min-height:66px;padding:9px 11px;font-family:var(--f-body);
+    text-transform:none;letter-spacing:0;font-size:14px;font-weight:600}
+  .cell .era{display:block;font-family:var(--f-body);font-size:12px;font-weight:400;
+    font-style:italic;color:var(--ivory-dim);letter-spacing:0;text-transform:none;margin-top:3px}
+  .cell.on{color:var(--ink)}
+  .cell.on .era{color:rgba(8,12,30,.7)}
+  .score{display:grid;grid-template-columns:1fr auto auto;gap:3px 12px;font-size:13px;padding:9px 11px}
+  .score .h{font-family:var(--f-disp);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);opacity:.8}
+  .score .me{color:var(--gold-hi);font-weight:600}
+  .err{color:#E39C8E;font-size:13px;padding:2px 0}
   .center{text-align:center}
-  .score{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;font-size:11px}
-  .score .h{color:var(--dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
-  .score .me{color:var(--act)}
+  h1.title{font-family:var(--f-disp);font-weight:700;font-size:clamp(26px,7vw,40px);
+    letter-spacing:.1em;margin:6px 0 2px;color:var(--gold-hi);text-align:center}
+  .sub{text-align:center;font-style:italic;color:var(--ivory-dim);margin:0 0 14px}
 
-  /* ---- DESKTOP: a real layout, not a stretched column ------------------ */
-  @media (min-width:900px){
-    #shell{display:grid;grid-template-columns:minmax(220px,1fr) minmax(420px,2.2fr) minmax(240px,1fr);
-      grid-template-rows:1fr auto auto;gap:0;min-height:0}
-    #side{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow:auto;
-      border-right:1px solid var(--line);grid-row:1/4}
-    #main{grid-column:2;grid-row:1;max-width:none}
-    #handband{grid-column:2;grid-row:2;border-left:0;border-right:0}
+  @media (min-width:960px){
+    #shell{display:grid;grid-template-columns:minmax(250px,1fr) minmax(440px,2.1fr) minmax(270px,1fr);
+      grid-template-rows:1fr auto auto;min-height:0}
+    #side{display:flex;flex-direction:column;gap:8px;padding:12px 14px;overflow:auto;grid-row:1/4;
+      border-right:1px solid rgba(201,162,39,.22)}
+    #main{grid-column:2;grid-row:1}
+    #handband{grid-column:2;grid-row:2}
     #bar{grid-column:2;grid-row:3}
-    #right{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow:hidden;
-      border-left:1px solid var(--line);grid-column:3;grid-row:1/4}
+    #right{display:flex;flex-direction:column;gap:8px;padding:12px 14px;overflow:hidden;
+      grid-column:3;grid-row:1/4;border-left:1px solid rgba(201,162,39,.22)}
     .log{flex:1 1 auto}
-    .slot .s{width:30px;height:30px;font-size:17px}
+    .slot .s{width:34px;height:34px;font-size:19px}
   }
-  #right{display:none}
-  @media (max-width:899px){
-    #right.m{display:flex;flex-direction:column;gap:6px;padding:0 12px 8px;max-height:34svh}
-  }
+  @media (max-width:959px){#right.m{display:flex;flex-direction:column;gap:7px;padding:0 14px 10px;max-height:32svh}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -171,7 +274,7 @@
     <path d="M7 34 L30 14 L35 21 L12 39Z"/><circle cx="32" cy="17" r="4"/></symbol>
   <symbol id="s-HORSEMAN" viewBox="0 0 40 48">
     <path d="M11 46V33Q9 22 17 17L15 10Q14 5 20 5Q25 5 26 10L31 15Q37 19 35 27L32 33V46Z"/>
-    <path d="M18 7 L16 1 L22 4Z"/><circle cx="20" cy="13" r="1.6" fill="#0b0c0d"/></symbol>
+    <path d="M18 7 L16 1 L22 4Z"/><circle cx="20" cy="13" r="1.6" fill="#0C1330"/></symbol>
   <symbol id="s-RIFLEMAN" viewBox="0 0 40 48">
     <circle cx="16" cy="12" r="6"/><path d="M10 46V27Q10 21 16 21Q22 21 22 27V46Z"/>
     <rect x="24" y="6" width="3" height="32" rx="1.5" transform="rotate(13 25 22)"/></symbol>
@@ -180,11 +283,18 @@
     <path d="M24 24Q31 29 31 35Q31 42 24 46Z"/></symbol>
 </defs></svg>
 
-<header><span id="brand">GOD</span><span id="status" class="lbl">connecting</span></header>
+<header>
+  <span class="brand" id="brand">GOD</span>
+  <span style="display:flex;align-items:center;gap:8px">
+    <span class="st" id="status">connecting</span>
+    <button id="snd" title="Sound">♪</button>
+  </span>
+</header>
+<div class="jali" style="height:5px;flex:0 0 auto;opacity:.5"></div>
 <div id="shell">
   <aside id="side"></aside>
   <main id="main"></main>
-  <div id="handband" hidden><div class="lbl" id="handlbl" style="padding-bottom:5px"></div>
+  <div id="handband" hidden><div class="cap" style="padding:0 14px 5px" id="handlbl"></div>
     <div class="hand" id="hand"></div></div>
   <div id="bar"></div>
   <aside id="right"></aside>
@@ -195,14 +305,39 @@
 const $=(i)=>document.getElementById(i);
 const el=(t,c,h)=>{const n=document.createElement(t);if(c)n.className=c;if(h!=null)n.innerHTML=h;return n};
 const RING=["ELEPHANT","RIFLEMAN","CANNON","HORSEMAN","WARRIOR"];
-const SHORT={ELEPHANT:"ELE",RIFLEMAN:"RIF",CANNON:"CAN",HORSEMAN:"HOR",WARRIOR:"WAR"};
-const HUES=["#5b8fa8","#b4543a","#7f9c5e","#9b7fb0","#c9a227","#c07d94","#5f9c96","#a8845b"];
+const SHORT={ELEPHANT:"Elephant",RIFLEMAN:"Rifleman",CANNON:"Cannon",HORSEMAN:"Horseman",WARRIOR:"Warrior"};
+const HUES=["#6E9BC4","#C0563A","#7FA163","#A98BC4","#C9A227","#C98BA0","#5F9C96","#B58F5B"];
 const beats=(x,y)=>y===(x+1)%5||y===(x+2)%5;
 const in2=(n)=>(n||"?").replace(/[^A-Za-z0-9]/g,"").slice(0,2).toUpperCase();
-const cap=(a)=>a[0]+a.slice(1).toLowerCase();
 
 let ws,me={id:localStorage.getItem("god.id"),code:localStorage.getItem("god.code"),seat:-1};
 let lobby=null,v=null,sel=null,err="",stage=3,timer=null,sheet=null;
+let seenLog=0,lastPhase=null;
+// reveal staging: how many kills have fired, the rolling totals, the current callout line
+let killStep=0,roll=null,callout="",shakeMag=1;
+
+/* ---- synthesised audio: no assets, one oscillator per hit ------------- */
+let AC=null,muted=localStorage.getItem("god.mute")==="1";
+const ac=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
+function tone(f,d,type="triangle",g=.14,slideTo){
+  if(muted)return;try{const c=ac(),o=c.createOscillator(),v2=c.createGain();
+    o.type=type;o.frequency.value=f;
+    if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,c.currentTime+d);
+    v2.gain.value=g;v2.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);
+    o.connect(v2);v2.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch{}
+}
+const S={
+  tap:()=>tone(320,.06,"square",.05),
+  land:()=>{tone(150,.16,"sine",.2,90);tone(420,.09,"triangle",.07)},
+  kill:()=>{tone(190,.22,"sawtooth",.13,70)},
+  reveal:()=>{tone(110,.5,"sine",.22,220)},
+  point:()=>{[660,880,1320].forEach((f,i)=>setTimeout(()=>tone(f,.24,"triangle",.11),i*90))},
+  refuse:()=>tone(150,.2,"square",.1,110),
+  win:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.36,"triangle",.13),i*130)),
+};
+$("snd").onclick=()=>{muted=!muted;localStorage.setItem("god.mute",muted?"1":"0");
+  $("snd").textContent=muted?"♪̸":"♪";if(!muted)S.tap()};
+$("snd").textContent=muted?"♪̸":"♪";
 
 function connect(){
   ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host);
@@ -213,17 +348,71 @@ function connect(){
     if(m.t==="seated"){me.seat=m.seat;me.code=m.code;me.id=m.id;
       localStorage.setItem("god.id",m.id);localStorage.setItem("god.code",m.code)}
     if(m.t==="lobby"){lobby=m;v=null}
-    if(m.t==="view"){const was=v&&v.phase==="resolved";v=m.view;
-      if(v.phase==="resolved"&&!was)reveal();else if(v.phase!=="resolved")stage=3;
-      if(v.toAct!==me.seat)sel=null}
-    if(m.t==="error"){err=m.msg;setTimeout(()=>{err="";paint()},2600)}
+    if(m.t==="view"){
+      const prev=v;v=m.view;
+      if(v.log&&prev){const fresh=v.log.slice(seenLog);
+        if(fresh.some(x=>x.kind==="refuse"))S.refuse();
+        else if(fresh.some(x=>x.kind==="commit"||x.kind==="accept"))S.land()}
+      seenLog=v.log?v.log.length:0;
+      if(v.phase==="resolved"&&lastPhase!=="resolved")reveal();
+      else if(v.phase!=="resolved")stage=3;
+      if(v.phase==="over"&&lastPhase!=="over")setTimeout(S.win,300);
+      lastPhase=v.phase;
+      if(v.toAct!==me.seat)sel=null;
+    }
+    if(m.t==="error"){err=m.msg;S.refuse();setTimeout(()=>{err="";paint()},2600)}
     paint()};
 }
-const send=(m)=>ws&&ws.readyState===1&&ws.send(JSON.stringify(m));
-function reveal(){clearTimeout(timer);stage=0;
-  timer=setTimeout(()=>{stage=1;paint();timer=setTimeout(()=>{stage=2;paint()},520)},420)}
-document.addEventListener("pointerdown",()=>{if(v&&v.phase==="resolved"&&stage<2){
-  clearTimeout(timer);stage=2;paint()}});
+const send=(m)=>{S.tap();ws&&ws.readyState===1&&ws.send(JSON.stringify(m))};
+
+/* ---- the reveal ------------------------------------------------------------
+   Balatro's lesson: show WHY. Each kill activates in sequence with its own callout, its own
+   note a step up the scale, and shake scaled to what died — rather than every cross appearing
+   at once. Then the totals ROLL rather than appear, because a number that counts up is a number
+   the player feels. Tap to skip straight to the end.                                        */
+const NOTES=[392,440,494,523,587,659,698,784];
+function reveal(){
+  clearTimeout(timer);
+  const rev=v&&v.reveal;const kills=(rev&&rev.kills)||[];
+  stage=0;killStep=0;roll=[0,0];callout="";S.reveal();paint();
+  let t=470;
+  kills.forEach((k,i)=>{
+    timer=setTimeout(()=>{
+      stage=1;killStep=i+1;
+      callout=`${SHORT[k.by.arm]} ${k.by.s} cancels ${SHORT[k.hit.arm]} ${k.hit.s}`;
+      shakeMag=Math.min(3,1+k.hit.s/5);
+      tone(NOTES[Math.min(i,NOTES.length-1)],.16,"triangle",.1);
+      tone(180-i*8,.2,"sawtooth",.1,70);
+      paint();
+    },t);t+=340;
+  });
+  // then roll the totals
+  timer=setTimeout(()=>{
+    stage=2;callout="";const fin=(rev&&rev.totals)||[0,0];
+    const steps=14;let s2=0;
+    const tick=()=>{
+      s2++;roll=[Math.round(fin[0]*s2/steps)||0,Math.round(fin[1]*s2/steps)||0];
+      if(s2%3===0)tone(300+s2*26,.07,"square",.05);
+      paint();
+      if(s2<steps)timer=setTimeout(tick,42);
+      else{
+        roll=null;paint();
+        if(rev&&rev.awarded&&rev.awarded.length){S.point();
+          const mine=rev.awarded.find(([p])=>p===v.you);
+          if(mine)flare("+"+mine[1])}
+      }
+    };tick();
+  },t+120);
+}
+function skipReveal(){
+  clearTimeout(timer);stage=2;killStep=999;roll=null;callout="";paint();
+}
+function flare(txt){
+  const f=el("div","flare",`<span>${txt}</span>`);document.body.append(f);
+  setTimeout(()=>f.remove(),1200);
+}
+document.addEventListener("pointerdown",()=>{
+  if(v&&v.phase==="resolved"&&(stage<2||roll))skipReveal()});
 
 const svg=(arm,h)=>`<svg class="pcsvg" width="${Math.round(h*.833)}" height="${h}" aria-hidden="true"><use href="#s-${arm}"/></svg>`;
 
@@ -232,25 +421,26 @@ function paint(){
   main.innerHTML="";bar.innerHTML="";side.innerHTML="";right.innerHTML="";
   $("handband").hidden=true;right.className=v?"m":"";
   $("sheet").innerHTML=sheet?sheetHTML():"";
-  if(err)main.append(el("div","err",err));
+  if(err)main.append(el("div","err center",err));
   if(v)return game(main,bar,side,right);
   if(lobby)return lob(main,bar);
   home(main,bar);
 }
-function sheetHTML(){
-  return `<div class="sheet"><h3>${sheet.title}</h3><div class="lbl">${sheet.sub||""}</div>
-    <p style="font-size:12px;color:var(--dim);margin:8px 0 12px">${sheet.body}</p>
-    <button style="width:100%" onclick="window.__close()">Close</button></div>`;
-}
-window.__close=()=>{sheet=null;paint()};
+function sheetHTML(){return `<div class="sheet"><h3>${sheet.title}</h3>
+  <div class="cap">${sheet.sub||""}</div><p>${sheet.body}</p>
+  <button style="width:100%" onclick="window.__close()">Close</button></div>`}
+window.__close=()=>{sheet=null;S.tap();paint()};
 
 function home(main,bar){
-  $("brand").textContent="GOD · GAMBIT OF DECCAN";
-  main.append(el("div","lbl","Your name"));
+  $("brand").textContent="GOD";
+  main.append(el("h1","title","Gambit of Deccan"),
+    el("p","sub","Two armies form on one piece of ground. The losers get the better cards."));
+  main.append(el("div","rule"));
+  main.append(el("div","cap","Your name"));
   const nm=el("input");nm.maxLength=16;nm.placeholder="Player";main.append(nm);
-  main.append(el("div","lbl","Table"));
+  main.append(el("div","cap","The table"));
   const c=el("button","go","Open a table");
-  const jc=el("input");jc.maxLength=4;jc.placeholder="CODE";
+  const jc=el("input");jc.maxLength=4;jc.placeholder="CODE";jc.style.textTransform="uppercase";
   const j=el("button","","Join");const r=el("div","grid2");r.append(jc,j);
   main.append(c,r);
   c.onclick=()=>send({t:"create",name:nm.value||"Player"});
@@ -260,174 +450,190 @@ function home(main,bar){
 function lob(main,bar){
   $("brand").textContent=`TABLE ${lobby.code}`;
   const mine=lobby.seats[me.seat];
-  main.append(el("div","lbl",`Seated · ${lobby.seats.length} of 8`));
-  for(const s of lobby.seats){const c=el("div","who");c.style.setProperty("--h",HUES[s.i%8]);
-    c.append(el("span","hue"),el("span","nm",`${s.i===me.seat?"▸ ":""}${s.name}${s.bot?" · bot":""}`),
-      el("span","lbl",s.ruler??"choosing"));main.append(c)}
-  main.append(el("div","lbl","Choose your ruler"));
+  main.append(el("div","cap",`Seated — ${lobby.seats.length} of 8`));
+  for(const s of lobby.seats){const c=el("div","panel who");c.style.setProperty("--h",HUES[s.i%8]);
+    c.append(el("span","hue"),
+      el("span","",`<span class="nm">${s.i===me.seat?"▸ ":""}${s.name}</span>`+
+        `<span class="rl">${s.bot?"bot · ":""}${s.ruler??"choosing"}</span>`),
+      el("span",""," "));main.append(c)}
+  main.append(el("div","rule"),el("div","cap","Choose your ruler"));
   const g=el("div","grid2");
   for(const r of lobby.rulers){const on=mine&&mine.faction===r.key;
-    const b=el("button","cell"+(on?" on":""),`${r.name}<br><span class="lbl">${r.era}</span>`);
+    const b=el("button","cell"+(on?" on go":""),`${r.name}<span class="era">${r.era}</span>`);
     b.disabled=r.taken&&!on;b.onclick=()=>send({t:"pick",faction:r.key});g.append(b)}
   main.append(g);
-  if(me.seat===0){const a=el("button","","Add bot"),s=el("button","go","Start");
+  if(me.seat===0){const a=el("button","","Add bot"),s=el("button","go","Begin");
     s.disabled=lobby.seats.length<2||!(mine&&mine.faction);
     a.onclick=()=>send({t:"addBot"});s.onclick=()=>send({t:"start"});bar.append(a,s)}
-  else bar.append(el("div","lbl center","waiting for the host"));
+  else bar.append(el("div","cap center","waiting for the host"));
 }
 
 function game(main,bar,side,right){
   const showAll=v.phase==="resolved"||v.phase==="over";
   const rev=v.reveal;
   const board=showAll&&rev&&rev.board?rev.board:v.armies.map(a=>a.units);
-  const isDead=(ai,ui)=>showAll&&stage>=1&&rev&&rev.dead?rev.dead[ai][ui]:false;
+  const allKills=(rev&&rev.kills)||[];
+  // a unit is struck only once ITS kill has fired, so the reveal reads one cause at a time
+  const struck=new Set(allKills.slice(0,killStep).map(k=>`${k.hit.army}:${k.hit.slot}`));
+  const isDead=(ai,ui)=>showAll&&struck.has(`${ai}:${ui}`);
+  const justDied=(ai,ui)=>{const k=allKills[killStep-1];
+    return !!k&&k.hit.army===ai&&k.hit.slot===ui};
+  const justKilled=(ai,ui)=>{const k=allKills[killStep-1];
+    return !!k&&k.by.army===ai&&k.by.slot===ui};
   $("brand").textContent=`ROUND ${v.round+1}`;
-  $("status").textContent=v.end?`game over · ${v.end}`:v.phase==="offer"?"an offer stands"
-    :v.toAct===v.you?"YOUR TURN":`${v.players[v.toAct]?.name??""} to act`;
+  const st=$("status");
+  st.textContent=v.end?`the game is over — ${v.end}`:v.phase==="offer"?"an offer stands"
+    :v.toAct===v.you?"your turn":`${v.players[v.toAct]?.name??""} deliberates`;
+  st.className="st"+(v.toAct===v.you?" you":"");
 
-  // ---- the read (poker HUD): public behaviour only
-  side.append(el("div","lbl","The table"));
-  const hud=el("div","hud");
+  // ---- the read
+  side.append(el("div","cap","The table"));
   for(const p of v.players){
-    const st=v.stats[p.seat];
-    const c=el("div","who"+(v.toAct===p.seat?" act":"")+(p.sittingOut?" out":""));
+    const s2=v.stats[p.seat];
+    const c=el("div","panel who"+(v.toAct===p.seat?" act":"")+(p.sittingOut?" out":""));
     c.style.setProperty("--h",HUES[p.seat%8]);
-    const agg=st.aggression;
     c.append(el("span","hue"),
-      el("span","nm",`${p.seat===v.you?"YOU":p.name} <span class="lbl">${p.ruler}</span>`),
+      el("span","",`<span class="nm">${p.seat===v.you?"You":p.name}</span>`+
+        `<span class="rl">${p.ruler}</span>`),
       el("span","vp num",`${p.vp}`));
     c.append(el("div","stats",
-      `<span>cmt <b class="num">${st.commits}</b></span>`+
-      `<span>str/rd <b class="num ${agg>=12?"hot":""}">${agg}</b></span>`+
-      `<span>sat <b class="num">${st.sitOuts}</b></span>`+
-      `<span>ref <b class="num">${st.offersRefused}</b></span>`+
-      `<span>burn <b class="num">${st.burned}</b></span>`+
-      (p.army!=null?`<span class="lbl">ARMY ${p.army?"II":"I"}</span>`:"")));
-    hud.append(c);
+      `<span>sent <b class="num">${s2.commits}</b></span>`+
+      `<span>str/rd <b class="num ${s2.aggression>=12?"hot":""}">${s2.aggression}</b></span>`+
+      `<span>sat <b class="num">${s2.sitOuts}</b></span>`+
+      `<span>refused <b class="num">${s2.offersRefused}</b></span>`+
+      `<span>burnt <b class="num">${s2.burned}</b></span>`+
+      (p.army!=null?`<span class="cap">Army ${p.army?"II":"I"}</span>`:"")));
+    side.append(c);
   }
-  side.append(hud);
-  side.append(el("div","lbl","Points · first to "+v.target));
-  const sc=el("div","score");
-  sc.append(el("div","h","ruler"),el("div","h","pts"),el("div","h","left"));
+  side.append(el("div","rule"),el("div","cap",`Points — first to ${v.target}`));
+  const sc=el("div","panel score");
+  sc.append(el("div","h","ruler"),el("div","h","pts"),el("div","h","needs"));
   for(const p of [...v.players].sort((a,b)=>b.vp-a.vp))
-    sc.append(el("div",p.seat===v.you?"me":"",p.seat===v.you?"YOU":p.name),
-      el("div","num",`${p.vp}`),el("div","num",`${v.target-p.vp}`));
+    sc.append(el("div",p.seat===v.you?"me":"",p.seat===v.you?"You":p.name),
+      el("div","num",`${p.vp}`),el("div","num",`${Math.max(0,v.target-p.vp)}`));
   side.append(sc);
 
   // ---- the ground
   const selU=sel?v.hand.find(u=>u.uid===sel):null;
   const army=(ai)=>{
-    const a=v.armies[ai],wrap=el("div");
+    const a=v.armies[ai],wrap=el("div","panel armywrap");
     const head=el("div","armyhead");
-    const mem=a.members.map(s=>in2(v.players[s].name)).join(" · ");
-    head.append(el("span","lbl",`Army ${ai?"II":"I"}${mem?" — "+mem:""}`));
-    head.append(el("span","tot num"+(showAll&&stage>=2&&rev&&rev.winners.includes(ai)?" win":""),
-      showAll&&stage>=2&&rev?`${rev.totals[ai]??0}`:`${a.count}/3`));
+    const mem=a.members.map(s2=>in2(v.players[s2].name)).join(" · ");
+    head.append(el("span","",`<span class="ttl">Army ${ai?"II":"I"}</span>`+
+      (mem?` <span class="mem">${mem}</span>`:"")));
+    const won=showAll&&stage>=2&&rev&&!roll&&rev.winners.includes(ai);
+    head.append(el("span","tot num"+(won?" win":""),
+      showAll&&stage>=2&&rev?`${(roll?roll[ai]:rev.totals[ai])??0}`:`${a.count}/3`));
     const sl=el("div","slots");
     for(let i=0;i<3;i++){
       const u=board[ai]&&board[ai][i];
       if(!u){sl.append(el("div","slot empty"));continue}
       const open=showAll||u.arm!=null,dead=isDead(ai,i);
-      const s=el("div","slot"+(open?"":" hid")+(u.owner===v.you?" mine":"")+(dead?" dead":""));
-      s.style.setProperty("--h",HUES[u.owner%8]);
-      s.append(el("span","hue"));
-      if(open){s.insertAdjacentHTML("beforeend",svg(u.arm,52));
-        s.append(el("span","s num",`${u.s}`));
-        if(u.broker)s.append(el("span","brk"));
-        s.onclick=()=>{sheet={title:`${cap(u.arm)} ${u.s}`,
+      const s2=el("div","slot"+(open?"":" hid")+(u.owner===v.you?" mine":"")+(dead?" dead":"")+
+        (stage===0?" land":justDied(ai,i)?" shake":justKilled(ai,i)?" strike":""));
+      if(justDied(ai,i))s2.style.setProperty("--mag",shakeMag);
+      s2.style.setProperty("--h",HUES[u.owner%8]);
+      s2.append(el("span","hue"));
+      if(open){
+        s2.insertAdjacentHTML("beforeend",svg(u.arm,54));
+        s2.append(el("span","s num",`${u.s}`));
+        if(u.broker)s2.append(el("span","brk"));
+        s2.onclick=()=>{S.tap();sheet={title:`${SHORT[u.arm]} ${u.s}`,
           sub:`${v.players[u.owner].name}${u.broker?" · Power Broker":""}`,
-          body:`Kills ${RING.filter((_,j)=>beats(RING.indexOf(u.arm),j)).map(x=>cap(x)).join(" and ")}. `+
-               `Dies to ${RING.filter((_,j)=>beats(j,RING.indexOf(u.arm))).map(x=>cap(x)).join(" and ")}.`};paint()};
-      } else s.append(el("span","lbl","face down"));
-      s.append(el("span","init",in2(v.players[u.owner].name)));
-      if(dead)s.insertAdjacentHTML("beforeend",
-        `<svg class="x" viewBox="0 0 100 140"><line x1="14" y1="18" x2="86" y2="122"/></svg>`);
-      sl.append(s);
+          body:`Cancels ${RING.filter((_,j)=>beats(RING.indexOf(u.arm),j)).map(x=>SHORT[x]).join(" and ")}. `+
+            `Cancelled by ${RING.filter((_,j)=>beats(j,RING.indexOf(u.arm))).map(x=>SHORT[x]).join(" and ")}.`};paint()};
+      }else s2.append(el("span","lbl-fd","face down"));
+      s2.append(el("span","init",in2(v.players[u.owner].name)));
+      if(dead)s2.insertAdjacentHTML("beforeend",
+        `<svg class="x" viewBox="0 0 100 140"><line x1="16" y1="20" x2="84" y2="120"/></svg>`);
+      sl.append(s2);
     }
     wrap.append(head,sl);return wrap;
   };
   const mid=el("div","clash");mid.append(ring(selU),note(selU));
   main.append(army(0),mid,army(1));
+  if(callout)main.append(el("div","callout",callout));
 
   if(showAll&&stage>=2&&rev){
-    if(rev.rocketsFired)main.append(el("div","err center","SULTAN ROCKETS — the winners' army burns"));
+    if(rev.rocketsFired)main.append(el("div","panel center","<span class='cap' style='color:var(--verm)'>Sultan Rockets — the victors recover nothing</span>"));
     for(const [p,n2] of rev.awarded)
-      main.append(el("div","center lbl",
-        `<span style="color:var(--act)">${v.players[p].name} was the largest contributor — +${n2}</span>`));
+      main.append(el("div","center",`<span class="cap" style="color:var(--gold-hi)">${
+        p===v.you?"You were":v.players[p].name+" was"} the largest contributor — +${n2}</span>`));
   }
 
   // ---- log
-  right.append(el("div","lbl","What happened"));
-  const lg=el("div","log");
+  right.append(el("div","cap","What happened"));
+  const lg=el("div","panel log");
   for(const e of v.log)lg.append(el("div",e.kind,e.text));
   right.append(lg);
 
   // ---- hand
   $("handband").hidden=false;
-  $("handlbl").textContent=`${v.players[v.you].ruler} · ${v.hand.filter(u=>u.state==="ready").length} ready`;
+  $("handlbl").textContent=`${v.players[v.you].ruler} — ${v.hand.filter(u=>u.state==="ready").length} ready`;
   const hand=$("hand");hand.innerHTML="";
   for(const u of v.hand){
     const cls=u.state==="burned"?"burn":u.state==="ready"?"":"rest";
     const c=el("div",`pc ${cls}${sel===u.uid?" sel":""}`);
-    c.insertAdjacentHTML("beforeend",svg(u.arm,38));
+    c.insertAdjacentHTML("beforeend",svg(u.arm,40));
     c.append(el("span","s num",`${u.s}`));
-    c.append(el("div","tag",u.broker?u.name.split(" ")[0]:cap(u.arm).slice(0,4)));
-    if(u.state!=="ready")c.append(el("div","tag",
-      u.state==="burned"?"burnt":u.state==="committed"?"on ground":`back r${u.returns+1}`));
+    c.append(el("div","nmm",u.broker?u.name:SHORT[u.arm]));
+    if(u.state!=="ready")c.append(el("div","rst",
+      u.state==="burned"?"burnt":u.state==="committed"?"on the ground":`returns r${u.returns+1}`));
     if(u.broker)c.append(el("span","brk"));
-    c.onclick=()=>{
-      if(u.state!=="ready"){sheet={title:`${cap(u.arm)} ${u.s}`,sub:u.state,
+    c.onclick=()=>{S.tap();
+      if(u.state!=="ready"){sheet={title:`${SHORT[u.arm]} ${u.s}`,sub:u.state,
         body:u.state==="burned"?"Lost with a defeated army. Gone for the rest of the game."
           :u.state==="committed"?"On the ground this round."
-          :`Won its ground and is recovering. Returns in round ${u.returns+1}.`};paint();return}
+          :`It won its ground and is recovering. Returns in round ${u.returns+1}.`};paint();return}
       sel=sel===u.uid?null:u.uid;paint()};
     hand.append(c);
   }
 
   // ---- actions
   if(v.phase==="offer"&&v.actions.some(a=>a.type==="accept")){
-    main.append(el("div","center lbl",
-      `${v.players[v.offer.from].name} sends a unit into your army — you cannot see it`));
+    main.append(el("div","panel center",
+      `<span class="cap">${v.players[v.offer.from].name} sends a unit into your army</span>`+
+      `<div style="color:var(--ivory-dim);font-size:13px;margin-top:4px">You cannot see what it is. They score from this army too.</div>`));
     const a=el("button","go","Accept"),r=el("button","no","Refuse");
     a.onclick=()=>send({t:"act",action:{type:"accept"}});
     r.onclick=()=>send({t:"act",action:{type:"refuse"}});bar.append(a,r);
   }else if(v.end&&v.phase==="over"){
-    bar.append(el("div","lbl center",v.winners.includes(v.you)?"YOU TAKE THE DECCAN"
-      :`${v.winners.map(s=>v.players[s].name).join(", ")} wins`));
+    bar.append(el("div","cap center",v.winners.includes(v.you)?"You take the Deccan"
+      :`${v.winners.map(s2=>v.players[s2].name).join(", ")} takes the Deccan`));
   }else if(v.toAct===v.you){
     const can=(n2)=>sel&&v.actions.some(a=>a.type==="commit"&&a.uid===sel&&a.army===n2);
-    const isOffer=(n2)=>sel&&v.actions.some(a=>a.type==="commit"&&a.uid===sel&&a.army===n2&&a.offer);
-    const b0=el("button","go",isOffer(0)?"Offer to I":"Send I");
-    const b1=el("button","go",isOffer(1)?"Offer to II":"Send II");
-    const ps=el("button","","Pass");
+    const isOf=(n2)=>sel&&v.actions.some(a=>a.type==="commit"&&a.uid===sel&&a.army===n2&&a.offer);
+    const b0=el("button","go",isOf(0)?"Offer to I":"Send to I");
+    const b1=el("button","go",isOf(1)?"Offer to II":"Send to II");
+    const ps=el("button","","Hold");
     b0.disabled=!can(0);b1.disabled=!can(1);
     b0.onclick=()=>{send({t:"act",action:{type:"commit",uid:sel,army:0}});sel=null};
     b1.onclick=()=>{send({t:"act",action:{type:"commit",uid:sel,army:1}});sel=null};
     ps.onclick=()=>send({t:"act",action:{type:"pass"}});
     bar.append(b0,b1,ps);
-  }else bar.append(el("div","lbl center",showAll?"the ring resolves…":"waiting…"));
+  }else bar.append(el("div","cap center",showAll?"the ring resolves":"waiting"));
 }
 
 function ring(u){
-  const R=32,cx=44,cy=42;
+  const R=34,cx=46,cy=44;
   const p=RING.map((_,i)=>{const t=-Math.PI/2+i*(2*Math.PI/5);
     return [cx+R*Math.cos(t),cy+R*Math.sin(t)]});
   const mi=u?RING.indexOf(u.arm):-1;
-  let s=`<svg width="88" height="84" viewBox="0 0 88 84" role="img" aria-label="the ring">`;
+  let s=`<svg width="92" height="88" viewBox="0 0 92 88" role="img" aria-label="the ring of five arms">`;
   for(let i=0;i<5;i++){const j=(i+1)%5;
     s+=`<line class="edge" x1="${p[i][0]}" y1="${p[i][1]}" x2="${p[j][0]}" y2="${p[j][1]}"/>`}
   for(let i=0;i<5;i++){let c="node";
     if(mi>=0){if(i===mi)c+=" me";else if(beats(mi,i))c+=" kil";else if(beats(i,mi))c+=" thr"}
-    s+=`<circle class="${c}" cx="${p[i][0]}" cy="${p[i][1]}" r="9.5"/>`;
+    s+=`<circle class="${c}" cx="${p[i][0]}" cy="${p[i][1]}" r="10"/>`;
     s+=`<text class="nlbl${mi===i?" on":""}" x="${p[i][0]}" y="${p[i][1]+3}">${RING[i][0]}</text>`}
   return el("div","",s+"</svg>");
 }
 function note(u){
-  if(!u)return el("div","ringnote lbl","each arm kills<br>the next two");
+  if(!u)return el("div","ringnote","<b>The ring</b><br>each arm cancels<br>the next two");
   const i=RING.indexOf(u.arm);
-  return el("div","ringnote",`<b>${cap(u.arm)} ${u.s}</b><br>`+
-    `kills ${RING.filter((_,j)=>beats(i,j)).map(a=>SHORT[a]).join(" · ")}<br>`+
-    `<span class="k">dies to ${RING.filter((_,j)=>beats(j,i)).map(a=>SHORT[a]).join(" · ")}</span>`);
+  return el("div","ringnote",`<b>${SHORT[u.arm]} ${u.s}</b><br>`+
+    `<span class="k">cancels ${RING.filter((_,j)=>beats(i,j)).map(a=>SHORT[a]).join(", ")}</span><br>`+
+    `<span class="t">falls to ${RING.filter((_,j)=>beats(j,i)).map(a=>SHORT[a]).join(", ")}</span>`);
 }
 connect();paint();
 </script>
