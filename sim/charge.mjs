@@ -35,6 +35,20 @@ export const NUM_ARMIES = Number(process.env.ARMIES || 2);
 // between resolutions, of which 28% were withdrawals and 32% were passes.
 // When every army is full there is nothing left to decide, so the armies charge.
 const FORCED = process.env.FORCED !== "0";
+
+// ---- DEFECTION (DEFECT=1) --------------------------------------------------------------------
+// Move your WHOLE contingent from the army it stands in to another one. Your units may never be
+// split across armies, so changing sides is all or nothing — which is what makes it a betrayal
+// rather than a shuffle. The side you leave loses that strength and the side you join gains it,
+// so it is a double swing where a withdrawal is only a single one.
+//
+// It costs your turn and nothing else. The price is paid in what it tells the table: the front
+// is face up after a charge, so everyone watches you change sides and knows exactly what it did.
+// ⚠️ ADOPTED, with its cost recorded. Defection improves completion (81% -> 85%) and seat
+// fairness (3.2 -> 2.4) and costs faction deviation (4.0 -> 5.6), because a contingent that can
+// change sides makes some rulers' arms worth more than others. The roster is tuned around it
+// rather than the rule being dropped to protect a number. DEFECT=0 restores the old behaviour.
+const DEFECT = process.env.DEFECT !== "0";
 export const ARMY_CAP = Number(process.env.CAP || 4);
 export const MAX_PER_ARMY = ARMY_CAP;
 // Four kills wins. Measured across 3-6: at four, every game from four players up reaches the
@@ -116,6 +130,16 @@ export function legalActions(g, seat) {
   // jammed front, so it costs a turn and nothing else.
   if (mine >= 0) {
     for (const c of g.armies[mine]) if (c.owner === seat) acts.push({ withdraw: c, army: mine });
+  }
+  if (DEFECT && mine >= 0) {
+    const contingent = g.armies[mine].filter((c) => c.owner === seat);
+    for (let a = 0; a < NUM_ARMIES; a++) {
+      if (a === mine) continue;
+      if (g.armies[a].length + contingent.length > ARMY_CAP) continue;
+      const members = new Set(g.armies[a].map((c) => c.owner));
+      if (!members.has(seat) && members.size >= MAX_PER_ARMY) continue;
+      acts.push({ defect: contingent, from: mine, to: a });
+    }
   }
   // only a senior partner may call it, and only with something to charge with
   if (mine >= 0 && g.leader[mine] === seat && g.armies[mine].length) acts.push({ charge: true });
@@ -220,6 +244,16 @@ export function score(g, seat, act) {
     }
     return CHARGE_BASE + KILL_WEIGHT * mine - RISK_WEIGHT * lose;
   }
+  if (act.defect) {
+    // worth it when the side you are joining can kill more of what is opposite it than the side
+    // you are leaving — the whole contingent moves, so the swing is counted twice
+    let here = 0, there = 0;
+    for (const c of act.defect) {
+      here += expectedKills(g, seat, c.arm, act.from) - expectedRisk(g, seat, c.arm, act.from);
+      there += expectedKills(g, seat, c.arm, act.to) - expectedRisk(g, seat, c.arm, act.to);
+    }
+    return PASS_BASE - 0.3 + KILL_WEIGHT * (there - here);
+  }
   if (act.withdraw) {
     // worth it when the unit is doing nothing where it stands — it can kill nothing and nothing
     // is about to kill it — because then it is a card locked up for no return
@@ -257,6 +291,17 @@ export function playGame(factionKeys, seed) {
     else {
       idle = 0;
       if (act.charge) { charge(g); charges++; }
+      else if (act.defect) {
+        const from = g.armies[act.from], to = g.armies[act.to];
+        for (const c of act.defect) { from.splice(from.indexOf(c), 1); to.push(c); }
+        if (!from.length) g.leader[act.from] = null;
+        else if (g.leader[act.from] === seat) {
+          const by = new Map();
+          for (const c of from) by.set(c.owner, (by.get(c.owner) || 0) + c.s);
+          g.leader[act.from] = [...by.entries()].sort((x, y) => y[1] - x[1])[0][0];
+        }
+        if (g.leader[act.to] === null) g.leader[act.to] = seat;
+      }
       else if (act.withdraw) {
         const a = g.armies[act.army];
         a.splice(a.indexOf(act.withdraw), 1);

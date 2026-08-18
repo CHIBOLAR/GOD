@@ -150,7 +150,7 @@ const ROSTER = [
   ["governor", "The Governor", "matchlocks drilled off the ships",                   "RIFLEMAN", [1, 3, 1, 1, 2]],
   ["rana",     "The Rana",     "the last stand on foot, and riders to reach it",     "WARRIOR",  [1, 1, 1, 2, 3]],
   ["nizam",    "The Nizam",    "guns, and the horse that screens them",              "CANNON",   [1, 1, 3, 2, 1]],
-  ["nawab",    "The Nawab",    "a fortress of musket and cannon",                    "RIFLEMAN", [1, 2, 3, 1, 1]],
+  ["nawab",    "The Nawab",    "massed muskets, and horse to carry them",                    "RIFLEMAN", [1, 3, 1, 2, 1]],
   ["maharaja", "The Maharaja", "horse and foot, and nothing bought",                 "HORSEMAN", [1, 1, 1, 3, 2]],
 ];
 // EIGHT CARDS, five arms, no zeroes: three spare cards over the 1-per-arm floor, so 35 decks

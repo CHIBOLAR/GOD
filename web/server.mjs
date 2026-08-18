@@ -13,7 +13,7 @@ import { dirname, join, normalize, extname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { FACTIONS, ARMS, ARMSTR, FORCE, BROKERS } from "../sim/cards.mjs";
-import { createGame, apply, botAction, view, legalActions, declare, PHASE } from "./engine.mjs";
+import { createGame, apply, botAction, view, legalActions, PHASE } from "./engine.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, "public");
@@ -111,7 +111,8 @@ function step(room) {
   const s = room.state;
   if (!s || s.phase === PHASE.OVER) { broadcast(room); return; }
 
-  if (s.phase === PHASE.RESOLVED) {
+  if (s.phase === PHASE.CHARGE) {
+    // hold the charge on screen long enough to watch, then let the front resume
     room.timer = setTimeout(() => { apply(s, 0, { type: "continue" }); step(room); }, REVEAL_HOLD);
     broadcast(room);
     return;
@@ -223,15 +224,6 @@ wss.on("connection", (ws) => {
         if (c.room.seats.length < 2) return fail("needs at least two players");
         if (!c.room.seats[c.seat].faction) return fail("choose your ruler first");
         startGame(c.room);
-        break;
-      }
-
-      // A claim about a face-down unit. Non-binding by design — see engine.declare.
-      case "declare": {
-        if (!c.room || !c.room.started) return fail("no game running");
-        if (m.arm !== null && !ARMS.includes(m.arm)) return fail("not an arm");
-        if (!declare(c.room.state, c.seat, m.arm)) return fail("you have nothing committed");
-        broadcast(c.room);
         break;
       }
 
