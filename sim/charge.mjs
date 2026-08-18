@@ -26,7 +26,15 @@
 
 import { FACTIONS, BROKERS, ARMS, PREY, beats } from "./cards.mjs";
 
-export const NUM_ARMIES = 2;
+export const NUM_ARMIES = Number(process.env.ARMIES || 2);
+
+// ⚠️ A FULL BOARD CHARGES ITSELF, and this is not a tidying rule — it is what stops the game
+// dying of hesitation. Nothing forced resolution, so a senior partner would sit on the charge
+// waiting for a fatter harvest while everyone else shuffled units in and out of a board with no
+// room. Measured at eight players: 201 turns across just 4.1 charges — six laps of the table
+// between resolutions, of which 28% were withdrawals and 32% were passes.
+// When every army is full there is nothing left to decide, so the armies charge.
+const FORCED = process.env.FORCED !== "0";
 export const ARMY_CAP = Number(process.env.CAP || 4);
 export const MAX_PER_ARMY = ARMY_CAP;
 // Four kills wins. Measured across 3-6: at four, every game from four players up reaches the
@@ -114,6 +122,8 @@ export function legalActions(g, seat) {
   return acts;
 }
 
+export const boardFull = (g) => g.armies.every((a) => a.length >= ARMY_CAP);
+
 export function commit(g, seat, unit, army) {
   unit.onBoard = true;
   const card = { owner: seat, arm: unit.arm, s: unit.s, ref: unit,
@@ -156,6 +166,12 @@ export function charge(g) {
 
   // BROKERS FOR CASUALTIES. Compensation is for losses now, not for defeat — one per player
   // per charge, so the player being killed most is armed fastest. Same rubber band, new hook.
+  // ⚠️ EVERY CASUALTY IS PAID, and the alternatives were both measured and rejected.
+  // Paying only the heaviest loser per charge keeps the supply comfortable (10.8 of 15 left)
+  // but concentrates the compensation and the rulers diverge: deviation 4.0 -> 6.1. Raising the
+  // supply instead is worse again, because brokers are strong cards and more of them in
+  // circulation widens the gap (4.9 at 15, 5.5 at 20, 6.6 at 25). A broad, even rubber band is
+  // what holds the eight rulers together, and the price is a supply that finishes nearly spent.
   const recruited = new Map();
   for (const [seat] of lost) {
     const card = g.supply.pop();
@@ -248,6 +264,8 @@ export function playGame(factionKeys, seed) {
         if (!a.length) g.leader[act.army] = null;
       } else commit(g, seat, act.unit, act.army);
     }
+    // the board is full and nobody can add anything: the armies charge whether anyone meant it or not
+    if (FORCED && boardFull(g)) { charge(g); charges++; }
     if (Math.max(...g.players.map((p) => p.vp)) >= TARGET) break;
     if (idle >= n * 2) break;                     // nobody can or will do anything
     seat = (seat + 1) % n;
