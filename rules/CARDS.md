@@ -39,7 +39,7 @@ fields warriors. The counts are set by measurement, one ruler at a time, not by 
 | **The Sultan** | three elephant + two warrior | E9 E9 E9 C7 H5 R3 W1 W1 | 44 |
 | **The Badshah** | three cannon + two warrior | E9 C7 C7 C7 H5 R3 W1 W1 | 40 |
 | **The Peshwa** | four horseman | E9 C7 H5 H5 H5 H5 R3 W1 | 40 |
-| **The Governor** | four rifleman | E9 C7 H5 R3 R3 R3 R3 W1 | 34 |
+| **The Governor** | three rifleman + two warrior | E9 C7 H5 R3 R3 R3 W1 W1 | 32 |
 | **The Rana** | three warrior + two horseman | E9 C7 H5 H5 R3 W1 W1 W1 | 32 |
 | **The Nizam** | three cannon + two horseman | E9 C7 C7 C7 H5 H5 R3 W1 | 44 |
 | **The Nawab** | three rifleman + two cannon | E9 C7 C7 H5 R3 R3 R3 W1 | 38 |
@@ -81,7 +81,7 @@ did not take it.
 | The Sultan | E9 E9 E9 C7 H5 R3 W1 W1 |
 | The Badshah | E9 C7 C7 C7 H5 R3 W1 W1 |
 | The Peshwa | E9 C7 H5 H5 H5 H5 R3 W1 |
-| The Governor | E9 C7 H5 R3 R3 R3 R3 W1 |
+| The Governor | E9 C7 H5 R3 R3 R3 W1 W1 |
 | The Rana | E9 C7 H5 H5 R3 W1 W1 W1 |
 | The Nizam | E9 C7 C7 C7 H5 H5 R3 W1 |
 | The Nawab | E9 C7 C7 H5 R3 R3 R3 W1 |

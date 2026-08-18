@@ -147,7 +147,7 @@ const ROSTER = [
   ["sultan",   "The Sultan",   "war elephants, and the foot that walks beside them", "ELEPHANT", [3, 1, 1, 1, 2]],
   ["badshah",  "The Badshah",  "the imperial gun train and its levies",              "CANNON",   [1, 1, 3, 1, 2]],
   ["peshwa",   "The Peshwa",   "Ganimi Kava, and horse that never stands",           "HORSEMAN", [1, 1, 1, 4, 1]],
-  ["governor", "The Governor", "matchlocks drilled off the ships",                   "RIFLEMAN", [1, 4, 1, 1, 1]],
+  ["governor", "The Governor", "matchlocks drilled off the ships",                   "RIFLEMAN", [1, 3, 1, 1, 2]],
   ["rana",     "The Rana",     "the last stand on foot, and riders to reach it",     "WARRIOR",  [1, 1, 1, 2, 3]],
   ["nizam",    "The Nizam",    "guns, and the horse that screens them",              "CANNON",   [1, 1, 3, 2, 1]],
   ["nawab",    "The Nawab",    "a fortress of musket and cannon",                    "RIFLEMAN", [1, 3, 2, 1, 1]],
