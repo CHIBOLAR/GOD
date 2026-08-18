@@ -26,11 +26,11 @@ Two armies form on the ground between you. Both begin empty.
 
 ## The ring
 
-Five arms stand in a ring. **Each arm cancels the NEXT TWO along it.**
+Five arms stand in a ring. **Each arm KILLS the NEXT TWO along it.**
 
 > ELEPHANT 9 → RIFLEMAN 3 → CANNON 7 → HORSEMAN 5 → WARRIOR 1 → back to ELEPHANT
 
-| Arm | | cancels | is cancelled by |
+| Arm | | kills | is killed by |
 | --- | ---: | --- | --- |
 | **ELEPHANT** | 9 | Rifleman, Cannon | Horseman, Warrior |
 | **RIFLEMAN** | 3 | Cannon, Horseman | Elephant, Warrior |
@@ -38,9 +38,8 @@ Five arms stand in a ring. **Each arm cancels the NEXT TWO along it.**
 | **HORSEMAN** | 5 | Warrior, Elephant | Rifleman, Cannon |
 | **WARRIOR** | 1 | Elephant, Rifleman | Cannon, Horseman |
 
-**A Warrior 1 cancels an Elephant 9.** The cheapest unit in the game kills the dearest, and that
-is not an exception — it is the rule the whole ring is built on. Strength decides nothing about
-who kills whom. It decides only who is **senior**.
+**A Warrior 1 kills an Elephant 9.** The cheapest unit in the game kills the dearest, and that
+is not an exception — it is the rule the whole ring is built on. Strength decides nothing about who kills whom. It decides only who is **senior**, and which unit the ring reaches for first.
 
 ---
 
@@ -79,26 +78,29 @@ Resolve it in this order:
 
 **1 · Reveal.** Every face-down unit turns face up.
 
-**2 · The ring.** Simultaneously, each unit cancels **one** unit of an arm it beats, in another
-army — the **strongest** one it can reach. A unit that is itself cancelled **still cancels**, so
-nothing depends on order.
+**2 · The ring.** Simultaneously, each unit kills **one** unit of an arm it beats, in another
+army — the **strongest** one it can reach. A unit that is itself killed **still kills**, so nothing depends on order — everything happens at once.
 
-**3 · The dead.** Every cancelled unit is **destroyed** and goes to the discard. It is gone for
+**3 · The dead.** Every killed unit goes to the discard. It is gone for
 the rest of the game.
 
-**4 · The spoils.** **You take ONE VICTORY POINT for every enemy unit your units cancelled.**
+**4 · The spoils.** **You take ONE VICTORY POINT for every enemy unit your units killed.**
 
-**5 · The living.** Every surviving unit **stays where it stands**, now **face up**. It does not
+**5 · Victory.** The side with the **greater surviving strength wins the charge**. It scores
+nothing for winning — points are kills — but **ON VICTORY** and **ON DEFEAT** abilities fire now,
+and the winning side **acts first** once the front reopens. Level strength, and neither side wins.
+
+**6 · The living.** Every surviving unit **stays where it stands**, now **face up**. It does not
 return to your hand.
 
-**6 · The casualties.** Every player who lost at least one unit **recruits one Power Broker**
+**7 · The casualties.** Every player who lost at least one unit **recruits one Power Broker**
 from the supply, face down into their hand.
 
 ---
 
 ## After a charge
 
-The front goes quiet. Every survivor is, by definition, unable to cancel anything opposite it —
+The front goes quiet. Every survivor is, by definition, unable to kill anything opposite it —
 or it would have. **Nothing more can die until somebody deploys a fresh unit.**
 
 So the board sits there, face up and known, until someone takes the risk of adding to it.
@@ -130,10 +132,10 @@ one strength above its arm's Force unit, so a Force unit and a Broker can never 
 | | | Arm | When | |
 | --- | ---: | --- | --- | --- |
 | **Siege Elephant** | 10 | ELEPHANT | ON DEPLOY | Deploy FACE UP. Look at one enemy unit — it stays face up. |
-| **Sultan Rockets** | 8 | CANNON | ON DEFEAT | Deploy FACE UP. Burn the winning army's recovering units. |
-| **Spy** | 6 | HORSEMAN | ON REVEAL | Exchange with the enemy's strongest unit. PERMANENT. |
-| **Sepoy** | 4 | RIFLEMAN | ON REVEAL | Alone in your army: triple strength. |
-| **Subhedar** | 2 | WARRIOR | ON REVEAL | Remove the enemy's weakest unit. |
+| **Sultan Rockets** | 8 | CANNON | ON DEFEAT | Deploy FACE UP. Kill one surviving enemy unit. |
+| **Spy** | 6 | HORSEMAN | ON REVEAL | If it survives, exchange with the enemy's strongest survivor. PERMANENT. |
+| **Sepoy** | 4 | RIFLEMAN | ON REVEAL | Kills TWO enemy units instead of one. |
+| **Subhedar** | 2 | WARRIOR | ON VICTORY | Kill the enemy's weakest survivor. |
 
 ---
 
@@ -142,8 +144,7 @@ one strength above its arm's Force unit, so a Force unit and a Broker can never 
 **Deploying is an act of violence.** A quiet front kills nobody. The moment you add a unit, the
 ring can fire again — on your unit as readily as on theirs.
 
-**Withdrawing is how a jammed front reopens.** A full board of units that cannot hurt each other
-is a dead board. Pulling one home makes room for something that can kill.
+**Withdrawing is how a jammed front reopens.** A full board of units that cannot hurt each other is a dead board. Pulling one home makes room for something that can kill.
 
 **Losing arms you.** Every casualty is a Power Broker, and the player being killed most is armed
 fastest. The player in front is the one player who cannot buy the game's sharpest cards.
@@ -152,15 +153,18 @@ fastest. The player in front is the one player who cannot buy the game's sharpes
 
 ## Glossary
 
-**ARM** — one of the five kinds. It decides what a unit cancels and what cancels it.
+**ARM** — one of the five kinds. It decides what a unit kills and what kills it.
 
 **CHARGE** — the moment the armies meet. Called by a senior partner, or forced by a full board.
+
+**VICTORY** — the side with the greater surviving strength after a charge. It wins no points;
+it wins the initiative, and its ON VICTORY abilities.
 
 **FORCE** — the eight units a ruler starts with.
 
 **FRONT** — the two armies as they stand between charges.
 
-**RING** — the cycle of five arms. Each cancels the next two along it.
+**RING** — the cycle of five arms. Each kills the next two along it.
 
 **SENIOR PARTNER** — the first player to deploy into an army; afterwards, whoever has the
 greatest surviving strength in it. Only a senior partner may call the charge.

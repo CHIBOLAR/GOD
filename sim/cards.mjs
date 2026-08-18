@@ -65,7 +65,8 @@ export const FORCE = [
 // touches the Sepoy's own strength, a cancelled Sepoy totals 0 whether doubled or not — so the
 // timing is inert for it and does not need a fourth word. ALONE counts the REVEALED army, so a
 // cancelled army-mate still counts as company (`battle.mjs` value(): `army.length === 1`).
-export const TIMING = { DEPLOY: "ON DEPLOY", REVEAL: "ON REVEAL", DEFEAT: "ON DEFEAT" };
+export const TIMING = { DEPLOY: "ON DEPLOY", REVEAL: "ON REVEAL",
+  VICTORY: "ON VICTORY", DEFEAT: "ON DEFEAT" };
 
 // LOOK, not REVEAL, on the Siege Elephant: REVEAL is now a timing keyword, and the rulebook's
 // own wording for this effect was always "look at any one committed enemy unit".
@@ -93,13 +94,13 @@ const ABILITY = {
   siege:    { name: "Siege Elephant", faceUp: true, when: TIMING.DEPLOY,
     text: "Deploy FACE UP. LOOK at one enemy unit — it stays face up." },
   rockets:  { name: "Sultan Rockets", faceUp: true, when: TIMING.DEFEAT,
-    text: "Deploy FACE UP. If this is cancelled, the unit that cancelled it dies too." },
+    text: "ON DEFEAT: kill one surviving enemy unit." },
   spy:      { name: "Spy", when: TIMING.REVEAL,
-    text: "If it survives the charge, EXCHANGE with the enemy's strongest survivor. PERMANENT." },
-  subhedar: { name: "Subhedar", when: TIMING.REVEAL,
-    text: "If it survives the charge, DESTROY the enemy's weakest survivor. That is a kill." },
+    text: "If it survives, EXCHANGE with the enemy's strongest survivor. PERMANENT." },
+  subhedar: { name: "Subhedar", when: TIMING.VICTORY,
+    text: "ON VICTORY: kill the enemy's weakest survivor." },
   sepoy:    { name: "Sepoy", when: TIMING.REVEAL,
-    text: "Cancels TWO enemy units instead of one." },
+    text: "Kills TWO enemy units instead of one." },
 };
 const ABIL = (process.env.ABIL || "siege,sepoy,rockets,spy,subhedar").split(",");
 export const BROKERS = ARMS.map((arm, i) => ({

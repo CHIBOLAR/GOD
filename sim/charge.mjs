@@ -92,12 +92,7 @@ export function resolveCharge(armies) {
       if (!t) break;
       dead[t.ai][t.ui] = true;
       kills.push({ by: k, hit: t });
-      // SULTAN ROCKETS take their killer with them. The scorch is a deterrent: cancel it and
-      // you lose the unit that did it, so a Rockets standing face up is a threat, not a target.
-      if (t.u.broker === "rockets" && !dead[k.ai][k.ui]) {
-        dead[k.ai][k.ui] = true;
-        kills.push({ by: t, hit: k, revenge: true });
-      }
+
     }
   }
 
@@ -106,22 +101,37 @@ export function resolveCharge(armies) {
   const survivors = all.filter(alive);
   const others = (ai) => survivors.filter((t) => t.ai !== ai && alive(t));
 
-  // THE SUBHEDAR removes the enemy's weakest survivor, and that counts as a kill.
+  // WHICH SIDE WON. Not for points — points are kills, and that does not change. Winning decides
+  // WHOSE ABILITY FIRES and who moves first next, which is what gives ON VICTORY and ON DEFEAT
+  // their meaning back. Higher surviving strength takes it; level strength and nobody does.
+  const strength = armies.map((a, ai) => a.reduce((n2, u, ui) => n2 + (dead[ai][ui] ? 0 : u.s), 0));
+  const top = Math.max(...strength);
+  const victors = strength.filter((x) => x === top).length === 1
+    ? strength.indexOf(top) : -1;
+
+  // THE SUBHEDAR kills the enemy's weakest survivor — but only ON VICTORY.
   for (const k of survivors) {
-    if (k.u.broker !== "subhedar" || !alive(k)) continue;
+    if (k.u.broker !== "subhedar" || !alive(k) || k.ai !== victors) continue;
     const t = others(k.ai).reduce((b, x) => (!b || x.u.s < b.u.s ? x : b), null);
     if (t) { dead[t.ai][t.ui] = true; kills.push({ by: k, hit: t, ability: "subhedar" }); }
   }
 
   // THE SPY exchanges with the enemy's strongest survivor — permanently, so the two cards
   // change hands for the rest of the game. Recorded for the caller to carry out.
+  // SULTAN ROCKETS burn on the way down — ON DEFEAT, they kill one surviving enemy.
+  for (const k of survivors) {
+    if (k.u.broker !== "rockets" || !alive(k) || victors < 0 || k.ai === victors) continue;
+    const t = others(k.ai).reduce((b, x) => (!b || x.u.s > b.u.s ? x : b), null);
+    if (t) { dead[t.ai][t.ui] = true; kills.push({ by: k, hit: t, ability: "rockets" }); }
+  }
+
   const swaps = [];
   for (const k of survivors) {
     if (k.u.broker !== "spy" || !alive(k)) continue;
     const t = others(k.ai).reduce((b, x) => (!b || x.u.s > b.u.s ? x : b), null);
     if (t) swaps.push({ spy: k, taken: t });
   }
-  return { dead, kills, swaps };
+  return { dead, kills, swaps, victors };
 }
 
 // ---- creation -----------------------------------------------------------------
@@ -201,7 +211,7 @@ export function commit(g, seat, unit, army) {
 
 // ---- the charge -----------------------------------------------------------------
 export function charge(g) {
-  const { dead, kills, swaps } = resolveCharge(g.armies);
+  const { dead, kills, swaps, victors } = resolveCharge(g.armies);
 
   // paid for what you killed
   const scored = new Map();
@@ -255,8 +265,9 @@ export function charge(g) {
     g.armies[spy.ai][i] = taken.u; g.armies[taken.ai][j] = spy.u;
   }
 
+  g.victors = victors;              // the winning side moves first next
   g.charge++;
-  return { kills, scored, lost, recruited, swaps };
+  return { kills, scored, lost, recruited, swaps, victors };
 }
 
 // ---- the policy ------------------------------------------------------------------

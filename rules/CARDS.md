@@ -62,10 +62,10 @@ whatever they committed.
 | Power Broker | | Arm | Timing | Ability |
 | --- | ---: | --- | --- | --- |
 | **Siege Elephant** | 10 | ELEPHANT | **ON DEPLOY** | Deploy FACE UP. LOOK at one enemy unit — it stays face up. |
-| **Sultan Rockets** | 8 | CANNON | **ON DEFEAT** | Deploy FACE UP. If this is cancelled, the unit that cancelled it dies too. |
-| **Spy** | 6 | HORSEMAN | **ON REVEAL** | If it survives the charge, EXCHANGE with the enemy's strongest survivor. PERMANENT. |
-| **Sepoy** | 4 | RIFLEMAN | **ON REVEAL** | Cancels TWO enemy units instead of one. |
-| **Subhedar** | 2 | WARRIOR | **ON REVEAL** | If it survives the charge, DESTROY the enemy's weakest survivor. That is a kill. |
+| **Sultan Rockets** | 8 | CANNON | **ON DEFEAT** | ON DEFEAT: kill one surviving enemy unit. |
+| **Spy** | 6 | HORSEMAN | **ON REVEAL** | If it survives, EXCHANGE with the enemy's strongest survivor. PERMANENT. |
+| **Sepoy** | 4 | RIFLEMAN | **ON REVEAL** | Kills TWO enemy units instead of one. |
+| **Subhedar** | 2 | WARRIOR | **ON VICTORY** | ON VICTORY: kill the enemy's weakest survivor. |
 
 **ON DEPLOY** — when the card is committed, before anything is revealed. Cancellation cannot
 stop it. **ON REVEAL** — the abilities step of the battle: the ring resolves first, so only
