@@ -26,6 +26,10 @@ const ALLY_TAX = 0.5;        // an ally who can out-commit me takes my point out
 // is not a flavour knob — it is the policy's objective. CONTRIB=0 restores the old blind policy
 // for comparison.
 const CONTRIB_WEIGHT = Number(process.env.CONTRIB ?? 1.2);
+// The policy must know HOW POINTS ARE AWARDED or every measurement of an alliance rule is noise
+// — the same trap D045 records. Under SPOILS=contributors every contributor to a winning army
+// scores, so the FIRST unit you put in earns the point and later ones add nothing to scoring.
+const SHARE_ALL = process.env.SPOILS === "contributors";
 const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger
 export const NUM_ARMIES = Number(process.env.ARMIES || 2);
 export const ARMY_CAP = Number(process.env.CAP || 3);
@@ -90,10 +94,25 @@ const GARRISON = process.env.GARRISON === "1";
 // is strictly dominated — a sacrificed card has no effect beyond being spent — so the generator
 // only offers the weakest, which keeps the move space at (standing x replacements) rather than
 // cubing it, without removing any choice a rational player would make.
+// ---- WITHDRAW (WITHDRAW=1) -----------------------------------------------------------------
+// On your turn, pull ONE of your units out of an army back to hand. You then FORFEIT any claim
+// to that ground's point this round. One rule, everyone, winner or loser — no special cases.
+//
+// It polices itself. If you are the largest contributor, withdrawing throws away a point you
+// were winning, so you will not. If you are behind you were scoring nothing anyway, so leaving
+// costs only the turn — which makes this precisely the loser's move, and that is what folding is.
+// Under GARRISON it is the release valve: a holder watching a ground turn can bleed out one unit
+// a turn instead of losing everything at once, paying for it by scoring nothing there.
+//
+// This is the half of "folding pays" that contribution scoring did not already cover. Standing
+// pat when ahead banks the point; withdrawing when behind is how you stop paying for a lost
+// fight. Taj Mahal has both, and until now we had only the first.
+const WITHDRAW = process.env.WITHDRAW === "1";
+export let st_withdrew = 0;
 const FOLD = process.env.FOLD === "1";
 const FOLD_BURN = process.env.FOLDBURN === "1";
 export let st_relieved = 0, st_actions = 0;
-export const resetRelief = () => { st_relieved = 0; st_actions = 0; };
+export const resetRelief = () => { st_relieved = 0; st_actions = 0; st_withdrew = 0; };
 export const HOLDS_GROUND = GARRISON;
 
 // ---- THE OFFER (BROKEROFFER=1) -----------------------------------------------------------
@@ -159,6 +178,11 @@ export function legalMoves(g, seat, m) {
       && m.offered.has(a)) continue;                         // one offer per army per turn
     for (const u of units) moves.push({ unit: u, army: a });
   }
+  if (WITHDRAW && mine !== undefined) {
+    for (const c of m.armies[mine].filter((x) => x.owner === seat)) {
+      moves.push({ withdraw: c, army: mine });
+    }
+  }
   if (FOLD && mine !== undefined && units.length >= (FOLD_BURN ? 2 : 1)) {
     const standing = m.armies[mine].filter((c) => c.owner === seat);
     const give = FOLD_BURN ? units.reduce((lo, u) => (u.s < lo.s ? u : lo), units[0]) : null;
@@ -170,6 +194,24 @@ export function legalMoves(g, seat, m) {
     }
   }
   return moves;
+}
+
+// Pull one unit out and go home with it. The forfeit is recorded on the CARD, not the player,
+// because a player may hold units in only one army — so marking the army's cards is enough.
+export function withdrawUnit(g, m, seat, mv) {
+  const army = m.armies[mv.army];
+  const i = army.indexOf(mv.withdraw);
+  if (i < 0) return false;
+  mv.withdraw.ref.held = false;
+  mv.withdraw.ref.rest = g.round + 1;     // home, but not back out again this round
+  army.splice(i, 1);
+  // forfeit: nothing this player still has here may count toward the point
+  for (const c of army) if (c.owner === seat) c.forfeit = true;
+  m.forfeited ||= new Set();
+  m.forfeited.add(seat);
+  if (!army.some((c) => c.owner === seat)) m.armyOf.delete(seat);   // out entirely; free to move
+  st_withdrew++;
+  return true;
 }
 
 // Pull `relieve` back to hand RESTING, optionally burn `give`, and put `put` in the freed slot.
@@ -209,7 +251,34 @@ export function scoreMove(g, seat, m, mv) {
     const a = m.armyOf.get(seat);
     if (a === undefined) return PASS_BASE;
     const st = standing(m.armies[a], seat);
-    return PASS_BASE + (st.mine > st.best ? CONTRIB_WEIGHT * 0.6 : 0);
+    const scoring = SHARE_ALL ? st.mine > 0 : st.mine > st.best;
+    return PASS_BASE + (scoring ? CONTRIB_WEIGHT * 0.6 : 0);
+  }
+  if (mv.withdraw) {
+    // Leaving is worth it only when you are NOT winning the point here: a leader who withdraws
+    // throws away what they were about to score. Value is the unit saved, less the forfeit.
+    // WITHDRAW DOES TWO DIFFERENT JOBS and they must be scored differently.
+    //  · FOLDING — leaving a contest you are losing. Worthless once every contributor scores,
+    //    because staying pays; so a scoring position is never folded.
+    //  · RECOVERY — taking back a unit STANDING on the ground under GARRISON. Nothing else can
+    //    do this: otherwise a unit only ever comes home by losing the ground. Worth the forfeit
+    //    when the card is dear, because you get it back for every future round.
+    const st = standing(m.armies[mv.army], seat);
+    // ⚠️ HAVING A UNIT HERE IS NOT THE SAME AS SCORING. You are paid only if this army WINS the
+    // ground. Treating any commitment as a guaranteed point made the policy refuse to fold out
+    // of a fight it was losing — which is precisely when folding is right, because the point was
+    // never coming and the units burn with the army.
+    const biggest = Math.max(...m.armies.map((a, i) => (i === mv.army ? 0 : a.length)));
+    const losing = biggest > m.armies[mv.army].length;
+    const wouldScore = SHARE_ALL ? st.mine > 0 : st.mine > st.best;
+    if (mv.withdraw.garrison) {
+      // RECOVERY: pay this round's point, regain a locked card for every round after.
+      return PASS_BASE - 0.2 + OWN_WEIGHT * mv.withdraw.s
+        - (wouldScore && !losing ? CONTRIB_WEIGHT * 0.6 : 0);
+    }
+    // FOLDING: only foolish when the ground looks winnable and you are in line to be paid.
+    if (wouldScore && !losing) return -3;
+    return PASS_BASE - 0.4 + OWN_WEIGHT * mv.withdraw.s * (losing ? 1 : 0.3);
   }
   if (mv.relieve) {
     // Worth it when what goes in is dearer than what comes out, less the tempo of losing the
@@ -251,12 +320,15 @@ export function scoreMove(g, seat, m, mv) {
   // quantity entirely — it was written for one-point-per-surviving-unit and never updated.
   const st = standing(mineArmy, seat);
   const after = st.mine + 1;
-  s += CONTRIB_WEIGHT * (after > st.best ? 1 : after === st.best ? 0.5 : 0);
+  s += CONTRIB_WEIGHT * (SHARE_ALL ? (st.mine === 0 ? 1 : 0)
+    : after > st.best ? 1 : after === st.best ? 0.5 : 0);
 
   // ⚠️ An ally is not a flat cost, as ALLY_TAX assumed. An ally who out-commits you takes the
   // WHOLE point — and one who cannot is close to free, because they add strength for nothing.
   // So the penalty applies only to allies who match or beat your count once this unit is down.
-  s -= ALLY_TAX * [...st.others.values()].filter((n) => n >= after).length;
+  // When every contributor is paid, an ally is not a rival for the point at all — they are
+  // free strength. The tax applies only when a single contributor takes it.
+  if (!SHARE_ALL) s -= ALLY_TAX * [...st.others.values()].filter((n) => n >= after).length;
 
   const biggest = Math.max(...m.armies.map((a, i) => (i === mv.army ? 0 : a.length)));
   if (biggest > mineArmy.length) s += BEHIND_BONUS;
@@ -483,6 +555,7 @@ export function playRound(g, rnd) {
       const mv = choose(moves, moves.map((x) => scoreMove(g, seat, m, x)), rnd);
       if (mv.pass) break;
       st_actions++;
+      if (mv.withdraw) { withdrawUnit(g, m, seat, mv); acted = true; turns[seat]++; break; }
       if (mv.relieve) { relieveUnit(g, m, seat, mv, rnd); acted = true; turns[seat]++; break; }
       const joining = m.armyOf.get(seat) === undefined
         && m.leader[mv.army] !== null && m.leader[mv.army] !== seat;

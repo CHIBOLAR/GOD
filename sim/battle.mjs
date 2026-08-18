@@ -107,6 +107,8 @@ export function resolveBattle(raw) {
 // survivors paid three points, so a four-point target could be reached in two battles, and
 // contribution stopped being about what you dared to commit. Measuring COMMITTED strength is
 // what makes the bluff pay — you can take the point with a unit the ring then kills.
+const SHARE_ALL = process.env.SPOILS === "contributors";
+
 export function spoils(result) {
   const vp = new Map();
   for (const i of result.winners) {
@@ -117,6 +119,8 @@ export function spoils(result) {
       // GARRISON in game.mjs. Holding earns nothing; you must keep committing to keep scoring,
       // which is what stops a held ground from paying its holder a point a round for free.
       if (u.garrison) continue;
+      // A player who withdrew from this ground forfeits any claim to its point — see WITHDRAW.
+      if (u.forfeit) continue;
       // CONTRIBUTION IS COUNTED IN UNITS COMMITTED, not strength committed.
       //
       // ⚠️ The original game measured contribution by base Strength, and that was fair there
@@ -135,6 +139,17 @@ export function spoils(result) {
       by.set(u.owner, (by.get(u.owner) || 0) + (process.env.SPOILS === "strength" ? u.s : 1));
     }
     if (!by.size) continue;
+    if (SHARE_ALL) {
+      // EVERY CONTRIBUTOR IN THE WINNING ARMY TAKES A POINT — one each, however much they sent.
+      //
+      // Why: paying only the largest contributor makes a JUNIOR PARTNER WORTHLESS. They add
+      // their strength, help the army take the ground, and score nothing. Alliances only looked
+      // healthy because players had no way out of them — the moment WITHDRAW existed, alliance
+      // frequency halved from 91% to 58% as the policy discovered that leaving a coalition it
+      // did not lead cost nothing. Cosmic Encounter pays its allies for exactly this reason.
+      for (const owner of by.keys()) vp.set(owner, (vp.get(owner) || 0) + 1);
+      continue;
+    }
     const most = Math.max(...by.values());
     for (const [owner, contributed] of by) {
       if (contributed === most) vp.set(owner, (vp.get(owner) || 0) + 1);
