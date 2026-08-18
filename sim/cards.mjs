@@ -149,7 +149,7 @@ const ROSTER = [
   ["peshwa",   "The Peshwa",   "Ganimi Kava, and horse that never stands",           "HORSEMAN", [1, 1, 1, 4, 1]],
   ["governor", "The Governor", "matchlocks drilled off the ships",                   "RIFLEMAN", [1, 3, 1, 1, 2]],
   ["rana",     "The Rana",     "the last stand on foot, and riders to reach it",     "WARRIOR",  [1, 1, 1, 2, 3]],
-  ["nizam",    "The Nizam",    "guns, and the horse that screens them",              "CANNON",   [1, 1, 3, 2, 1]],
+  ["nizam",    "The Nizam",    "guns, and the horse that screens them",              "CANNON",   [2, 1, 2, 2, 1]],
   ["nawab",    "The Nawab",    "massed muskets, and horse to carry them",                    "RIFLEMAN", [1, 3, 1, 2, 1]],
   ["maharaja", "The Maharaja", "horse and foot, and nothing bought",                 "HORSEMAN", [1, 1, 1, 3, 2]],
 ];

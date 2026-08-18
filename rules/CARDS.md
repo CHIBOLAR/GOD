@@ -41,8 +41,8 @@ fields warriors. The counts are set by measurement, one ruler at a time, not by 
 | **The Peshwa** | four horseman | E9 C7 H5 H5 H5 H5 R3 W1 | 40 |
 | **The Governor** | three rifleman + two warrior | E9 C7 H5 R3 R3 R3 W1 W1 | 32 |
 | **The Rana** | three warrior + two horseman | E9 C7 H5 H5 R3 W1 W1 W1 | 32 |
-| **The Nizam** | three cannon + two horseman | E9 C7 C7 C7 H5 H5 R3 W1 | 44 |
-| **The Nawab** | three cannon + two rifleman | E9 C7 C7 C7 H5 R3 R3 W1 | 42 |
+| **The Nizam** | two elephant + two cannon + two horseman | E9 E9 C7 C7 H5 H5 R3 W1 | 46 |
+| **The Nawab** | three rifleman + two horseman | E9 C7 H5 H5 R3 R3 R3 W1 | 36 |
 | **The Maharaja** | three horseman + two warrior | E9 C7 H5 H5 H5 R3 W1 W1 | 36 |
 
 *The Sultan — war elephants, and the muskets and foot that walk beside them.*  
@@ -51,7 +51,7 @@ fields warriors. The counts are set by measurement, one ruler at a time, not by 
 *The Governor — matchlocks drilled off the ships.*  
 *The Rana — the last stand on foot, and riders to reach it.*  
 *The Nizam — guns, and the horse that screens them.*  
-*The Nawab — a fortress of musket and cannon.*  
+*The Nawab — massed muskets, and horse to carry them.*  
 *The Maharaja — horse and foot, and nothing bought.*  
 
 ## The supply
@@ -83,8 +83,8 @@ did not take it.
 | The Peshwa | E9 C7 H5 H5 H5 H5 R3 W1 |
 | The Governor | E9 C7 H5 R3 R3 R3 W1 W1 |
 | The Rana | E9 C7 H5 H5 R3 W1 W1 W1 |
-| The Nizam | E9 C7 C7 C7 H5 H5 R3 W1 |
-| The Nawab | E9 C7 C7 C7 H5 R3 R3 W1 |
+| The Nizam | E9 E9 C7 C7 H5 H5 R3 W1 |
+| The Nawab | E9 C7 H5 H5 R3 R3 R3 W1 |
 | The Maharaja | E9 C7 H5 H5 H5 R3 W1 W1 |
 | Siege Elephant ×3 | E10 |
 | Sultan Rockets ×3 | C8 |
