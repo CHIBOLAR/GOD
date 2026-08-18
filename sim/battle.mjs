@@ -107,7 +107,7 @@ export function resolveBattle(raw) {
 // survivors paid three points, so a four-point target could be reached in two battles, and
 // contribution stopped being about what you dared to commit. Measuring COMMITTED strength is
 // what makes the bluff pay — you can take the point with a unit the ring then kills.
-const SHARE_ALL = process.env.SPOILS === "contributors";
+const SHARE_ALL = process.env.SPOILS !== "largest";
 
 export function spoils(result) {
   const vp = new Map();

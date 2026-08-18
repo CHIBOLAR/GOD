@@ -29,10 +29,10 @@ const CONTRIB_WEIGHT = Number(process.env.CONTRIB ?? 1.2);
 // The policy must know HOW POINTS ARE AWARDED or every measurement of an alliance rule is noise
 // — the same trap D045 records. Under SPOILS=contributors every contributor to a winning army
 // scores, so the FIRST unit you put in earns the point and later ones add nothing to scoring.
-const SHARE_ALL = process.env.SPOILS === "contributors";
+const SHARE_ALL = process.env.SPOILS !== "largest";
 const BEHIND_BONUS = 0.6;    // answering an army that is visibly bigger
 export const NUM_ARMIES = Number(process.env.ARMIES || 2);
-export const ARMY_CAP = Number(process.env.CAP || 3);
+export const ARMY_CAP = Number(process.env.CAP || 4);
 export const MAX_PER_ARMY = ARMY_CAP;
 // A Spy's theft is PERMANENT: the two cards change owner for good. Measured as free —
 // faction deviation 6.7 vs 7.0 — because a theft completes in only 12-31%% of games.
@@ -73,7 +73,7 @@ const REFUSAL_FORK = process.env.REFUSALFORK === "1";
 //      allying into someone's ground can be a takeover — you arrive a guest and leave the
 //      landlord. Points and control are deliberately measured differently: units for one,
 //      strength for the other.
-const GARRISON = process.env.GARRISON === "1";
+const GARRISON = process.env.GARRISON !== "0";
 
 // ---- RELIEF IN PLACE (FOLD=1) --------------------------------------------------------------
 // One action, once per turn: pull one of your STANDING units back and put another in its place.
@@ -107,12 +107,26 @@ const GARRISON = process.env.GARRISON === "1";
 // This is the half of "folding pays" that contribution scoring did not already cover. Standing
 // pat when ahead banks the point; withdrawing when behind is how you stop paying for a lost
 // fight. Taj Mahal has both, and until now we had only the first.
-const WITHDRAW = process.env.WITHDRAW === "1";
+const WITHDRAW = process.env.WITHDRAW !== "0";
+
+// ---- BETRAYAL (BETRAY=1) --------------------------------------------------------------------
+// On your turn, move ONE of your committed units from the army it is in to the other one. The
+// side you abandon loses that strength and the side you join gains it — a double swing, where
+// withdrawing is only a single one.
+//
+// The price is the same as withdrawing: you FORFEIT any claim to the ground you walked away
+// from. What you may still take is a share of the one you defected to.
+//
+// ⚠️ The obvious degenerate line is "join whoever looks strongest, late". What stops it is that
+// armies are BLIND — you are reading unit counts, not cards, so defecting is a bet rather than
+// a calculation. Whether that is enough is exactly what the measurement is for.
+const BETRAY = process.env.BETRAY === "1";
+export let st_betrayed = 0;
 export let st_withdrew = 0;
 const FOLD = process.env.FOLD === "1";
 const FOLD_BURN = process.env.FOLDBURN === "1";
 export let st_relieved = 0, st_actions = 0;
-export const resetRelief = () => { st_relieved = 0; st_actions = 0; st_withdrew = 0; };
+export const resetRelief = () => { st_relieved = 0; st_actions = 0; st_withdrew = 0; st_betrayed = 0; };
 export const HOLDS_GROUND = GARRISON;
 
 // ---- THE OFFER (BROKEROFFER=1) -----------------------------------------------------------
@@ -178,6 +192,17 @@ export function legalMoves(g, seat, m) {
       && m.offered.has(a)) continue;                         // one offer per army per turn
     for (const u of units) moves.push({ unit: u, army: a });
   }
+  if (BETRAY && mine !== undefined) {
+    for (const c of m.armies[mine].filter((x) => x.owner === seat)) {
+      for (let a = 0; a < NUM_ARMIES; a++) {
+        if (a === mine) continue;
+        if (m.armies[a].length >= ARMY_CAP) continue;
+        const members = new Set(m.armies[a].map((x) => x.owner));
+        if (!members.has(seat) && members.size >= MAX_PER_ARMY) continue;
+        moves.push({ betray: c, from: mine, to: a });
+      }
+    }
+  }
   if (WITHDRAW && mine !== undefined) {
     for (const c of m.armies[mine].filter((x) => x.owner === seat)) {
       moves.push({ withdraw: c, army: mine });
@@ -194,6 +219,24 @@ export function legalMoves(g, seat, m) {
     }
   }
   return moves;
+}
+
+// Walk one unit across to the other army. The ground you left is forfeit; the one you join is not.
+export function betrayWith(g, m, seat, mv) {
+  const from = m.armies[mv.from], to = m.armies[mv.to];
+  const i = from.indexOf(mv.betray);
+  if (i < 0) return false;
+  from.splice(i, 1);
+  for (const c of from) if (c.owner === seat) c.forfeit = true;   // no claim where you deserted
+  mv.betray.garrison = false;                                     // it moved; it is not standing
+  mv.betray.forfeit = false;
+  mv.betray.army = mv.to;
+  to.push(mv.betray);
+  if (m.leader[mv.to] === null) m.leader[mv.to] = seat;
+  if (!from.some((c) => c.owner === seat)) m.armyOf.set(seat, mv.to);
+  else m.armyOf.set(seat, mv.to);           // your units may not be split across two armies
+  st_betrayed++;
+  return true;
 }
 
 // Pull one unit out and go home with it. The forfeit is recorded on the CARD, not the player,
@@ -253,6 +296,13 @@ export function scoreMove(g, seat, m, mv) {
     const st = standing(m.armies[a], seat);
     const scoring = SHARE_ALL ? st.mine > 0 : st.mine > st.best;
     return PASS_BASE + (scoring ? CONTRIB_WEIGHT * 0.6 : 0);
+  }
+  if (mv.betray) {
+    // Worth it when the army you are leaving is losing and the one you are joining is not.
+    const here = m.armies[mv.from].length, there = m.armies[mv.to].length + 1;
+    const gain = there - here;
+    return PASS_BASE - 0.3 + OWN_WEIGHT * mv.betray.s * (gain > 0 ? 1 : 0)
+      + (gain > 0 ? CONTRIB_WEIGHT * 0.4 : -1.5);
   }
   if (mv.withdraw) {
     // Leaving is worth it only when you are NOT winning the point here: a leader who withdraws
@@ -555,6 +605,7 @@ export function playRound(g, rnd) {
       const mv = choose(moves, moves.map((x) => scoreMove(g, seat, m, x)), rnd);
       if (mv.pass) break;
       st_actions++;
+      if (mv.betray) { betrayWith(g, m, seat, mv); acted = true; turns[seat]++; break; }
       if (mv.withdraw) { withdrawUnit(g, m, seat, mv); acted = true; turns[seat]++; break; }
       if (mv.relieve) { relieveUnit(g, m, seat, mv, rnd); acted = true; turns[seat]++; break; }
       const joining = m.armyOf.get(seat) === undefined
