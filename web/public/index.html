@@ -5,128 +5,158 @@
 
 <!--
   GOD — the client.
+  Built against web/STATE_INVENTORY.md.
 
-  Built against web/STATE_INVENTORY.md, not against an impression of the rules. The visual
-  language is deliberately austere: one value scale, one accent, uniform 1px strokes, no
-  gradients or shadows. The unit silhouettes are the ONLY curves on the screen, so they own
-  attention without a single highlight. Restraint is the design, not a shortcut.
+  Three things drive this layout, all from competitor practice:
+    · Hearthstone — the numbers break the frame. Strength is the largest thing on a piece.
+    · Poker HUDs  — a read on an opponent is public behaviour, shown as stats. Ours are derived
+                    from public information only, so displaying them leaks nothing.
+    · BGA         — an event log is baseline, not an extra. Nothing may happen silently.
+  Desktop is a real layout (board centre, reads left, log right), not a stretched phone column.
 -->
 
 <style>
-  :root {
-    --bg:#0b0c0d;         /* ground */
-    --panel:#101112;
-    --line:#2e3134;       /* every border, one weight */
-    --line-lit:#4a4e52;
-    --txt:#e9e7e2;
-    --dim:#83878a;
-    --faint:#4d5153;
-    --act:#c9a227;        /* the ONE accent: the action you should take */
-    --kill:#b4543a;       /* semantic only, never decorative */
-    --hold:#5d8a6b;
-    --pc:#cfd3d5;         /* silhouette */
-    --step:56px;
+  :root{
+    --bg:#0b0c0d; --panel:#111213; --panel2:#161718;
+    --line:#2c2f32; --line-lit:#4a4e52;
+    --txt:#e9e7e2; --dim:#868a8d; --faint:#4b4f52;
+    --act:#c9a227; --kill:#c0563a; --good:#6f9f7e; --info:#6f8ea8;
+    --pc:#d2d6d8;
   }
-  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; }
-  body {
-    margin:0; background:var(--bg); color:var(--txt);
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--txt);
     font:13px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-    letter-spacing:.02em;
-    height:100svh; display:flex; flex-direction:column; overflow:hidden;
+    height:100svh;display:flex;flex-direction:column;overflow:hidden
   }
-  .lbl { font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); }
+  .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .num{font-variant-numeric:tabular-nums}
 
-  /* ---- bands ---------------------------------------------------------- */
-  header {
-    flex:0 0 auto; display:flex; justify-content:space-between; align-items:center;
-    padding:10px 12px; border-bottom:1px solid var(--line); font-size:11px; letter-spacing:.14em;
+  header{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:9px 12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.13em}
+  #shell{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  #main{flex:1 1 auto;min-height:0;overflow:auto;padding:10px 12px;display:flex;
+    flex-direction:column;gap:8px}
+  #side{display:none}
+  #handband{flex:0 0 auto;border-top:1px solid var(--line);padding:7px 0 7px 12px}
+  #bar{flex:0 0 auto;display:flex;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line)}
+  #bar>*{flex:1}
+
+  button{font:inherit;letter-spacing:.1em;text-transform:uppercase;font-size:11px;color:var(--txt);
+    background:transparent;border:1px solid var(--line);padding:0 10px;min-height:48px;cursor:pointer}
+  button:disabled{color:var(--faint);border-color:#1c1e20;cursor:default}
+  button.go:not(:disabled){border-color:var(--act);color:var(--act)}
+  button.no:not(:disabled){border-color:var(--kill);color:var(--kill)}
+  button:focus-visible{outline:1px solid var(--act);outline-offset:2px}
+  input{font:inherit;color:var(--txt);background:transparent;border:1px solid var(--line);
+    padding:0 10px;min-height:48px;width:100%}
+  input::placeholder{color:var(--faint)}
+
+  /* ---- the read: a poker HUD per opponent ---------------------------- */
+  .hud{display:flex;flex-direction:column;gap:6px}
+  .who{border:1px solid var(--line);padding:6px 8px;display:grid;
+    grid-template-columns:3px 1fr auto;gap:8px;align-items:center}
+  .who.act{border-color:var(--act)}
+  .who.out{opacity:.55}
+  .who .hue{grid-row:1/3;align-self:stretch;background:var(--h)}
+  .who .nm{font-size:12px}
+  .who .vp{font-size:15px;font-weight:600}
+  .who .stats{grid-column:2/4;display:flex;gap:10px;font-size:10px;color:var(--dim)}
+  .who .stats b{color:var(--txt);font-weight:400}
+  .who .stats .hot{color:var(--kill)}
+
+  /* ---- the ground ---------------------------------------------------- */
+  .armyhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .armyhead .tot{font-size:18px;font-weight:600}
+  .armyhead .tot.win{color:var(--act)}
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+  .slot{border:1px solid var(--line);aspect-ratio:5/7;position:relative;display:flex;
+    align-items:center;justify-content:center;cursor:default}
+  .slot.empty{border-style:dashed;border-color:#1c1e20}
+  .slot.mine{box-shadow:inset 0 0 0 1px var(--line-lit)}
+  .slot.hid{background:repeating-linear-gradient(45deg,transparent 0 5px,#18191a 5px 10px)}
+  .slot.dead{border-color:var(--kill)}
+  .slot .hue{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--h)}
+  .slot .init{position:absolute;bottom:3px;right:5px;font-size:9px;color:var(--dim)}
+  /* Hearthstone: the number breaks the frame. It is the first thing read. */
+  .slot .s{position:absolute;top:-9px;left:-6px;min-width:24px;height:24px;border-radius:2px;
+    background:var(--bg);border:1px solid var(--line-lit);display:flex;align-items:center;
+    justify-content:center;font-size:14px;font-weight:600}
+  .slot.dead .s{border-color:var(--kill);color:var(--kill)}
+  .slot .brk{position:absolute;top:4px;right:5px;width:6px;height:6px;border:1px solid var(--act)}
+  .slot .x{position:absolute;inset:0;stroke:var(--kill);stroke-width:2}
+  .pcsvg{fill:var(--pc);display:block}
+  .clash{display:flex;align-items:center;justify-content:center;gap:14px;padding:4px 0}
+  .node{fill:var(--panel);stroke:var(--line)}
+  .node.me{stroke:var(--act)} .node.kil{stroke:var(--kill)}
+  .node.thr{stroke:var(--kill);stroke-dasharray:2 2}
+  .nlbl{fill:var(--dim);font-size:8px;text-anchor:middle}
+  .nlbl.on{fill:var(--txt)}
+  .edge{stroke:var(--line);fill:none}
+  .ringnote{font-size:10px;color:var(--dim);line-height:1.5}
+  .ringnote b{color:var(--txt);font-weight:400}
+  .ringnote .k{color:var(--kill)}
+
+  /* ---- log ------------------------------------------------------------ */
+  .log{display:flex;flex-direction:column-reverse;gap:3px;overflow:auto;font-size:11px;
+    border:1px solid var(--line);padding:7px 8px;min-height:0}
+  .log div{color:var(--dim);line-height:1.4}
+  .log .kill{color:var(--kill)} .log .ground{color:var(--txt)}
+  .log .score{color:var(--act)} .log .recruit{color:var(--good)}
+  .log .rockets{color:var(--kill);font-weight:600}
+  .log .offer,.log .accept,.log .refuse{color:var(--info)}
+
+  /* ---- hand ----------------------------------------------------------- */
+  .hand{display:flex;gap:8px;overflow-x:auto;padding-right:12px;scroll-snap-type:x proximity;
+    touch-action:pan-x;overscroll-behavior-x:contain;scrollbar-width:none}
+  .hand::-webkit-scrollbar{display:none}
+  .pc{flex:0 0 62px;min-height:92px;border:1px solid var(--line);scroll-snap-align:start;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    padding:8px 2px 4px;position:relative;cursor:pointer}
+  .pc.sel{border-color:var(--act)}
+  .pc.rest{border-style:dashed;cursor:default}
+  .pc.rest .pcsvg{fill:var(--faint)}
+  .pc.burn{border-style:dotted;border-color:#1c1e20;cursor:default}
+  .pc.burn .pcsvg{fill:#232527}
+  .pc .s{position:absolute;top:-8px;left:-5px;min-width:22px;height:22px;background:var(--bg);
+    border:1px solid var(--line-lit);display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:600}
+  .pc.rest .s,.pc.burn .s{border-color:#1c1e20;color:var(--faint)}
+  .pc .tag{font-size:9px;color:var(--dim);text-align:center;line-height:1.25}
+  .pc .brk{position:absolute;top:4px;right:5px;width:6px;height:6px;border:1px solid var(--act)}
+
+  /* ---- sheets / misc --------------------------------------------------- */
+  .sheet{position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:1px solid var(--act);
+    padding:14px 14px calc(14px + env(safe-area-inset-bottom));z-index:9}
+  .sheet h3{margin:0 0 6px;font-size:13px;font-weight:600}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .cell{border:1px solid var(--line);padding:10px;text-align:left;min-height:56px}
+  .cell.on{border-color:var(--act);color:var(--act)}
+  .err{color:var(--kill);font-size:11px}
+  .center{text-align:center}
+  .score{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;font-size:11px}
+  .score .h{color:var(--dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  .score .me{color:var(--act)}
+
+  /* ---- DESKTOP: a real layout, not a stretched column ------------------ */
+  @media (min-width:900px){
+    #shell{display:grid;grid-template-columns:minmax(220px,1fr) minmax(420px,2.2fr) minmax(240px,1fr);
+      grid-template-rows:1fr auto auto;gap:0;min-height:0}
+    #side{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow:auto;
+      border-right:1px solid var(--line);grid-row:1/4}
+    #main{grid-column:2;grid-row:1;max-width:none}
+    #handband{grid-column:2;grid-row:2;border-left:0;border-right:0}
+    #bar{grid-column:2;grid-row:3}
+    #right{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow:hidden;
+      border-left:1px solid var(--line);grid-column:3;grid-row:1/4}
+    .log{flex:1 1 auto}
+    .slot .s{width:30px;height:30px;font-size:17px}
   }
-  #seats { flex:0 0 auto; display:flex; flex-wrap:wrap; gap:6px; padding:8px 12px;
-           border-bottom:1px solid var(--line); max-height:25svh; overflow:auto; }
-  main { flex:1 1 auto; min-height:0; overflow:hidden; display:flex; flex-direction:column;
-         padding:10px 12px; gap:6px; }
-  #handband { flex:0 0 auto; border-top:1px solid var(--line); padding:8px 0 8px 12px; }
-  #bar { flex:0 0 auto; display:flex; gap:8px; padding:8px 12px calc(8px + env(safe-area-inset-bottom));
-         border-top:1px solid var(--line); }
-  #bar button { flex:1; }
-
-  /* ---- controls ------------------------------------------------------- */
-  button {
-    font:inherit; letter-spacing:.1em; text-transform:uppercase; font-size:11px;
-    color:var(--txt); background:transparent; border:1px solid var(--line);
-    padding:0 10px; min-height:48px; cursor:pointer;
-  }
-  button:disabled { color:var(--faint); border-color:#1d1f21; cursor:default; }
-  button.go:not(:disabled) { border-color:var(--act); color:var(--act); }
-  button.no:not(:disabled) { border-color:var(--kill); color:var(--kill); }
-  button:focus-visible { outline:1px solid var(--act); outline-offset:2px; }
-  input { font:inherit; color:var(--txt); background:transparent; border:1px solid var(--line);
-          padding:0 10px; min-height:48px; width:100%; }
-  input::placeholder { color:var(--faint); }
-
-  /* ---- seat chips ------------------------------------------------------ */
-  .seat { display:flex; align-items:center; gap:6px; border:1px solid var(--line);
-          padding:5px 8px; font-size:11px; min-height:32px; }
-  .seat.act { border-color:var(--act); }
-  .seat.out { color:var(--faint); }
-  .hue { width:3px; align-self:stretch; background:var(--h); }
-  .seat .vp { color:var(--txt); }
-
-  /* ---- the ground ------------------------------------------------------ */
-  .armyhead { display:flex; justify-content:space-between; align-items:baseline; }
-  .slots { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .slot { border:1px solid var(--line); aspect-ratio:5/7; position:relative;
-          display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
-  .slot.empty { border-style:dashed; border-color:#1d1f21; }
-  .slot.mine { border-color:var(--line-lit); border-width:1px; box-shadow:inset 0 0 0 1px var(--line-lit); }
-  .slot.dead { border-color:var(--kill); }
-  .slot .own { position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--h); }
-  .slot .who { position:absolute; bottom:3px; right:4px; font-size:9px; color:var(--dim); }
-  .slot .st { font-size:12px; color:var(--txt); }
-  .slot.hid { background:
-     repeating-linear-gradient(45deg,transparent 0 4px,#191b1c 4px 8px); }
-  .slot .x { position:absolute; inset:0; stroke:var(--kill); stroke-width:2; }
-  .pcsvg { fill:var(--pc); display:block; }
-  .clash { display:flex; align-items:center; justify-content:center; gap:14px; padding:2px 0; }
-  .ringwrap { flex:0 0 auto; }
-  .ringnote { font-size:10px; color:var(--dim); line-height:1.4; }
-  .ringnote b { color:var(--txt); font-weight:400; }
-  .node { fill:var(--panel); stroke:var(--line); stroke-width:1; }
-  .node.me  { stroke:var(--act); }
-  .node.kil { stroke:var(--kill); }
-  .node.thr { stroke:var(--kill); stroke-dasharray:2 2; }
-  .nlbl { fill:var(--dim); font-size:8px; text-anchor:middle; letter-spacing:.06em; }
-  .nlbl.on { fill:var(--txt); }
-  .edge { stroke:var(--line); stroke-width:1; fill:none; }
-
-  /* ---- hand ------------------------------------------------------------ */
-  .hand { display:flex; gap:8px; overflow-x:auto; padding-right:12px;
-          scroll-snap-type:x proximity; touch-action:pan-x; overscroll-behavior-x:contain;
-          scrollbar-width:none; }
-  .hand::-webkit-scrollbar { display:none; }
-  .pc { flex:0 0 62px; min-height:88px; border:1px solid var(--line); scroll-snap-align:start;
-        display:flex; flex-direction:column; align-items:center; justify-content:space-between;
-        padding:6px 2px 4px; position:relative; }
-  .pc.sel { border-color:var(--act); }
-  .pc.rest { border-style:dashed; }
-  .pc.rest .pcsvg { fill:var(--faint); }
-  .pc.burn { border-style:dotted; border-color:#1d1f21; }
-  .pc.burn .pcsvg { fill:#26292b; }
-  .pc .tag { font-size:9px; color:var(--dim); text-align:center; line-height:1.2; }
-  .pc .brk { position:absolute; top:3px; right:4px; width:5px; height:5px;
-             border:1px solid var(--act); }
-
-  /* ---- misc ------------------------------------------------------------ */
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .cell { border:1px solid var(--line); padding:10px; text-align:left; min-height:56px; }
-  .cell.on { border-color:var(--act); color:var(--act); }
-  .scroll { overflow:auto; min-height:0; }
-  .err { color:var(--kill); padding:6px 12px; font-size:11px; }
-  .center { text-align:center; }
-  .win { color:var(--act); }
-  @media (prefers-reduced-motion:no-preference) {
-    .slot, .pc { transition:border-color .18s ease; }
+  #right{display:none}
+  @media (max-width:899px){
+    #right.m{display:flex;flex-direction:column;gap:6px;padding:0 12px 8px;max-height:34svh}
   }
 </style>
 
@@ -134,295 +164,270 @@
   <symbol id="s-ELEPHANT" viewBox="0 0 40 48">
     <path d="M9 46V31Q4 27 4 19Q4 5 20 5Q36 5 36 19Q36 27 31 31V46Z"/>
     <path d="M17 17Q14 30 17 40Q18 45 21 44Q24 43 22 39Q19 30 21 18Z"/>
-    <ellipse cx="7" cy="17" rx="4" ry="6"/><ellipse cx="33" cy="17" rx="4" ry="6"/>
-  </symbol>
+    <ellipse cx="7" cy="17" rx="4" ry="6"/><ellipse cx="33" cy="17" rx="4" ry="6"/></symbol>
   <symbol id="s-CANNON" viewBox="0 0 40 48">
     <rect x="4" y="37" width="32" height="4" rx="1.5"/>
     <circle cx="11" cy="40" r="6"/><circle cx="29" cy="40" r="6"/>
-    <path d="M7 34 L30 14 L35 21 L12 39Z"/><circle cx="32" cy="17" r="4"/>
-  </symbol>
+    <path d="M7 34 L30 14 L35 21 L12 39Z"/><circle cx="32" cy="17" r="4"/></symbol>
   <symbol id="s-HORSEMAN" viewBox="0 0 40 48">
     <path d="M11 46V33Q9 22 17 17L15 10Q14 5 20 5Q25 5 26 10L31 15Q37 19 35 27L32 33V46Z"/>
-    <path d="M18 7 L16 1 L22 4Z"/>
-    <circle cx="20" cy="13" r="1.6" fill="#0b0c0d"/>
-  </symbol>
+    <path d="M18 7 L16 1 L22 4Z"/><circle cx="20" cy="13" r="1.6" fill="#0b0c0d"/></symbol>
   <symbol id="s-RIFLEMAN" viewBox="0 0 40 48">
-    <circle cx="16" cy="12" r="6"/>
-    <path d="M10 46V27Q10 21 16 21Q22 21 22 27V46Z"/>
-    <rect x="24" y="6" width="3" height="32" rx="1.5" transform="rotate(13 25 22)"/>
-  </symbol>
+    <circle cx="16" cy="12" r="6"/><path d="M10 46V27Q10 21 16 21Q22 21 22 27V46Z"/>
+    <rect x="24" y="6" width="3" height="32" rx="1.5" transform="rotate(13 25 22)"/></symbol>
   <symbol id="s-WARRIOR" viewBox="0 0 40 48">
-    <circle cx="15" cy="17" r="5.5"/>
-    <path d="M9.5 46V31Q9.5 26 15 26Q20.5 26 20.5 31V46Z"/>
-    <path d="M24 24Q31 29 31 35Q31 42 24 46Z"/>
-  </symbol>
+    <circle cx="15" cy="17" r="5.5"/><path d="M9.5 46V31Q9.5 26 15 26Q20.5 26 20.5 31V46Z"/>
+    <path d="M24 24Q31 29 31 35Q31 42 24 46Z"/></symbol>
 </defs></svg>
 
-<header>
-  <span id="brand">GOD</span>
-  <span id="status" class="lbl">connecting</span>
-</header>
-<div id="seats"></div>
-<main id="app"></main>
-<div id="handband" hidden><div class="lbl" id="handlbl" style="padding-bottom:5px"></div><div class="hand" id="hand"></div></div>
-<div id="bar"></div>
+<header><span id="brand">GOD</span><span id="status" class="lbl">connecting</span></header>
+<div id="shell">
+  <aside id="side"></aside>
+  <main id="main"></main>
+  <div id="handband" hidden><div class="lbl" id="handlbl" style="padding-bottom:5px"></div>
+    <div class="hand" id="hand"></div></div>
+  <div id="bar"></div>
+  <aside id="right"></aside>
+</div>
+<div id="sheet"></div>
 
 <script type="module">
-const $ = (id) => document.getElementById(id);
-const el = (t, c, h) => { const n = document.createElement(t); if (c) n.className = c;
-  if (h != null) n.innerHTML = h; return n; };
+const $=(i)=>document.getElementById(i);
+const el=(t,c,h)=>{const n=document.createElement(t);if(c)n.className=c;if(h!=null)n.innerHTML=h;return n};
+const RING=["ELEPHANT","RIFLEMAN","CANNON","HORSEMAN","WARRIOR"];
+const SHORT={ELEPHANT:"ELE",RIFLEMAN:"RIF",CANNON:"CAN",HORSEMAN:"HOR",WARRIOR:"WAR"};
+const HUES=["#5b8fa8","#b4543a","#7f9c5e","#9b7fb0","#c9a227","#c07d94","#5f9c96","#a8845b"];
+const beats=(x,y)=>y===(x+1)%5||y===(x+2)%5;
+const in2=(n)=>(n||"?").replace(/[^A-Za-z0-9]/g,"").slice(0,2).toUpperCase();
+const cap=(a)=>a[0]+a.slice(1).toLowerCase();
 
-const RING = ["ELEPHANT","RIFLEMAN","CANNON","HORSEMAN","WARRIOR"];
-const SHORT = { ELEPHANT:"ELE", RIFLEMAN:"RIF", CANNON:"CAN", HORSEMAN:"HOR", WARRIOR:"WAR" };
-const HUES = ["#5b8fa8","#b4543a","#7f9c5e","#9b7fb0","#c9a227","#c07d94","#5f9c96","#a8845b"];
-const beats = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
-const init2 = (n) => (n || "?").replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
+let ws,me={id:localStorage.getItem("god.id"),code:localStorage.getItem("god.code"),seat:-1};
+let lobby=null,v=null,sel=null,err="",stage=3,timer=null,sheet=null;
 
-let ws, me = { id: localStorage.getItem("god.id"), code: localStorage.getItem("god.code"), seat: -1 };
-let lobby = null, v = null, sel = null, err = "", stage = 3, stageTimer = null;
-
-// ---- socket -----------------------------------------------------------------
-function connect() {
-  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
-  ws.onopen = () => { $("status").textContent = "online";
-    if (me.id && me.code) send({ t:"join", code:me.code, id:me.id }); paint(); };
-  ws.onclose = () => { $("status").textContent = "offline"; setTimeout(connect, 1500); };
-  ws.onmessage = (e) => {
-    const m = JSON.parse(e.data);
-    if (m.t === "seated") { me.seat = m.seat; me.code = m.code; me.id = m.id;
-      localStorage.setItem("god.id", m.id); localStorage.setItem("god.code", m.code); }
-    if (m.t === "lobby") { lobby = m; v = null; }
-    if (m.t === "view") {
-      const wasResolved = v && v.phase === "resolved";
-      v = m.view;
-      if (v.phase === "resolved" && !wasResolved) runReveal(); else if (v.phase !== "resolved") stage = 3;
-      if (v.toAct !== me.seat) sel = null;
-    }
-    if (m.t === "error") { err = m.msg; setTimeout(() => { err = ""; paint(); }, 2600); }
-    paint();
-  };
+function connect(){
+  ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host);
+  ws.onopen=()=>{$("status").textContent="online";
+    if(me.id&&me.code)send({t:"join",code:me.code,id:me.id});paint()};
+  ws.onclose=()=>{$("status").textContent="offline";setTimeout(connect,1500)};
+  ws.onmessage=(e)=>{const m=JSON.parse(e.data);
+    if(m.t==="seated"){me.seat=m.seat;me.code=m.code;me.id=m.id;
+      localStorage.setItem("god.id",m.id);localStorage.setItem("god.code",m.code)}
+    if(m.t==="lobby"){lobby=m;v=null}
+    if(m.t==="view"){const was=v&&v.phase==="resolved";v=m.view;
+      if(v.phase==="resolved"&&!was)reveal();else if(v.phase!=="resolved")stage=3;
+      if(v.toAct!==me.seat)sel=null}
+    if(m.t==="error"){err=m.msg;setTimeout(()=>{err="";paint()},2600)}
+    paint()};
 }
-const send = (m) => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
+const send=(m)=>ws&&ws.readyState===1&&ws.send(JSON.stringify(m));
+function reveal(){clearTimeout(timer);stage=0;
+  timer=setTimeout(()=>{stage=1;paint();timer=setTimeout(()=>{stage=2;paint()},520)},420)}
+document.addEventListener("pointerdown",()=>{if(v&&v.phase==="resolved"&&stage<2){
+  clearTimeout(timer);stage=2;paint()}});
 
-// The reveal is the only thing in the game that animates, and it gets the whole budget:
-// face up (0.4s) -> the ring strikes (0.5s) -> totals. Tap anywhere to skip to the end.
-function runReveal() {
-  clearTimeout(stageTimer); stage = 0;
-  stageTimer = setTimeout(() => { stage = 1; paint();
-    stageTimer = setTimeout(() => { stage = 2; paint(); }, 500); }, 420);
+const svg=(arm,h)=>`<svg class="pcsvg" width="${Math.round(h*.833)}" height="${h}" aria-hidden="true"><use href="#s-${arm}"/></svg>`;
+
+function paint(){
+  const main=$("main"),bar=$("bar"),side=$("side"),right=$("right");
+  main.innerHTML="";bar.innerHTML="";side.innerHTML="";right.innerHTML="";
+  $("handband").hidden=true;right.className=v?"m":"";
+  $("sheet").innerHTML=sheet?sheetHTML():"";
+  if(err)main.append(el("div","err",err));
+  if(v)return game(main,bar,side,right);
+  if(lobby)return lob(main,bar);
+  home(main,bar);
 }
-document.addEventListener("pointerdown", () => {
-  if (v && v.phase === "resolved" && stage < 2) { clearTimeout(stageTimer); stage = 2; paint(); }
-});
-
-// ---- pieces ------------------------------------------------------------------
-function pieceSVG(arm, s, h) {
-  const H = h ?? Math.round(22 + s * 3.1);
-  return `<svg class="pcsvg" width="${Math.round(H * 0.833)}" height="${H}" aria-hidden="true"
-    ><use href="#s-${arm}"/></svg>`;
+function sheetHTML(){
+  return `<div class="sheet"><h3>${sheet.title}</h3><div class="lbl">${sheet.sub||""}</div>
+    <p style="font-size:12px;color:var(--dim);margin:8px 0 12px">${sheet.body}</p>
+    <button style="width:100%" onclick="window.__close()">Close</button></div>`;
 }
+window.__close=()=>{sheet=null;paint()};
 
-// ---- render ------------------------------------------------------------------
-function paint() {
-  const app = $("app"), bar = $("bar");
-  app.innerHTML = ""; bar.innerHTML = "";
-  $("seats").innerHTML = ""; $("handband").hidden = true;
-  if (err) app.append(el("div", "err", err));
-  if (v) return paintGame(app, bar);
-  if (lobby) return paintLobby(app, bar);
-  paintHome(app, bar);
-}
-
-function paintHome(app, bar) {
-  $("brand").textContent = "GOD · GAMBIT OF DECCAN";
-  const box = el("div", "scroll");
-  box.append(el("div", "lbl", "Your name"));
-  const nm = el("input"); nm.id = "nm"; nm.maxLength = 16; nm.placeholder = "Player";
-  box.append(nm, el("div", "lbl", "<br>Table"));
-  const create = el("button", "go", "Open a table");
-  const jc = el("input"); jc.id = "jc"; jc.maxLength = 4; jc.placeholder = "CODE";
-  const join = el("button", "", "Join");
-  const row = el("div", "grid2"); row.append(jc, join);
-  box.append(create, el("div", "", "<br>"), row);
-  app.append(box);
-  create.onclick = () => send({ t:"create", name: nm.value || "Player" });
-  join.onclick = () => send({ t:"join", code: jc.value.toUpperCase(), name: nm.value || "Player" });
+function home(main,bar){
+  $("brand").textContent="GOD · GAMBIT OF DECCAN";
+  main.append(el("div","lbl","Your name"));
+  const nm=el("input");nm.maxLength=16;nm.placeholder="Player";main.append(nm);
+  main.append(el("div","lbl","Table"));
+  const c=el("button","go","Open a table");
+  const jc=el("input");jc.maxLength=4;jc.placeholder="CODE";
+  const j=el("button","","Join");const r=el("div","grid2");r.append(jc,j);
+  main.append(c,r);
+  c.onclick=()=>send({t:"create",name:nm.value||"Player"});
+  j.onclick=()=>send({t:"join",code:jc.value.toUpperCase(),name:nm.value||"Player"});
 }
 
-function paintLobby(app, bar) {
-  $("brand").textContent = `TABLE ${lobby.code}`;
-  const mine = lobby.seats[me.seat];
-  const box = el("div", "scroll");
-  box.append(el("div", "lbl", `Seated · ${lobby.seats.length} of 8`));
-  for (const s of lobby.seats) {
-    const c = el("div", "seat");
-    c.style.setProperty("--h", HUES[s.i % 8]);
-    c.append(el("span", "hue"), el("span", "", `${s.i === me.seat ? "▸" : ""}${s.name}${s.bot ? " ·bot" : ""}`),
-             el("span", "lbl", s.ruler ?? "choosing"));
-    box.append(c);
+function lob(main,bar){
+  $("brand").textContent=`TABLE ${lobby.code}`;
+  const mine=lobby.seats[me.seat];
+  main.append(el("div","lbl",`Seated · ${lobby.seats.length} of 8`));
+  for(const s of lobby.seats){const c=el("div","who");c.style.setProperty("--h",HUES[s.i%8]);
+    c.append(el("span","hue"),el("span","nm",`${s.i===me.seat?"▸ ":""}${s.name}${s.bot?" · bot":""}`),
+      el("span","lbl",s.ruler??"choosing"));main.append(c)}
+  main.append(el("div","lbl","Choose your ruler"));
+  const g=el("div","grid2");
+  for(const r of lobby.rulers){const on=mine&&mine.faction===r.key;
+    const b=el("button","cell"+(on?" on":""),`${r.name}<br><span class="lbl">${r.era}</span>`);
+    b.disabled=r.taken&&!on;b.onclick=()=>send({t:"pick",faction:r.key});g.append(b)}
+  main.append(g);
+  if(me.seat===0){const a=el("button","","Add bot"),s=el("button","go","Start");
+    s.disabled=lobby.seats.length<2||!(mine&&mine.faction);
+    a.onclick=()=>send({t:"addBot"});s.onclick=()=>send({t:"start"});bar.append(a,s)}
+  else bar.append(el("div","lbl center","waiting for the host"));
+}
+
+function game(main,bar,side,right){
+  const showAll=v.phase==="resolved"||v.phase==="over";
+  const rev=v.reveal;
+  const board=showAll&&rev&&rev.board?rev.board:v.armies.map(a=>a.units);
+  const isDead=(ai,ui)=>showAll&&stage>=1&&rev&&rev.dead?rev.dead[ai][ui]:false;
+  $("brand").textContent=`ROUND ${v.round+1}`;
+  $("status").textContent=v.end?`game over · ${v.end}`:v.phase==="offer"?"an offer stands"
+    :v.toAct===v.you?"YOUR TURN":`${v.players[v.toAct]?.name??""} to act`;
+
+  // ---- the read (poker HUD): public behaviour only
+  side.append(el("div","lbl","The table"));
+  const hud=el("div","hud");
+  for(const p of v.players){
+    const st=v.stats[p.seat];
+    const c=el("div","who"+(v.toAct===p.seat?" act":"")+(p.sittingOut?" out":""));
+    c.style.setProperty("--h",HUES[p.seat%8]);
+    const agg=st.aggression;
+    c.append(el("span","hue"),
+      el("span","nm",`${p.seat===v.you?"YOU":p.name} <span class="lbl">${p.ruler}</span>`),
+      el("span","vp num",`${p.vp}`));
+    c.append(el("div","stats",
+      `<span>cmt <b class="num">${st.commits}</b></span>`+
+      `<span>str/rd <b class="num ${agg>=12?"hot":""}">${agg}</b></span>`+
+      `<span>sat <b class="num">${st.sitOuts}</b></span>`+
+      `<span>ref <b class="num">${st.offersRefused}</b></span>`+
+      `<span>burn <b class="num">${st.burned}</b></span>`+
+      (p.army!=null?`<span class="lbl">ARMY ${p.army?"II":"I"}</span>`:"")));
+    hud.append(c);
   }
-  box.append(el("div", "lbl", "<br>Choose your ruler"));
-  const g = el("div", "grid2");
-  for (const r of lobby.rulers) {
-    const on = mine && mine.faction === r.key;
-    const b = el("button", "cell" + (on ? " on" : ""),
-      `${r.name}<br><span class="lbl" style="letter-spacing:.04em">${r.era}</span>`);
-    b.disabled = r.taken && !on;
-    b.onclick = () => send({ t:"pick", faction: r.key });
-    g.append(b);
-  }
-  box.append(g); app.append(box);
+  side.append(hud);
+  side.append(el("div","lbl","Points · first to "+v.target));
+  const sc=el("div","score");
+  sc.append(el("div","h","ruler"),el("div","h","pts"),el("div","h","left"));
+  for(const p of [...v.players].sort((a,b)=>b.vp-a.vp))
+    sc.append(el("div",p.seat===v.you?"me":"",p.seat===v.you?"YOU":p.name),
+      el("div","num",`${p.vp}`),el("div","num",`${v.target-p.vp}`));
+  side.append(sc);
 
-  if (me.seat === 0) {
-    const addb = el("button", "", "Add bot"), go = el("button", "go", "Start");
-    go.disabled = lobby.seats.length < 2 || !(mine && mine.faction);
-    addb.onclick = () => send({ t:"addBot" });
-    go.onclick = () => send({ t:"start" });
-    bar.append(addb, go);
-  } else bar.append(el("div", "lbl center", "waiting for the host"));
-}
-
-function paintGame(app, bar) {
-  const showAll = v.phase === "resolved" || v.phase === "over";
-  const rev = v.reveal;
-  const board = showAll && rev && rev.board ? rev.board : v.armies.map((a) => a.units);
-  const deadOf = (ai, ui) => showAll && stage >= 1 && rev && rev.dead ? rev.dead[ai][ui] : false;
-
-  $("brand").textContent = `ROUND ${v.round + 1}`;
-  $("status").textContent = v.end ? `game over · ${v.end}`
-    : v.phase === "offer" ? "an offer stands"
-    : v.toAct === v.you ? "your turn" : `${v.players[v.toAct]?.name ?? ""} to act`;
-
-  // seats
-  for (const p of v.players) {
-    if (p.seat === v.you) continue;
-    const c = el("div", "seat" + (v.toAct === p.seat ? " act" : "") + (p.sittingOut ? " out" : ""));
-    c.style.setProperty("--h", HUES[p.seat % 8]);
-    c.append(el("span", "hue"),
-      el("span", "", `${init2(p.name)}`),
-      el("span", "vp", `${p.vp}`),
-      el("span", "lbl", p.army != null ? (p.army ? "II" : "I") : p.sittingOut ? "out" : ""));
-    $("seats").append(c);
-  }
-
-  const selUnit = sel ? v.hand.find((u) => u.uid === sel) : null;
-
-  const armyBlock = (ai) => {
-    const a = v.armies[ai];
-    const wrap = el("div");
-    const head = el("div", "armyhead");
-    const membs = a.members.map((s) => init2(v.players[s].name)).join("·");
-    head.append(el("span", "lbl", `Army ${ai ? "II" : "I"}${membs ? " · " + membs : ""}`),
-      el("span", showAll && stage >= 2 && rev ? (rev.winners.includes(ai) ? "win" : "lbl") : "lbl",
-        showAll && stage >= 2 && rev ? `${rev.totals[ai] ?? 0}` : `${a.count} unit${a.count === 1 ? "" : "s"}`));
-    const slots = el("div", "slots");
-    for (let i = 0; i < 3; i++) {
-      const u = board[ai] && board[ai][i];
-      if (!u) { slots.append(el("div", "slot empty")); continue; }
-      const open = showAll || u.arm != null;
-      const dead = deadOf(ai, i);
-      const s = el("div", "slot" + (open ? "" : " hid") + (u.owner === v.you ? " mine" : "") + (dead ? " dead" : ""));
-      s.style.setProperty("--h", HUES[u.owner % 8]);
-      s.append(el("span", "own"));
-      if (open) {
-        s.insertAdjacentHTML("beforeend", pieceSVG(u.arm, u.s));
-        s.append(el("div", "st", `${u.s}`));
-        if (u.broker) s.append(el("div", "lbl", "broker"));
-      } else s.append(el("div", "lbl", "face down"));
-      s.append(el("div", "who", init2(v.players[u.owner].name)));
-      if (dead) s.insertAdjacentHTML("beforeend",
+  // ---- the ground
+  const selU=sel?v.hand.find(u=>u.uid===sel):null;
+  const army=(ai)=>{
+    const a=v.armies[ai],wrap=el("div");
+    const head=el("div","armyhead");
+    const mem=a.members.map(s=>in2(v.players[s].name)).join(" · ");
+    head.append(el("span","lbl",`Army ${ai?"II":"I"}${mem?" — "+mem:""}`));
+    head.append(el("span","tot num"+(showAll&&stage>=2&&rev&&rev.winners.includes(ai)?" win":""),
+      showAll&&stage>=2&&rev?`${rev.totals[ai]??0}`:`${a.count}/3`));
+    const sl=el("div","slots");
+    for(let i=0;i<3;i++){
+      const u=board[ai]&&board[ai][i];
+      if(!u){sl.append(el("div","slot empty"));continue}
+      const open=showAll||u.arm!=null,dead=isDead(ai,i);
+      const s=el("div","slot"+(open?"":" hid")+(u.owner===v.you?" mine":"")+(dead?" dead":""));
+      s.style.setProperty("--h",HUES[u.owner%8]);
+      s.append(el("span","hue"));
+      if(open){s.insertAdjacentHTML("beforeend",svg(u.arm,52));
+        s.append(el("span","s num",`${u.s}`));
+        if(u.broker)s.append(el("span","brk"));
+        s.onclick=()=>{sheet={title:`${cap(u.arm)} ${u.s}`,
+          sub:`${v.players[u.owner].name}${u.broker?" · Power Broker":""}`,
+          body:`Kills ${RING.filter((_,j)=>beats(RING.indexOf(u.arm),j)).map(x=>cap(x)).join(" and ")}. `+
+               `Dies to ${RING.filter((_,j)=>beats(j,RING.indexOf(u.arm))).map(x=>cap(x)).join(" and ")}.`};paint()};
+      } else s.append(el("span","lbl","face down"));
+      s.append(el("span","init",in2(v.players[u.owner].name)));
+      if(dead)s.insertAdjacentHTML("beforeend",
         `<svg class="x" viewBox="0 0 100 140"><line x1="14" y1="18" x2="86" y2="122"/></svg>`);
-      slots.append(s);
+      sl.append(s);
     }
-    wrap.append(head, slots);
-    return wrap;
+    wrap.append(head,sl);return wrap;
   };
+  const mid=el("div","clash");mid.append(ring(selU),note(selU));
+  main.append(army(0),mid,army(1));
 
-  const mid = el("div", "clash");
-  mid.append(ringBadge(selUnit), ringNote(selUnit));
-  app.append(armyBlock(0), mid, armyBlock(1));
+  if(showAll&&stage>=2&&rev){
+    if(rev.rocketsFired)main.append(el("div","err center","SULTAN ROCKETS — the winners' army burns"));
+    for(const [p,n2] of rev.awarded)
+      main.append(el("div","center lbl",
+        `<span style="color:var(--act)">${v.players[p].name} was the largest contributor — +${n2}</span>`));
+  }
 
-  if (showAll && stage >= 2 && rev && rev.rocketsFired)
-    app.append(el("div", "err center", "SULTAN ROCKETS — the winners' army burns"));
+  // ---- log
+  right.append(el("div","lbl","What happened"));
+  const lg=el("div","log");
+  for(const e of v.log)lg.append(el("div",e.kind,e.text));
+  right.append(lg);
 
-  // hand
-  $("handband").hidden = false;
-  $("handlbl").textContent = `${v.players[v.you].ruler} · ${v.players[v.you].vp}/${v.target} points`;
-  const hand = $("hand"); hand.innerHTML = "";
-  for (const u of v.hand) {
-    const cls = u.state === "burned" ? "burn" : u.state === "ready" ? "" : "rest";
-    const c = el("div", `pc ${cls}${sel === u.uid ? " sel" : ""}`);
-    c.insertAdjacentHTML("beforeend", pieceSVG(u.arm, u.s, 40));
-    c.append(el("div", "tag", `${u.s}${u.broker ? "<br>" + u.name.split(" ")[0] : ""}` +
-      (u.state === "ready" ? "" : `<br>${u.state === "burned" ? "burnt"
-        : u.state === "recovering" ? "back r" + (u.returns + 1)
-        : "r" + (u.returns + 1)}`)));
-    if (u.broker) c.append(el("span", "brk"));
-    if (u.state === "ready") c.onclick = () => { sel = sel === u.uid ? null : u.uid; paint(); };
+  // ---- hand
+  $("handband").hidden=false;
+  $("handlbl").textContent=`${v.players[v.you].ruler} · ${v.hand.filter(u=>u.state==="ready").length} ready`;
+  const hand=$("hand");hand.innerHTML="";
+  for(const u of v.hand){
+    const cls=u.state==="burned"?"burn":u.state==="ready"?"":"rest";
+    const c=el("div",`pc ${cls}${sel===u.uid?" sel":""}`);
+    c.insertAdjacentHTML("beforeend",svg(u.arm,38));
+    c.append(el("span","s num",`${u.s}`));
+    c.append(el("div","tag",u.broker?u.name.split(" ")[0]:cap(u.arm).slice(0,4)));
+    if(u.state!=="ready")c.append(el("div","tag",
+      u.state==="burned"?"burnt":u.state==="committed"?"on ground":`back r${u.returns+1}`));
+    if(u.broker)c.append(el("span","brk"));
+    c.onclick=()=>{
+      if(u.state!=="ready"){sheet={title:`${cap(u.arm)} ${u.s}`,sub:u.state,
+        body:u.state==="burned"?"Lost with a defeated army. Gone for the rest of the game."
+          :u.state==="committed"?"On the ground this round."
+          :`Won its ground and is recovering. Returns in round ${u.returns+1}.`};paint();return}
+      sel=sel===u.uid?null:u.uid;paint()};
     hand.append(c);
   }
 
-  // action bar
-  if (v.phase === "offer" && v.actions.some((a) => a.type === "accept")) {
-    const from = init2(v.players[v.offer.from].name);
-    app.append(el("div", "center lbl", `<br>${from} sends a unit into your army — you cannot see it`));
-    const acc = el("button", "go", "Accept"), ref = el("button", "no", "Refuse");
-    acc.onclick = () => send({ t:"act", action:{ type:"accept" } });
-    ref.onclick = () => send({ t:"act", action:{ type:"refuse" } });
-    bar.append(acc, ref);
-  } else if (v.end && v.phase === "over") {
-    bar.append(el("div", "lbl center win",
-      v.winners.includes(v.you) ? "you take the Deccan" : `${v.winners.map((s) => v.players[s].name).join(", ")} wins`));
-  } else if (v.toAct === v.you) {
-    const can = (n) => sel && v.actions.some((a) => a.type === "commit" && a.uid === sel && a.army === n);
-    const b0 = el("button", "go", "Send I"), b1 = el("button", "go", "Send II"), ps = el("button", "", "Pass");
-    b0.disabled = !can(0); b1.disabled = !can(1);
-    b0.onclick = () => { send({ t:"act", action:{ type:"commit", uid:sel, army:0 } }); sel = null; };
-    b1.onclick = () => { send({ t:"act", action:{ type:"commit", uid:sel, army:1 } }); sel = null; };
-    ps.onclick = () => send({ t:"act", action:{ type:"pass" } });
-    bar.append(b0, b1, ps);
-  } else {
-    bar.append(el("div", "lbl center", showAll ? "the ring resolves…" : "waiting…"));
-  }
+  // ---- actions
+  if(v.phase==="offer"&&v.actions.some(a=>a.type==="accept")){
+    main.append(el("div","center lbl",
+      `${v.players[v.offer.from].name} sends a unit into your army — you cannot see it`));
+    const a=el("button","go","Accept"),r=el("button","no","Refuse");
+    a.onclick=()=>send({t:"act",action:{type:"accept"}});
+    r.onclick=()=>send({t:"act",action:{type:"refuse"}});bar.append(a,r);
+  }else if(v.end&&v.phase==="over"){
+    bar.append(el("div","lbl center",v.winners.includes(v.you)?"YOU TAKE THE DECCAN"
+      :`${v.winners.map(s=>v.players[s].name).join(", ")} wins`));
+  }else if(v.toAct===v.you){
+    const can=(n2)=>sel&&v.actions.some(a=>a.type==="commit"&&a.uid===sel&&a.army===n2);
+    const isOffer=(n2)=>sel&&v.actions.some(a=>a.type==="commit"&&a.uid===sel&&a.army===n2&&a.offer);
+    const b0=el("button","go",isOffer(0)?"Offer to I":"Send I");
+    const b1=el("button","go",isOffer(1)?"Offer to II":"Send II");
+    const ps=el("button","","Pass");
+    b0.disabled=!can(0);b1.disabled=!can(1);
+    b0.onclick=()=>{send({t:"act",action:{type:"commit",uid:sel,army:0}});sel=null};
+    b1.onclick=()=>{send({t:"act",action:{type:"commit",uid:sel,army:1}});sel=null};
+    ps.onclick=()=>send({t:"act",action:{type:"pass"}});
+    bar.append(b0,b1,ps);
+  }else bar.append(el("div","lbl center",showAll?"the ring resolves…":"waiting…"));
 }
 
-// The ring is a CIRCLE, never unrolled: flattening it puts "Warrior kills Elephant" — the most
-// surprising rule in the game — off the end of a line. Labels stay horizontal.
-function ringBadge(u) {
-  const R = 34, cx = 46, cy = 44;
-  const pos = RING.map((_, i) => {
-    const t = -Math.PI / 2 + i * (2 * Math.PI / 5);
-    return [cx + R * Math.cos(t), cy + R * Math.sin(t)];
-  });
-  const mineIdx = u ? RING.indexOf(u.arm) : -1;
-  let s = `<svg class="ringwrap" width="92" height="88" viewBox="0 0 92 88" role="img"
-    aria-label="the ring of five arms">`;
-  for (let i = 0; i < 5; i++) {
-    const j = (i + 1) % 5;
-    s += `<line class="edge" x1="${pos[i][0]}" y1="${pos[i][1]}" x2="${pos[j][0]}" y2="${pos[j][1]}"/>`;
-  }
-  for (let i = 0; i < 5; i++) {
-    let cls = "node";
-    if (mineIdx >= 0) {
-      if (i === mineIdx) cls += " me";
-      else if (beats(mineIdx, i)) cls += " kil";
-      else if (beats(i, mineIdx)) cls += " thr";
-    }
-    s += `<circle class="${cls}" cx="${pos[i][0]}" cy="${pos[i][1]}" r="10"/>`;
-    s += `<text class="nlbl${mineIdx === i ? " on" : ""}" x="${pos[i][0]}" y="${pos[i][1] + 3}"
-      >${RING[i][0]}</text>`;
-  }
-  return el("div", "", s + "</svg>");
+function ring(u){
+  const R=32,cx=44,cy=42;
+  const p=RING.map((_,i)=>{const t=-Math.PI/2+i*(2*Math.PI/5);
+    return [cx+R*Math.cos(t),cy+R*Math.sin(t)]});
+  const mi=u?RING.indexOf(u.arm):-1;
+  let s=`<svg width="88" height="84" viewBox="0 0 88 84" role="img" aria-label="the ring">`;
+  for(let i=0;i<5;i++){const j=(i+1)%5;
+    s+=`<line class="edge" x1="${p[i][0]}" y1="${p[i][1]}" x2="${p[j][0]}" y2="${p[j][1]}"/>`}
+  for(let i=0;i<5;i++){let c="node";
+    if(mi>=0){if(i===mi)c+=" me";else if(beats(mi,i))c+=" kil";else if(beats(i,mi))c+=" thr"}
+    s+=`<circle class="${c}" cx="${p[i][0]}" cy="${p[i][1]}" r="9.5"/>`;
+    s+=`<text class="nlbl${mi===i?" on":""}" x="${p[i][0]}" y="${p[i][1]+3}">${RING[i][0]}</text>`}
+  return el("div","",s+"</svg>");
 }
-
-function ringNote(u) {
-  if (!u) return el("div", "ringnote lbl", "each arm kills<br>the next two");
-  const i = RING.indexOf(u.arm);
-  const kills = RING.filter((_, j) => beats(i, j)).map((a) => SHORT[a]).join(" · ");
-  const dies = RING.filter((_, j) => beats(j, i)).map((a) => SHORT[a]).join(" · ");
-  return el("div", "ringnote",
-    `<b>${SHORT[u.arm]} ${u.s}</b><br>kills ${kills}<br>dies to ${dies}`);
+function note(u){
+  if(!u)return el("div","ringnote lbl","each arm kills<br>the next two");
+  const i=RING.indexOf(u.arm);
+  return el("div","ringnote",`<b>${cap(u.arm)} ${u.s}</b><br>`+
+    `kills ${RING.filter((_,j)=>beats(i,j)).map(a=>SHORT[a]).join(" · ")}<br>`+
+    `<span class="k">dies to ${RING.filter((_,j)=>beats(j,i)).map(a=>SHORT[a]).join(" · ")}</span>`);
 }
-
-connect(); paint();
+connect();paint();
 </script>
