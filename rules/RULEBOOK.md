@@ -1,6 +1,6 @@
 # DECCAN
 
-**2–8 players · 30–45 minutes · 76 cards**
+**2–8 players · 30–45 minutes · 79 cards**
 
 Two armies form on one piece of ground. You do not command an army — you put units *into* one,
 alongside whoever else wants the same ground, and it pays out to whoever is still standing when
@@ -14,10 +14,12 @@ only ones who ever get the game's best cards.
 
 ## Components
 
-**Eight rulers**, each with a **FORCE** of seven units. Every unit shows an **ARM** and a printed
-**STRENGTH**.
+**Eight rulers**, each with a **FORCE** of eight units. Every unit shows an **ARM** and a printed
+**STRENGTH**. No two rulers hold the same eight cards, and every ruler holds at least one of
+every arm — so every ruler can answer every arm.
 
-**Twenty Power Brokers**, four of each of five kinds, shuffled face down into a **supply**.
+**Fifteen Power Brokers**, three of each of five kinds, shuffled face down into a **supply**.
+If the supply ever empties, shuffle the discarded brokers to make a new one.
 
 ## Setup
 
@@ -79,8 +81,8 @@ Turn every committed unit face up.
 
 **A cancelled unit does nothing.** It adds no strength, and its ability never happens.
 
-Then every surviving **Power Broker** resolves its ability, and each army totals the strength of
-its survivors. **The higher total takes the GROUND.** Level totals, and both armies take it.
+Then every surviving **Power Broker** resolves its **ON REVEAL** ability, and each army totals the
+strength of its survivors. **The higher total takes the GROUND.** Level totals, and both armies take it.
 
 ### 4 · Spoils
 
@@ -112,16 +114,33 @@ game ends and the most points wins.
 
 ## Power Brokers
 
-| | | |
-| --- | ---: | --- |
-| **Siege Elephant** | 10 | Deploy **face up**. On deployment, look at any one committed enemy unit; it stays face up. |
-| **Sultan Rockets** | 8 | If your army **loses**, burn every recovering unit of the winning army. |
-| **Spy** | 6 | Swap with the strongest unit of the opposing army. **The exchange is permanent** — each card joins the other player's Force for the rest of the game. |
-| **Sepoy** | 4 | While **alone** in your army, fight at double strength. |
-| **Subhedar** | 2 | Remove the weakest unit of the opposing army. |
+| | | | |
+| --- | ---: | --- | --- |
+| **Siege Elephant** | 10 | ON DEPLOY | Deploy **face up**. Look at one enemy unit — it stays face up. |
+| **Sultan Rockets** | 8 | ON DEFEAT | Burn the winning army's recovering units. |
+| **Spy** | 6 | ON REVEAL | **Exchange** with the enemy's strongest unit. **Permanent** — each card joins the other Force for good. |
+| **Sepoy** | 4 | ON REVEAL | **Alone** in your army: double strength. |
+| **Subhedar** | 2 | ON REVEAL | Remove the enemy's weakest unit. |
 
-The Siege Elephant's look happens when you deploy it, so the ring cannot stop it. Every other
-ability needs its card to survive the ring first.
+**Every broker says when it acts.**
+
+| | |
+| --- | --- |
+| **ON DEPLOY** | When you commit it, before anything is revealed. **The ring cannot stop it** — the card has not been contested yet. |
+| **ON REVEAL** | The abilities step of the battle. The ring resolves first, so **only survivors act**. |
+| **ON DEFEAT** | After the ground is decided, if the card survived the ring and its army did not take the ground. |
+
+Only the Siege Elephant is ON DEPLOY, and it is face up precisely because it acts before the
+ring. Every other ability needs its card to survive the ring first.
+
+**ON REVEAL is not the Charge.** Both armies turn face up at the Charge, but nothing resolves
+until the ring has been read off them.
+
+A Sepoy's **alone** is fixed the moment the armies turn face up: it counts the units revealed
+beside it, so an army-mate that the ring cancels still counts as company.
+
+**A borrowed unit never earns the alone bonus.** A Sepoy that changed hands through a Spy's
+exchange fights at its printed strength for its new army, however alone it is left there.
 
 ---
 
@@ -133,8 +152,9 @@ it can reach, so an Elephant draws fire that a Warrior never would.
 **Losing is how you get stronger.** Every defeat hands you a Power Broker, and only the defeated
 ever hold one. The leader is the one player who cannot buy the game's sharpest cards.
 
-**A ruler with three of one arm still holds one of every other.** However hard you lean on your
-speciality, you always have an answer to everything — and so does everyone else.
+**However many you hold of your best arm, you still hold one of every other.** You always have
+an answer to everything — and so does everyone else. Most rulers also carry the arm that answers
+their own: the Sultan's elephants are cancelled by warriors, so the Sultan fields warriors.
 
 ---
 
@@ -146,9 +166,13 @@ speciality, you always have an answer to everything — and so does everyone els
 
 **COMMIT** — place a unit face down into an army. It cannot be taken back.
 
-**FORCE** — the seven units a ruler starts with.
+**FORCE** — the eight units a ruler starts with.
 
 **GROUND** — what the two armies are fighting over. Taken by the higher surviving total.
+
+**ON DEPLOY / ON REVEAL / ON DEFEAT** — when a Power Broker's ability happens. On deployment,
+before the ring and safe from it · at the abilities step, survivors only · after the ground is
+decided, for a surviving card whose army lost.
 
 **LEADER** — the first player to commit to an army. Accepts or refuses every unit offered to it,
 without looking.

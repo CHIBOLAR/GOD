@@ -1,6 +1,6 @@
 # DECCAN
 
-A physical card game for **2–8 players**, in **76 cards**. Two armies form on one piece of
+A physical card game for **2–8 players**, in **79 cards**. Two armies form on one piece of
 ground; the players decide who fights in them, and the losers get the better cards.
 
 This repository holds the **design**: the rulebook, the card list, and the simulation used to
@@ -39,20 +39,21 @@ army, and the recruit-on-defeat economy — **quote its numbers, not the duel mo
 
 ## Where it landed
 
-Measured on the whole game with alliances, 3000 games per player count:
+Measured on the whole game with alliances, 12,000 games per player count:
 
 | | |
 | --- | ---: |
-| Worst seat deviation, 2–8p | **2.6** |
-| Worst faction deviation | **6.1** at two players, **2.0** at eight |
-| Game length | 4.5 – 8.0 rounds |
+| Worst seat deviation, 2–8p | **3.9** |
+| Worst faction deviation | **4.4** at four players, **1.8** at eight |
+| Game length | 4.4 – 7.9 rounds |
 | Games decided on the target | **100%** |
-| Rounds containing an alliance, 3p+ | **83%** |
-| Power Brokers drawn per game | 16.3 of 20 |
+| Rounds containing an alliance, 3p+ | **86%** |
+| Power Brokers drawn per game | 13.9 of 15 |
 
-**8 gates · 7 pass · 1 warn · 0 fail.** The warning is faction deviation at two players, where
-alliances almost never fire and the game is least itself; it is a deliberate trade recorded in
-`DECISIONS.md` D032.
+**9 gates · 8 pass · 1 warn · 0 fail.** The warning is the Power Broker supply, which is drawn
+down to 13.9 of 15 at eight players. No game in any run ended by exhaustion — 100% still end on
+the victory target — and an emptied supply is reshuffled from the discards. See `DECISIONS.md`
+D046.
 
 **Rulebook:** 9 glossary terms, 160 lines.
 

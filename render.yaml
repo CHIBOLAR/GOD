@@ -1,0 +1,14 @@
+# Render Blueprint for GOD — Gambit of Deccan.
+# Push this repo to GitHub, then in Render: New > Blueprint > pick the repo.
+services:
+  - type: web
+    name: god
+    runtime: node
+    plan: free          # sleeps after ~15 min idle, wakes on the next visit
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

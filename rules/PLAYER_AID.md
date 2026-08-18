@@ -64,31 +64,37 @@ Game also ends if two rounds pass with nothing committed, or nobody can commit. 
 
 ## The eight rulers
 
-Seven units each. **A specialist** holds three of one arm; **a pair** holds two of its arm and
-two of the next arm round the ring. Everyone holds at least one of every arm.
+Eight units each. Everyone holds at least one of every arm; what differs is where the spare
+cards sit. Most rulers carry the arm that answers their own — the Sultan's elephants are
+cancelled by warriors, so the Sultan fields warriors.
 
 | Ruler | | Force |
 | --- | --- | --- |
-| **The Sultan** | three elephant | E9 E9 E9 · C7 H5 R3 W1 |
-| **The Badshah** | three cannon | C7 C7 C7 · E9 H5 R3 W1 |
-| **The Peshwa** | three horseman | H5 H5 H5 · E9 C7 R3 W1 |
-| **The Governor** | three rifleman | R3 R3 R3 · E9 C7 H5 W1 |
-| **The Rana** | three warrior | W1 W1 W1 · E9 C7 H5 R3 |
-| **The Nizam** | two cannon + two horseman | C7 C7 H5 H5 · E9 R3 W1 |
-| **The Nawab** | two rifleman + two cannon | R3 R3 C7 C7 · E9 H5 W1 |
-| **The Maharaja** | two horseman + two warrior | H5 H5 W1 W1 · E9 C7 R3 |
+| **The Sultan** | three elephant + two warrior | E9 E9 E9 W1 W1 · C7 H5 R3 |
+| **The Badshah** | three cannon + two warrior | C7 C7 C7 W1 W1 · E9 H5 R3 |
+| **The Peshwa** | four horseman | H5 H5 H5 H5 · E9 C7 R3 W1 |
+| **The Governor** | four rifleman | R3 R3 R3 R3 · E9 C7 H5 W1 |
+| **The Rana** | three warrior + two horseman | W1 W1 W1 H5 H5 · E9 C7 R3 |
+| **The Nizam** | three cannon + two horseman | C7 C7 C7 H5 H5 · E9 R3 W1 |
+| **The Nawab** | three rifleman + two cannon | R3 R3 R3 C7 C7 · E9 H5 W1 |
+| **The Maharaja** | three horseman + two warrior | H5 H5 H5 W1 W1 · E9 C7 R3 |
 
 ## The supply — 4 of each, 20 cards, recruited by losing
 
-| | | |
-| --- | ---: | --- |
-| **Siege Elephant** | 10 | Deploy **face up**. Look at one committed enemy unit; it stays face up. |
-| **Sultan Rockets** | 8 | If your army **loses**, burn the winner's recovering units. |
-| **Spy** | 6 | Swap with their strongest unit. **Permanent** — the cards change hands for good. |
-| **Sepoy** | 4 | While **alone** in your army, fight at double strength. |
-| **Subhedar** | 2 | Remove the weakest unit of the opposing army. |
+| | | | |
+| --- | ---: | --- | --- |
+| **Siege Elephant** | 10 | ON DEPLOY | Deploy **face up**. Look at one enemy unit — it stays face up. |
+| **Sultan Rockets** | 8 | ON DEFEAT | Burn the winning army's recovering units. |
+| **Spy** | 6 | ON REVEAL | **Exchange** with their strongest unit. **Permanent** — the cards change hands for good. |
+| **Sepoy** | 4 | ON REVEAL | **Alone** in your army: double strength. |
+| **Subhedar** | 2 | ON REVEAL | Remove the enemy's weakest unit. |
 
-Only the Siege Elephant's look survives being cancelled — it happens as you deploy.
+**ON DEPLOY** as you commit it — the ring cannot stop it. **ON REVEAL** at the abilities step —
+the ring goes first, so only survivors act. **ON DEFEAT** once the ground is decided, if the card
+survived and its army lost.
+
+A Sepoy's **alone** counts the units revealed beside it, so a cancelled army-mate still counts as
+company — and a Sepoy taken by a Spy never earns the bonus for its new army.
 
 ---
 

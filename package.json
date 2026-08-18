@@ -2,14 +2,20 @@
   "name": "deccan",
   "version": "0.1.0",
   "private": true,
-  "description": "DECCAN II — design and balance model for the card game. No app.",
+  "description": "DECCAN II - design and balance model, and GOD (Gambit of Deccan), the online game.",
   "type": "module",
   "scripts": {
     "cards": "node sim/cardsdoc.mjs",
     "gates": "node sim/gates.mjs",
-    "prove": "node sim/prove.mjs"
+    "prove": "node sim/prove.mjs",
+    "start": "node web/server.mjs",
+    "serve": "node web/server.mjs",
+    "parity": "node web/parity.mjs"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
   }
 }

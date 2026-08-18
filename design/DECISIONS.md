@@ -845,3 +845,362 @@ Taken anyway. A card that appears in one game in four and changes that game's sh
 worth more than one that fires every round and nudges a total. **If it should fire more often,
 the lever is the Spy's arm** — HORSEMAN is cancelled by Rifleman and Cannon, two of the
 commonest cards in the game.
+
+---
+
+## 2026-08-18 — D037. Every Power Broker states WHEN it acts: ON DEPLOY / ON REVEAL / ON DEFEAT
+
+**Ruling:** three timing keywords, printed on every broker.
+
+| | |
+| --- | --- |
+| **ON DEPLOY** | As the card is committed, before anything is revealed. **Beats the ring** — the card has not been contested yet. Siege Elephant only, and it is face up *because* it acts before the ring. |
+| **ON REVEAL** | The abilities step of the battle: ring first, then abilities. **Survivors only.** |
+| **ON DEFEAT** | After the ground is decided, if the card survived the ring and its army did not take the ground. |
+
+**Reason:** the ordering rule existed but lived only in a rulebook sentence — *"the Siege
+Elephant's look happens when you deploy it… every other ability needs its card to survive the
+ring first."* Nothing on the card said so, and *"does my Spy still steal if a Rifleman cancelled
+it?"* was answerable only by going back to the book.
+
+**The keywords also shorten the cards.** The Rockets no longer say "if your army loses" and the
+Spy no longer explains what permanence means — the keyword carries it.
+
+**ON REVEAL is the abilities step, NOT the Charge.** Both armies turn face up at the Charge, but
+nothing resolves until the ring has been read off them.
+
+⚠️ **The Sepoy is ON REVEAL and does not need a fourth static keyword.** Its condition (ALONE) is
+fixed the moment both armies turn face up and cannot change afterwards, and because the effect
+touches only the Sepoy's own strength, a cancelled Sepoy totals 0 whether doubled or not — the
+timing is inert for it. ALONE counts the **revealed** army, so a cancelled army-mate still counts
+as company. This matches `battle.mjs` exactly (`army.length === 1`), which was already the
+behaviour before the keyword named it.
+
+**Consequence:** the Siege Elephant's effect verb became **LOOK**, freeing REVEAL to be a timing
+word. That was the rulebook's own original wording.
+
+**Measured: nothing.** The change is documentation — the resolver reads `faceUp`, never `text` or
+`when`. Verified by stashing and re-running: gates bit-identical.
+
+---
+
+## 2026-08-18 — D038. The supply gate derives its own size
+
+**Ruling:** the "Power Brokers drawn per game" gate takes its thresholds from `SUPPLY_SIZE`
+(88% of the supply to pass, running it dry to fail) instead of the literals 22 and 25.
+
+**Reason:** `gates.mjs` reported `"of 25"` and gated at `pass <= 22 / fail > 25` — thresholds
+inherited from a 25-card supply. The supply is 20. **Against 20 those thresholds could never
+bind**, so a gate reading "the supply must not run dry" had silently stopped measuring anything.
+It now reads `16.3 … the supply of 20 must not run dry` and has real headroom.
+
+⚠️ **The general lesson: a gate with a hardcoded literal stops being a gate the moment the design
+moves.** Every threshold that describes a proportion should be written as one.
+
+---
+
+## 2026-08-18 — D039. The Sepoy's alone bonus is ×3
+
+**Ruling:** `SEPOY_MULT = 3`. A lone Sepoy fights at 12.
+
+**Measured** — a lone Sepoy against all 55 possible enemy armies of 1–3 Force units:
+
+| multiplier | fights at | takes the ground |
+| --- | ---: | ---: |
+| ×2 | 8 | 23.6% |
+| **×3** | **12** | **32.7%** |
+| ×4 | 16 | 34.5% |
+| ×∞ | — | 34.5% |
+
+⚠️ **The multiplier saturates, and the ceiling is structural.** 36 of the 55 armies contain an
+ELEPHANT or a WARRIOR — the two arms that cancel RIFLEMAN — and a cancelled unit contributes 0
+however large the multiplier. At ×4 the losses are *exactly* those 36. **A Warrior 1, the
+cheapest card in the game and held by every ruler, blanks a lone Sepoy at any multiplier.**
+
+×3 buys 95% of the available headroom; ×4 buys 1.8 points more and nothing beyond. Whole-game
+gates are flat across all three: faction deviation 5.2 / 5.3 / 5.3.
+
+**LESSONS C2 no longer binds, and is marked superseded for DECCAN II.** C2 records that a ×3
+alone multiplier once made a one-card army the best army in the game at 95.6%. That happened
+**because lone units were untargetable**. DECCAN II targets them: a lone Sepoy is its army's
+strongest *and* weakest unit, so the ring cancels it and a Subhedar removes it. The win rate is
+capped at 34.5% by construction and the C2 failure cannot recur.
+
+**Not a lever for making the Sepoy matter more:** every arm has exactly two killers, so every
+arm's ceiling is the same 19-of-55. Moving the ability changes *which* armies blank it, not how
+many. The only lever that raises the ceiling is cancellation immunity.
+
+---
+
+## 2026-08-18 — D040. CORRECTION: a borrowed unit never earns the alone bonus (LESSONS C4)
+
+**Ruling:** a unit that changed hands through a Spy's exchange fights at its printed strength for
+its new army, however alone it is left there. `battle.mjs` marks both exchanged cards `borrowed`
+and the alone bonus checks the flag.
+
+**This was a live bug, not a clarification.** `value()` checked only
+`broker === "sepoy" && army.length === 1`, with **no ownership test**, and totals are computed
+*after* swaps. A Spy could steal a Sepoy into its own one-unit army and fight at the doubled
+value. Exhaustive search: **reachable in 470 of 81,225 matchups**, e.g.
+`[Warrior+Warrior+Sepoy] vs [Cannon+Spy]` — the thief takes the ground **6 to 12**, on a card
+they do not own.
+
+**This is exactly LESSONS C4**, recorded from the old game — *"a single Spy once beat a lone
+Elephant outright by stealing it into its own one-unit army"* — and it had been reintroduced.
+D039's ×3 raised its payoff from 8 to 12, which is what prompted the search.
+
+**Fixed and verified: 470 → 0.** Gates unchanged at 5.2.
+
+⚠️ **`OPEN.md` claimed "checked line by line… nothing diverges."** It did diverge. A
+reconciliation pass that reads for agreement will not find a missing guard — only adversarial
+search will. The flag is set on **both** exchanged cards so any future conditional bonus inherits
+the guard rather than having to remember it (LESSONS C5).
+
+---
+
+## 2026-08-18 — D041. The Sultan Rockets deploy FACE UP
+
+**Ruling:** the Rockets are committed face up. Two brokers now trade in information — the Siege
+Elephant **buys** it, the Rockets **are** it.
+
+**Reason:** a hidden scorch does not create a read. Broker identity was a 4-of-20 shuffle; times
+the chance the card is committed, times it surviving CANNON's killers, the prior is mostly noise.
+A threat nobody can price is variance, not deduction. Face up, the winning side can decide in the
+open whether a ground is worth their recovery, and the holder pays surprise for it.
+
+**Measured: balance-neutral.** Faction deviation 5.2 → 5.1 at 12,000 games; all eight gates keep
+their verdict. (At 4,000 games it read 5.6 → 6.0, which did not survive the larger sample — a
+reminder that this gate's noise band is roughly ±0.4.)
+
+⚠️ **The gates could NOT test the actual hypothesis, and this must not be read as if they had.**
+`rockets` appears nowhere in `scoreMove`; it exists only in resolution and in the stats counters.
+The simulated players never fear the burn and never price their recovery. What the run measured
+is the **ring channel** — a visible CANNON 8 that opponents route around — which is a side effect
+of the change, not the change. Whether the deterrent is *fun* is a table question.
+
+**One real signal from the ring channel:** the worst faction shifts from badshah to peshwa at
+5p/6p/8p and holds at 12,000 games. A visible cannon lets the arms that fear cannon dodge it,
+while the cannon specialist loses the surprise it was trading on.
+
+---
+
+## 2026-08-18 — D042. The five brokers pay in different currencies
+
+**Not a ruling — a measurement**, recorded because it governs every future "is this broker weak?"
+question.
+
+Each broker in every army of 1–3 against every enemy army of 1–3, compared with its own arm's
+Force unit (the "+1 shadow" of D029):
+
+| broker | vs counterpart | takes the ground | marginal |
+| --- | --- | ---: | ---: |
+| Sepoy 4 | Rifleman 3 | 67.4% | +10.0 |
+| Siege Elephant 10 | Elephant 9 | 65.1% | +0.4 |
+| **Subhedar 2** | Warrior 1 | 64.1% | **+12.1** |
+| Sultan Rockets 8 | Cannon 7 | 60.5% | +0.4 |
+| Spy 6 | Horseman 5 | 52.1% | **−6.8** |
+
+**The Subhedar has the highest marginal value in the set.** Remove-the-weakest is not a weak
+ability and does not need replacing — a question asked twice and now answered with a number.
+(Caveat: marginals are measured against different baselines. The Warrior 1 is the worst card in
+the game, so the Subhedar has the most headroom; the **absolute** column is the fairer read, and
+there it sits third of five.)
+
+**Two brokers contribute essentially nothing to taking the ground** (+0.4 each) and one is
+actively **negative** (−6.8). That is by design, not a fault: the Siege Elephant trades in
+information, the Rockets in denying a winner their recovery, the Spy in permanent card advantage
+across the whole game. **No single metric can rank this set**, and any that appears to is
+measuring one currency and calling it value.
+
+---
+
+## 2026-08-18 — D043. The recruit chooser must be ability-aware
+
+**Ruling:** `pickFromOffer` scores a broker as expected points —
+`pSurvive × (0.5 + GROUND) + live × OFFAXIS` — where `GROUND` is the measured marginal from D042
+and `live` uses the D037 timing keyword (ON DEPLOY beats the ring, so the Siege Elephant's
+information does not require the card to survive).
+
+**Reason:** the first version scored strength × survival. Being blind to what a card *does*, it
+ranked the printed 2 last **by construction** and reported the Subhedar as the least-wanted
+broker at 15.2% — when D042 shows it is the highest-marginal card in the set. A chooser that
+cannot see abilities will answer every "which broker is weak" question with the strength order.
+
+⚠️ **`OFFAXIS` is a STATED JUDGEMENT, not a measurement, and cannot be measured from this repo** —
+information, denial and permanent theft are invisible to a ground metric. The three values (siege
+0.25, rockets 0.35, spy 0.40) are documented with their reasoning in `game.mjs` and are
+env-tunable **so that conclusions can be sensitivity-tested rather than believed.**
+
+**Pick rates, and what survives the sweep:**
+
+| off-axis | Elephant | Rockets | Spy | Sepoy | Subhedar | worst gap from 20% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| zero (ground only) | **15.9** | 22.1 | 19.0 | 21.9 | 21.0 | 4.1 |
+| halved | 22.0 | 21.7 | 18.0 | 20.0 | 18.3 | **2.0** |
+| default | 22.6 | 21.9 | 18.7 | 19.5 | 17.3 | 2.7 |
+| doubled | 22.8 | 22.1 | 19.9 | 18.9 | **16.3** | 3.7 |
+| flat 0.33 | 22.8 | 21.8 | 18.2 | 19.6 | 17.6 | 2.8 |
+
+**Robust — holds at every setting:** the Rockets are always the most-taken (21.7–22.1%), even at
+zero ability value, purely on survival odds; the Spy is always under 20%.
+
+**Assumption-driven — NOT findings:** the Siege Elephant swings 15.9% → 22.8%, the widest in the
+set. **At zero information value, a printed 10 is the worst card in the offer**, because ELEPHANT
+is cancelled by WARRIOR, the cheapest and most abundant card in the game. The entire case for the
+Siege Elephant is that ON DEPLOY beats the ring. The Subhedar swings 21.0% → 16.3% and *changes
+sign*.
+
+**On the design goal that all five choices be equal: they effectively are** — worst gap 2.0–4.1
+points depending on assumptions, across five cards paying in three currencies.
+
+---
+
+## 2026-08-18 — D044. THE OFFER: three brokers face up. Built, measured, NOT adopted
+
+**Status: implemented behind `BROKEROFFER=1`, default off, pending one unresolved signal.**
+
+**The rule:** three brokers lie face up from setup. A defeated player **chooses** one and it is
+topped straight back up to three.
+
+**Reason:** a blind 4-of-20 draw makes broker identity unreadable, so any decision keyed to *"do
+they hold X"* is a gamble rather than a deduction. Face up, taking is a public choice that tells
+the table what you think you need, and what you hold becomes countable exactly like a Force — the
+property that makes a read possible at all.
+
+**The choice bites, mildly.** Blind draw comes out uniform to within 0.2% (a clean check that the
+harness measures what it claims); the offer opens a 5–7 point spread. See D043.
+
+⚠️ **Emergent: the offer becomes a sink for the card nobody wants.** With three slots and five
+kinds, the least-wanted broker clogs a slot and the live choice is effectively two, not three.
+
+⚠️ **THE FINDING THAT MATTERS MOST: the simulation has ALWAYS assumed broker identity is
+public.** `available()` filters the whole hand — recruited brokers included — and `pools` hands
+every opponent their arm and strength via `scoreMove`. **Every balance number this project has
+ever produced was computed under public brokers.** Two consequences: the gates cannot show the
+offer's deduction benefit, because the baseline already had it; and the change brings the physical
+game into line with what the model has assumed all along, which makes the existing gates *more*
+trustworthy under the offer than under a blind draw.
+
+⚠️ **Why it is not adopted yet.** Faction deviation with the offer has come in higher in **three
+consecutive measurements** (5.3→5.6, 5.2→6.0, 5.2→6.0) against a fail line of 10. Each move alone
+sits inside the ±0.4 noise band; three in the same direction is a pattern. **Resolve before
+adopting, not after.**
+
+**Sub-rules still unspecified:** multiple defeated players currently choose in the order they
+committed — turn order and fewest-points-first are both live candidates, and it matters, because
+first pick of three is a real edge. Also unresolved: whether the offer is persistent (as built) or
+**refreshes each round**, discarding what was not taken — that reading would clear the clog by
+itself but burn through a 20-card supply far faster.
+
+---
+
+## 2026-08-18 — D045. THE REFUSAL FORK: built, measured, NOT adopted
+
+**Status: implemented behind `REFUSALFORK=1`, default off. A rules change, awaiting a table test.**
+
+**The rule:** a refused unit **lands in the other army** instead of vanishing, unless there is
+nowhere legal for it to go.
+
+**Reason:** the blind accept/refuse is the best yomi moment in the game and carries almost no
+stake, because "a refusal does not end your turn." Making the refusal *re-aim* the card turns it
+into a two-sided read — *"accept me, or I strengthen the people you are fighting"* — and adds
+**zero cards**.
+
+**It fires hard:** 17.1% (8p) to 27.7% (2p) of all offers are re-aimed. Offers themselves fall
+(70.6k → 57.7k at 8p) because leaders accept more readily.
+
+**Measured, stable at 4,000 and 12,000 games:**
+
+* **Sitting out collapses** — 9%→5% at 4p, 16%→11% at 5p, 36%→33% at 8p.
+* **Alliances rise** — 83%→90% at 3p; at two players 3%→7%.
+* Rounds, game length and the on-target rate are untouched.
+* Faction deviation is **inconclusive**: 5.6→5.4 at 4,000 games but 5.2→5.6 at 12,000. It moved
+  both directions depending on sample, so the honest reading is *no detectable effect*.
+
+⚠️ **The trade, stated plainly: sitting out was designed, not accidental.** *"Passing is not
+folding"*, and `OPEN.md` records it as a real and frequent choice. The fork **relocates decision
+density** — from "should I commit at all" (a solo decision) to "should I accept this" (a two-sided
+read). That is arguably the upgrade, but it is a trade, and it reshapes the 5–8p game most.
+
+⚠️ **What the model cannot see:** `accepts()` is two fixed probabilities keyed on army size. **A
+probability cannot bluff, and cannot be bluffed** — and the bluff is the entire appeal. The run
+shows the rule is structurally safe and moves the game's shape measurably; it cannot show whether
+the bluff plays well. Two players needs a specific look: there, "the other army" is your
+opponent's.
+
+**Method note, applying to D041 and D044 as well:** the decision logic was changed *with* the
+rule, and **without a new tuned constant** — the leader keeps the same two probabilities, and only
+the board being compared changes ("would another army be bigger than mine once my refusal lands
+there?"). **A mechanic whose decision function ignores it is untestable**: the lever adds noise
+and the gates measure nothing. That is precisely what happened with the face-up Rockets in D041,
+and it is the trap to check for before trusting any lever in this repo.
+
+---
+
+## 2026-08-18 — D046. EIGHT CARDS PER RULER: 64 units + 15 brokers = 79 cards. ADOPTED
+
+**The change:** every ruler's Force goes from seven units to **eight**, the supply from twenty
+Power Brokers to **fifteen** (three of each rather than four), and the box from 76 cards to 79.
+Eight rulers is unchanged.
+
+**Reason: the seven-card deck space was too coarse to tune with, and that is measurable.**
+Seven cards over five arms with no zeroes leaves two spare cards, so exactly **15 decks exist**.
+Every legal single-card move swung a faction **5–9 points** of win rate against a **5-point
+gate** — the only available lever had worse resolution than the target. Two rulers could not be
+fixed at all: Peshwa (+4.2) had four legal moves, two of which duplicated another ruler and two
+of which measured worse; Badshah (−4.7) sat between "3 Cannon" (too weak) and "2 Elephant +
+2 Cannon" (+5.9, too strong) with **nothing in between**, because those two decks differ by two
+points of raw strength and nine points of win rate. At eight cards there are three spares and
+**35 decks**, and a slot can be re-aimed without overshooting.
+
+**Result — every gate passes, and the faction warn that stood for the whole project is gone:**
+
+| | 7 cards (shipped) | 8 cards (this) |
+| --- | ---: | ---: |
+| worst faction deviation, 3 seeds | 4.6 / 5.3 / 5.9 | **4.0 / 4.4 / 4.5** |
+| RMS over all faction × count cells | 2.31 / 2.37 / 2.67 | **1.74 / 1.78 / 1.78** |
+| worst at two players (80k duels) | 5.0 | **3.0** |
+| decks available to tune with | 15 | 35 |
+
+**THE PATTERN THE SWEEPS FOUND: a ruler needs the arm that answers its own predator.** Sultan's
+Elephants die to Warriors, so the Sultan fields Warriors (`4E` → `3E 2W`, fixing −5.6 at two
+players). Badshah `4C` → `3C 2W` fixed −6.1 at three. Rana `4W` → `3W 2H` fixed −6.4 at two.
+Three independent slot sweeps landed on the same shape, and it is the same Cannon+Warrior move
+that was the only working fix found in the seven-card game.
+
+⚠️ **ROTATION IS DEAD AS A ROSTER GENERATOR.** Every earlier roster was one shape rotated to each
+lead arm. That cannot be fair while **strength is welded to the arm** — the same note already
+recorded against the strength ladder. Measured on a nine-card variant: the shape `3-2-2-1-1`
+gives the Horseman-led ruler three Elephant-killers *and* two Elephants (+7.0) and the
+Elephant-led ruler Riflemen and Cannons (−8.0). Identical shape, 15 points apart. Rotating the
+pairs onto different arms only moved the crown (gate 8.0 → 11.2). The roster is now written out
+arm by arm and each ruler is chosen by sweeping its slot against the whole roster.
+
+**Rejected on the way:**
+* **Badshah as a V-shape dropping the Warrior** (`1E 1R 2C 2H 0W`) — a wash at 12,000 games
+  (gate 5.0 → 5.1). The 3p gain that made it look good was a 4,000-game artifact.
+* **Seven rulers of nine cards** (63 + 15 = 78). The economy held — 100% on target — but every
+  rotation-built roster measured worse (gate 8.0 and 11.2), and 9 cards is more card than the
+  tuning problem needs.
+* **Fixing Governor and Nawab.** Both were swept over all 28 legal decks against the final
+  roster and both **already rank 1st**. Decks that flatten Governor itself (−4.0 → −0.8) make the
+  roster worse (RMS 1.76 → 1.92), because deviations are win shares and sum to zero: the slack
+  has to sit somewhere, and spread thin across two rulers is the flattest arrangement there is.
+
+**The roster is coordinate-wise optimal:** no single ruler's deck can be changed to improve it.
+That is weaker than a global optimum and is stated as such.
+
+⚠️ **NEW WARN: the Power Broker supply.** Fifteen brokers are drawn down to **13.9 of 15** at
+eight players, against a gate wanting 12% left undrawn. **No game in any run ended by
+exhaustion** — 100% still end on the victory target at every count — and the rulebook now says an
+emptied supply is reshuffled from the discards. Every number in this entry was measured **without**
+that reshuffle, so the recycling rule is adopted but **unmeasured**; it can only loosen a
+constraint that never bound.
+
+**METHOD NOTE, and it invalidates some earlier readings.** The headline gate is a **max over 56
+noisy cells**, and it swings **4.6 → 5.9 across seeds at 12,000 games** on the unchanged shipped
+roster. `OPEN.md` recorded "±0.4 at 4,000 games", which understates the real spread by about 3×.
+Two comparisons in this session flipped sign between seeds while a dedicated 2-player harness —
+80,000 duels, 8× the samples per matchup — was unanimous. **RMS across all cells is the stable
+statistic and should be quoted alongside the max.** Any conclusion drawn from a single seed's
+gate value is unsafe.

@@ -32,8 +32,24 @@ export function cancelMasks(armies) {
 
 const pickBy = (units, better) => units.reduce((b, u) => (!b || better(u, b) ? u : b), null);
 
-// The Sepoy doubles while alone in its army.
-const value = (u, army) => (u.broker === "sepoy" && army.length === 1 ? u.s * 2 : u.s);
+// The Sepoy doubles while alone in its army. SEPOYMULT=3 makes it triple, etc.
+// ⚠️ LESSONS C2: an alone multiplier of x3 once made a one-card army the best army in the game
+// at 95.6%. That was under a rule where LONE UNITS WERE UNTARGETABLE, which DECCAN II does not
+// have — a lone Sepoy is cancelled by ELEPHANT or WARRIOR, and it is simultaneously its army's
+// strongest AND weakest unit, so a Subhedar removes it too. The lesson may or may not still
+// bind; that is what the lever is for.
+// ×3 ADOPTED. Measured: a lone Sepoy takes the ground in 23.6% of the 55 possible enemy armies
+// at ×2, 32.7% at ×3, 34.5% at ×4 — and 34.5% is the CEILING at any multiplier, because 36 of
+// the 55 armies contain an ELEPHANT or WARRIOR and cancel it outright. ×3 buys 95% of the
+// available headroom; ×4 buys 1.8 points more and nothing beyond. Gates flat at 5.2/5.3/5.3.
+export const SEPOY_MULT = Number(process.env.SEPOYMULT || 3);
+// ⚠️ LESSONS C4: A BORROWED UNIT MUST NEVER EARN AN ALONE BONUS FOR THE BORROWER. A Spy that
+// steals a Sepoy into its own one-unit army was fighting at the doubled value FOR THE THIEF —
+// reachable in 470 of 81,225 matchups, e.g. [Warrior+Warrior+Sepoy] vs [Cannon+Spy], where the
+// thief took the ground 6 to 12. The `borrowed` flag is set by the swap below, and the alone
+// bonus checks it. C5 applies too: this is defined in the same place that creates the exchange.
+const value = (u, army) =>
+  (u.broker === "sepoy" && !u.borrowed && army.length === 1 ? u.s * SEPOY_MULT : u.s);
 
 export function resolveBattle(raw) {
   let armies = raw.map((a) => a.map((u) => ({ ...u })));
@@ -65,6 +81,9 @@ export function resolveBattle(raw) {
     const mi = mine.indexOf(p.u), ti = armies[tj].indexOf(p.t);
     if (mi < 0 || ti < 0) continue;
     mine[mi] = p.t; armies[tj][ti] = p.u;
+    // Both cards are now fighting for someone who does not own them (LESSONS C4). Marked on
+    // both, not just the Sepoy, so any future conditional bonus inherits the guard by default.
+    p.t.borrowed = true; p.u.borrowed = true;
     // record the exchange so the caller can make it permanent if the rules say so
     swaps.push({ spy: p.u, taken: p.t, thief: p.u.owner, victim: p.t.owner });
   }

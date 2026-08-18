@@ -86,6 +86,13 @@ strength entirely.**
 **C2. Never buff an alone bonus while lone units are untargetable.** Raising the Elephant's alone
 multiplier to ×3 made a **one-card army the best army in the game at 95.6%**.
 
+> ⚠️ **SUPERSEDED FOR DECCAN II — see `DECISIONS.md` D039.** The precondition is gone: DECCAN II
+> targets lone units. A lone Sepoy is cancelled by ELEPHANT or WARRIOR and is simultaneously its
+> army's strongest *and* weakest unit, so a Subhedar removes it too. Measured, a lone Sepoy takes
+> the ground 23.6% at ×2, 32.7% at ×3 and **34.5% at any multiplier including infinite** — the
+> ceiling is set by cancellation, not arithmetic. ×3 was adopted. **The lesson is still true as
+> written; it simply no longer applies here.** Check the precondition before invoking it.
+
 **C3. But never remove lone-unit protection while a cheap card aims at the strongest, either** —
 a lone unit *is* its army's strongest, so a printed 1 deletes it. Solo play collapsed: lone
 Rifleman 60.2 → 25.7, lone Elephant 53.9 → 22.7.
@@ -96,6 +103,13 @@ exists only to hold the other two up.
 **C4. A borrowed unit must never earn an alone bonus for the borrower.** A single Spy once beat a
 lone Elephant outright by stealing it into its own one-unit army, where the Elephant fought at
 20 *for the thief*.
+
+> ⚠️ **THIS RECURRED IN DECCAN II AND WAS SHIPPED UNNOTICED — see `DECISIONS.md` D040.** The
+> Sepoy's alone bonus had no ownership test; a Spy could steal it into a one-unit army and fight
+> at double. Reachable in **470 of 81,225 matchups**. It survived a line-by-line reconciliation
+> that reported "nothing diverges", because reading for agreement cannot find a missing guard.
+> **Writing a lesson down does not prevent it. Only a test does** — this one is now guarded by a
+> `borrowed` flag set on *both* exchanged cards, so future conditional bonuses inherit it.
 
 **C5. A unit that copies or banks a value must not keep it after the source leaves.** Live
 exploit, closed once and re-opened by the reset. Whatever the equivalent is in DECCAN II,
