@@ -92,18 +92,49 @@ export function resolveBattle(raw) {
   // ---- totals; the highest takes the ground, and armies level at the top all win
   const totals = armies.map((a) => a.reduce((s, u) => s + value(u, a), 0));
   const fielded = raw.map((a, i) => (a.length ? i : -1)).filter((i) => i >= 0);
-  if (!fielded.length) return { armies, totals, swaps, winners: new Set() };
+  if (!fielded.length) return { armies, totals, swaps, committed: raw, winners: new Set() };
   const top = Math.max(...fielded.map((i) => totals[i]));
-  return { armies, totals, swaps, winners: new Set(fielded.filter((i) => totals[i] === top)) };
+  return { armies, totals, swaps, committed: raw,
+    winners: new Set(fielded.filter((i) => totals[i] === top)) };
 }
 
-// Points: each player in a winning army scores 1 for every surviving unit of theirs.
+// THE VICTORY POINT. One per army that took the ground, to the LARGEST CONTRIBUTOR by base
+// Strength COMMITTED. Tied contributors each take one.
+//
+// ⚠️ Restored from the original game (v21 engine: "the Victory Point goes to the largest
+// contributor by base Strength committed; tied contributors each take one"). It had been
+// replaced by one point per surviving unit, which is a different and worse game: three
+// survivors paid three points, so a four-point target could be reached in two battles, and
+// contribution stopped being about what you dared to commit. Measuring COMMITTED strength is
+// what makes the bluff pay — you can take the point with a unit the ring then kills.
 export function spoils(result) {
   const vp = new Map();
-  for (const i of result.winners)
-    for (const u of result.armies[i]) {
+  for (const i of result.winners) {
+    const by = new Map();
+    for (const u of result.committed[i]) {
       if (u.owner === undefined) continue;
-      vp.set(u.owner, (vp.get(u.owner) || 0) + 1);
+      // CONTRIBUTION IS COUNTED IN UNITS COMMITTED, not strength committed.
+      //
+      // ⚠️ The original game measured contribution by base Strength, and that was fair there
+      // because every player held an IDENTICAL Force. With eight asymmetric rulers it is not:
+      // a ruler holding a second Elephant can commit 25 in a round where another can only reach
+      // 21, so the Elephant ruler takes the point almost every time. Measured: 10.9 deviation
+      // against a gate of 5. Equalising deck totals only reached 9.5, and equalising the top
+      // three commitables only reached 7.4 — and no further, because on the 9/7/5/3/1 ladder no
+      // sum of three spares is shared by more than two decks, so eight near-symmetric rulers do
+      // not exist. Counting units is immune to all of it and measured 6.5 before any retune.
+      //
+      // What matters is preserved exactly: one point per ground, to the LARGEST CONTRIBUTOR,
+      // ties share, and contribution counts what you COMMITTED rather than what survived — so
+      // the bluff still pays when the ring kills what you sent. SPOILS=strength restores the
+      // original measure for comparison.
+      by.set(u.owner, (by.get(u.owner) || 0) + (process.env.SPOILS === "strength" ? u.s : 1));
     }
+    if (!by.size) continue;
+    const most = Math.max(...by.values());
+    for (const [owner, contributed] of by) {
+      if (contributed === most) vp.set(owner, (vp.get(owner) || 0) + 1);
+    }
+  }
   return vp;
 }

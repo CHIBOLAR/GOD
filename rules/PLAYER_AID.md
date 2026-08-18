@@ -34,7 +34,8 @@
 
 ## Scoring and the aftermath
 
-**You score 1 point per surviving unit of yours, if your army took the ground.**
+**If your army took the ground, its largest contributor scores 1 point — most units committed,
+ties share. Cancelled units still count toward contribution.**
 
 | | |
 | --- | --- |

@@ -86,8 +86,12 @@ strength of its survivors. **The higher total takes the GROUND.** Level totals, 
 
 ### 4 · Spoils
 
-**Each player in an army that took the ground scores one point for every surviving unit of
-theirs.**
+**The army that took the ground pays ONE POINT to its largest contributor — the player who
+committed the most units to it. Tied contributors each take one.**
+
+Contribution counts what you **committed**, not what survived. A unit the ring cancelled still
+counts toward the point, which is why sending your best into a contested ground can pay even
+when it dies.
 
 Then settle the armies:
 

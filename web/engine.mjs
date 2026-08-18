@@ -25,6 +25,7 @@
 
 import { FACTIONS, VICTORY_TARGET } from "../sim/cards.mjs";
 import { cancelMasks } from "../sim/battle.mjs";
+import { beats } from "../sim/cards.mjs";
 import {
   NUM_ARMIES, ARMY_CAP, MAX_PER_ARMY,
   makeRng, newGame, available, legalMoves, commitUnit,
@@ -68,10 +69,24 @@ export function createGame({ factions, seed = Date.now(), names = [] }) {
     end: null,
     winners: [],
     log: [],
+    // THE READ. Poker solves "what is this player doing" with a HUD of public behaviour —
+    // how often they enter a pot, how aggressive, how often they re-raise. Every number here
+    // is likewise derived from PUBLIC information only (STATE_INVENTORY §0), so showing it
+    // leaks nothing: how much they commit, how often they sit back, how they answer offers.
+    stats: Array.from({ length: n }, () => ({
+      commits: 0, passes: 0, strength: 0, rounds: 0, sitOuts: 0,
+      offersMade: 0, offersTaken: 0, offersRefused: 0, refusedBy: 0, burned: 0, won: 0,
+    })),
   };
   beginRound(s);
   return s;
 }
+
+const nm = (s, i) => s.g.players[i].name;
+const note = (s, text, kind = "info") => {
+  s.log.push({ round: s.g.round, text, kind });
+  if (s.log.length > 200) s.log.shift();
+};
 
 // ---- round and turn plumbing -------------------------------------------------
 function beginRound(s) {
@@ -109,6 +124,26 @@ function endTurn(s, seat, acted) {
   else beginTurn(s, next);
 }
 
+
+// DISPLAY ONLY. cancelMasks says WHICH units died; a player also wants to know WHAT killed them,
+// so this mirrors the same selection (strongest canceller first, strongest legal target) to
+// recover the pairing. It never feeds a rule — the outcome always comes from battle.mjs.
+function killPairs(armies) {
+  const all = [];
+  armies.forEach((a, ai) => a.forEach((u, ui) => all.push({ u, ai, ui })));
+  const dead = armies.map((a) => new Array(a.length).fill(false));
+  const pairs = [];
+  for (const k of [...all].sort((x, y) => y.u.s - x.u.s)) {
+    let best = null;
+    for (const t of all) {
+      if (t.ai === k.ai || dead[t.ai][t.ui] || !beats(k.u.arm, t.u.arm)) continue;
+      if (!best || t.u.s > best.u.s) best = t;
+    }
+    if (best) { dead[best.ai][best.ui] = true; pairs.push({ by: k, hit: best }); }
+  }
+  return pairs;
+}
+
 function resolveRound(s) {
   const { g } = s;
   const roundNo = g.round;
@@ -121,12 +156,45 @@ function resolveRound(s) {
     a.map((u) => ({ owner: u.owner, arm: u.arm, s: u.s, broker: u.broker, revealed: !!u.revealed })));
   const dead = cancelMasks(s.m.armies);
 
+  const pairs = killPairs(s.m.armies);
+  const armyName = (i) => (i ? "II" : "I");
+  const say = (u) => `${u.arm[0] + u.arm.slice(1).toLowerCase()} ${u.s}`;
+
   const summary = settleRound(g, s.m, s.rnd);
+
+  // ---- narrate the battle, so nothing ever happens silently
+  if (summary.fielded) {
+    for (const { by, hit } of pairs) {
+      note(s, `${say(by.u)} (${nm(s, by.u.owner)}) cancels ${say(hit.u)} (${nm(s, hit.u.owner)})`, "kill");
+    }
+    if (summary.result) {
+      const t = summary.result.totals;
+      const w = [...summary.result.winners].map(armyName).join(" and ");
+      note(s, `Army I totals ${t[0] ?? 0}, Army II totals ${t[1] ?? 0} — Army ${w} takes the ground`, "ground");
+    }
+    if (summary.rocketsFired) note(s, `SULTAN ROCKETS — the winners recover nothing, their army burns`, "rockets");
+    for (const [p, v] of summary.awarded) {
+      s.stats[p].won += v;
+      note(s, `${nm(s, p)} was the largest contributor and takes ${v} point${v === 1 ? "" : "s"}`, "score");
+    }
+    for (const [p, v] of summary.recruited) {
+      const got = g.players[p].hand[g.players[p].hand.length - 1];
+      note(s, `${nm(s, p)} was defeated and recruits ${got && got.name ? got.name : "a Power Broker"}`, "recruit");
+    }
+  } else {
+    note(s, `nothing was committed — the round passes`, "info");
+  }
+  for (let i = 0; i < s.n; i++) {
+    s.stats[i].rounds++;
+    if (s.turns[i] === 0) s.stats[i].sitOuts++;
+    s.stats[i].burned = g.players[i].hand.filter((u) => u.spent).length;
+  }
 
   s.lastRound = {
     round: roundNo,
     board: committedBoard,
     dead,
+    kills: pairs.map(({ by, hit }) => ({ by: { ...by.u, army: by.ai }, hit: { ...hit.u, army: hit.ai } })),
     armies: summary.result ? summary.result.armies : [],
     totals: summary.result ? summary.result.totals : [],
     winners: summary.result ? [...summary.result.winners] : [],
@@ -194,7 +262,8 @@ export function apply(s, seat, action) {
 
   switch (action.type) {
     case "pass":
-      s.log.push({ t: "pass", seat });
+      s.stats[seat].passes++;
+      note(s, `${nm(s, seat)} passes`);
       endTurn(s, seat, false);
       break;
 
@@ -207,10 +276,12 @@ export function apply(s, seat, action) {
         s.pending = { from: seat, uid: unit.uid, army: action.army };
         s.phase = PHASE.OFFER;
         s.toAct = s.m.leader[action.army];
-        s.log.push({ t: "offer", seat, army: action.army, to: s.toAct });
+        s.stats[seat].offersMade++;
+        note(s, `${nm(s, seat)} sends a unit into Army ${action.army ? "II" : "I"} — ${nm(s, s.toAct)} must answer blind`, "offer");
       } else {
         commitUnit(s.g, s.m, seat, unit, action.army, s.rnd);
-        s.log.push({ t: "commit", seat, army: action.army });
+        s.stats[seat].commits++; s.stats[seat].strength += unit.s;
+        note(s, `${nm(s, seat)} commits to Army ${action.army ? "II" : "I"}`, "commit");
         endTurn(s, seat, true);
       }
       break;
@@ -220,7 +291,9 @@ export function apply(s, seat, action) {
       const { from, uid, army } = s.pending;
       const unit = s.g.players[from].hand.find((u) => u.uid === uid);
       commitUnit(s.g, s.m, from, unit, army, s.rnd);
-      s.log.push({ t: "accept", seat, from, army });
+      s.stats[from].commits++; s.stats[from].strength += unit.s;
+      s.stats[seat].offersTaken++;
+      note(s, `${nm(s, seat)} accepts ${nm(s, from)} into Army ${army ? "II" : "I"}`, "accept");
       s.pending = null;
       endTurn(s, from, true);
       break;
@@ -229,7 +302,8 @@ export function apply(s, seat, action) {
     case "refuse": {
       const { from, uid, army } = s.pending;
       s.m.offered.add(army);
-      s.log.push({ t: "refuse", seat, from, army });
+      s.stats[seat].offersRefused++; s.stats[from].refusedBy++;
+      note(s, `${nm(s, seat)} refuses ${nm(s, from)} — Army ${army ? "II" : "I"} is closed to them this turn`, "refuse");
       // REFUSAL_FORK is built but not adopted; refusalLandsIn returns undefined at baseline.
       const lands = refusalLandsIn(s.m, from, army);
       s.pending = null;
@@ -286,16 +360,23 @@ export function botAction(s, seat) {
 // ---- the per-seat view -------------------------------------------------------
 // Enforces STATE_INVENTORY §0 and §9. A card's face is sent ONLY if the viewer owns it or the
 // card is `revealed` (a face-up broker, or a unit a Siege Elephant looked at).
-function handState(u, round) {
+// ⚠️ `rest` alone CANNOT tell "on the ground right now" from "recovering". A unit committed
+// this round is set to rest = round + 1, and a unit that WON last round is set to rest + 2 and
+// then the round advances — so both read as round + 1 at view time. The board is the only
+// reliable discriminator, so it is passed in. Getting this wrong showed every recovering unit
+// as "committed", which is why recovery looked like it never happened.
+function handState(u, round, onBoard) {
   if (u.spent) return "burned";
+  if (onBoard.has(u)) return "committed";
   if (u.rest <= round) return "ready";
-  return u.rest === round + 1 ? "committed" : "recovering";
+  return "recovering";
 }
 
 export function view(s, seat) {
   const { g } = s;
   const round = g.round;
   const showFaces = s.phase === PHASE.RESOLVED || s.phase === PHASE.OVER;
+  const onBoard = new Set(s.m.armies.flat().map((c) => c.ref));
 
   const card = (c) => {
     const open = showFaces || c.owner === seat || c.revealed;
@@ -340,12 +421,19 @@ export function view(s, seat) {
       name: u.isBroker ? u.name : undefined,
       text: u.isBroker ? u.text : undefined,
       when: u.isBroker ? u.when : undefined,
-      state: handState(u, round),
-      returns: u.spent || u.rest <= round ? undefined : u.rest,
+      state: handState(u, round, onBoard),
+      returns: u.spent || u.rest <= round || onBoard.has(u) ? undefined : u.rest,
     })),
     offer: s.pending ? { from: s.pending.from, army: s.pending.army } : null,
     actions: legalActions(s, seat),
     reveal: showFaces ? s.lastRound : null,
+    kills: showFaces && s.lastRound ? s.lastRound.kills : null,
+    log: s.log.slice(-60),
+    // the HUD: public behaviour only, so it can be shown for every seat
+    stats: s.stats.map((st) => ({ ...st,
+      aggression: st.rounds ? +(st.strength / st.rounds).toFixed(1) : 0,
+      entered: st.rounds ? Math.round(100 * (st.rounds - st.sitOuts) / st.rounds) : 0,
+    })),
     supplyLeft: g.supply.length,
   };
 }

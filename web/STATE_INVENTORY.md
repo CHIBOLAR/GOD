@@ -66,7 +66,7 @@ ROUND
  |- THE RING        cancellation, simultaneous
  |- ABILITIES       survivors only, ON REVEAL
  |- THE GROUND      higher total takes it; level totals, both take it
- |- SPOILS          1 point per surviving unit of yours, if your army took the ground
+ |- SPOILS          1 point to the winning army's largest contributor (units committed, ties share)
  \- SETTLE          winners recover · losers burn and recruit
 ```
 
