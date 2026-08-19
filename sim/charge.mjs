@@ -49,6 +49,9 @@ const FORCED = process.env.FORCED !== "0";
 // change sides makes some rulers' arms worth more than others. The roster is tuned around it
 // rather than the rule being dropped to protect a number. DEFECT=0 restores the old behaviour.
 const DEFECT = process.env.DEFECT !== "0";
+// How many units a Sepoy kills. Two is half the victory target from one card, so it is
+// measured rather than assumed.
+const SEPOY_SWINGS = Number(process.env.SEPOYSWINGS || 2);
 export const ARMY_CAP = Number(process.env.CAP || 4);
 export const MAX_PER_ARMY = ARMY_CAP;
 // Four kills wins. Measured across 3-6: at four, every game from four players up reaches the
@@ -86,7 +89,7 @@ export function resolveCharge(armies) {
   };
   for (const k of [...all].sort((x, y) => y.u.s - x.u.s || x.ai - y.ai || x.ui - y.ui)) {
     // THE SEPOY CANCELS TWO. Everything else takes one target, strongest it can reach.
-    const swings = k.u.broker === "sepoy" ? 2 : 1;
+    const swings = k.u.broker === "sepoy" ? SEPOY_SWINGS : 1;
     for (let n = 0; n < swings; n++) {
       const t = pick(k);
       if (!t) break;
