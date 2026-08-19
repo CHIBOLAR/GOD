@@ -8,10 +8,10 @@
 // rule appears here that is not a call into sim/, the online game is a different game from the
 // one the gates measured.
 
-import { FACTIONS } from "../sim/cards.mjs";
+import { FACTIONS, ARMS } from "../sim/cards.mjs";
 import {
   NUM_ARMIES, ARMY_CAP, MAX_PER_ARMY, TARGET,
-  makeRng, newGame, legalActions as modelActions, score, commit, charge, boardFull,
+  makeRng, newGame, legalActions as modelActions, score, commit, charge, boardFull, recovering,
 } from "../sim/charge.mjs";
 
 export const PHASE = {
@@ -66,11 +66,13 @@ export function legalActions(s, seat) {
   return modelActions(s.g, seat).map((a) =>
     a.pass ? { type: "hold" }
     : a.charge ? { type: "charge" }
+    : a.defect ? { type: "defect", from: a.from, to: a.to }
     : a.withdraw ? { type: "withdraw", card: a.withdraw.ref.uid, army: a.army }
-    : { type: "deploy", uid: a.unit.uid, army: a.army });
+    : { type: "deploy", uid: a.unit.uid, army: a.army, claim: null });
 }
 
 function endTurn(s, acted) {
+  s.g.turn++;                                   // the clock recovery is measured against
   s.idle = acted ? 0 : s.idle + 1;
 
   // ⚠️ A FULL BOARD CHARGES ITSELF — the model's rule, not a convenience. Waiting on a board
@@ -97,7 +99,7 @@ function doCharge(s, seat) {
   for (const { by, hit } of r.kills) {
     s.stats[by.u.owner].kills++;
     s.stats[hit.u.owner].losses++;
-    note(s, `${by.u.arm[0]}${by.u.s} (${nm(s, by.u.owner)}) cancels ` +
+    note(s, `${by.u.arm[0]}${by.u.s} (${nm(s, by.u.owner)}) kills ` +
       `${hit.u.arm[0]}${hit.u.s} (${nm(s, hit.u.owner)})`, "kill");
   }
   for (const [p, v] of r.scored) note(s, `${nm(s, p)} takes ${v} point${v === 1 ? "" : "s"}`, "score");
@@ -133,9 +135,31 @@ export function apply(s, seat, action) {
 
     case "deploy": {
       const unit = s.g.players[seat].hand.find((u) => u.uid === action.uid);
-      commit(s.g, seat, unit, action.army);
+      // A DECLARATION IS PART OF DEPLOYING, not a separate turn. You put a unit down face down
+      // and say what it is — truthfully or not. The claim dies with the charge.
+      const claim = ARMS.includes(action.claim) ? action.claim : null;
+      commit(s.g, seat, unit, action.army, claim);
       s.stats[seat].deploys++;
-      note(s, `${nm(s, seat)} deploys into Army ${armyName(action.army)}`, "deploy");
+      note(s, claim
+        ? `${nm(s, seat)} deploys into Army ${armyName(action.army)} and declares ${claim}`
+        : `${nm(s, seat)} deploys into Army ${armyName(action.army)} and says nothing`, "deploy");
+      endTurn(s, true);
+      break;
+    }
+
+    case "defect": {
+      // your whole contingent changes sides at once — you may never stand in two armies
+      const from = s.g.armies[action.from], to = s.g.armies[action.to];
+      const moving = from.filter((c) => c.owner === seat);
+      for (const c of moving) { from.splice(from.indexOf(c), 1); to.push(c); }
+      if (!from.length) s.g.leader[action.from] = null;
+      else if (s.g.leader[action.from] === seat) {
+        const by = new Map();
+        for (const c of from) by.set(c.owner, (by.get(c.owner) || 0) + c.s);
+        s.g.leader[action.from] = [...by.entries()].sort((x, y) => y[1] - x[1])[0][0];
+      }
+      if (s.g.leader[action.to] === null) s.g.leader[action.to] = seat;
+      note(s, `${nm(s, seat)} DEFECTS to Army ${armyName(action.to)}`, "defect");
       endTurn(s, true);
       break;
     }
@@ -145,6 +169,7 @@ export function apply(s, seat, action) {
       const i = a.findIndex((c) => c.ref.uid === action.card);
       const [card] = a.splice(i, 1);
       card.ref.onBoard = false;
+      card.ref.readyAt = s.g.turn + s.n;        // recovers for one turn before it can go out again
       if (!a.length) s.g.leader[action.army] = null;
       s.stats[seat].withdraws++;
       note(s, `${nm(s, seat)} withdraws from Army ${armyName(action.army)}`, "withdraw");
@@ -187,8 +212,9 @@ export function botAction(s, seat) {
   for (let i = 0; i < acts.length; i++) if ((r -= w[i]) <= 0) { pick = acts[i]; break; }
   return pick.pass ? { type: "hold" }
     : pick.charge ? { type: "charge" }
+    : pick.defect ? { type: "defect", from: pick.from, to: pick.to }
     : pick.withdraw ? { type: "withdraw", card: pick.withdraw.ref.uid, army: pick.army }
-    : { type: "deploy", uid: pick.unit.uid, army: pick.army };
+    : { type: "deploy", uid: pick.unit.uid, army: pick.army, claim: null };
 }
 
 // ---- the per-seat view --------------------------------------------------------
@@ -199,6 +225,8 @@ export function view(s, seat) {
   const card = (c) => {
     const open = showAll || c.revealed || c.owner === seat;
     return { owner: c.owner, revealed: !!c.revealed, id: c.ref.uid,
+      // what they SAID it is — visible to everyone, true or not
+      ...(c.claim ? { claim: c.claim } : {}),
       ...(open ? { arm: c.arm, s: c.s, broker: c.broker } : {}) };
   };
   return {
@@ -222,6 +250,7 @@ export function view(s, seat) {
       seat: p.seat, name: p.name, ruler: p.faction.name, vp: p.vp,
       army: s.g.armies.findIndex((a) => a.some((c) => c.owner === p.seat)),
       inHand: p.hand.filter((u) => !u.spent && !u.onBoard).length,
+      recovering: recovering(p, s.g).length,
       lost: p.hand.filter((u) => u.spent).length,
       ...s.stats[p.seat],
     })),
@@ -230,7 +259,9 @@ export function view(s, seat) {
       broker: u.isBroker ? u.key : undefined,
       name: u.isBroker ? u.name : undefined,
       text: u.isBroker ? u.text : undefined,
-      state: u.spent ? "dead" : u.onBoard ? "standing" : "ready",
+      state: u.spent ? "dead" : u.onBoard ? "standing"
+        : (u.readyAt ?? 0) > s.g.turn ? "recovering" : "ready",
+      readyIn: (u.readyAt ?? 0) > s.g.turn ? (u.readyAt - s.g.turn) : undefined,
     })),
     reveal: showAll ? s.lastCharge : null,
     log: s.log.slice(-60),

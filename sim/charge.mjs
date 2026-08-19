@@ -157,13 +157,19 @@ export function newGame(factionKeys, rnd) {
 }
 
 const armyOf = (g, seat) => g.armies.findIndex((a) => a.some((c) => c.owner === seat));
-const inHand = (p) => p.hand.filter((u) => !u.spent && !u.onBoard);
+// A withdrawn unit does NOT go straight back into the hand — it RECOVERS for one turn. Without
+// that, pulling a unit home and dropping it somewhere else is free, and the front becomes a
+// shuffling contest. `readyAt` is measured on the global turn clock, one full lap of the table.
+const inHand = (p, g) =>
+  p.hand.filter((u) => !u.spent && !u.onBoard && (u.readyAt ?? 0) <= g.turn);
+export const recovering = (p, g) =>
+  p.hand.filter((u) => !u.spent && !u.onBoard && (u.readyAt ?? 0) > g.turn);
 
 // ---- what a player may do ------------------------------------------------------
 export function legalActions(g, seat) {
   const acts = [{ pass: true }];
   const p = g.players[seat];
-  const units = inHand(p);
+  const units = inHand(p, g);
   const mine = armyOf(g, seat);
   for (let a = 0; a < NUM_ARMIES; a++) {
     if (mine >= 0 && mine !== a) continue;                 // your units never split
@@ -198,9 +204,12 @@ export function legalActions(g, seat) {
 
 export const boardFull = (g) => g.armies.every((a) => a.length >= ARMY_CAP);
 
-export function commit(g, seat, unit, army) {
+// `claim` is what the player SAYS this unit is. It may be a lie. It is attached to the card and
+// dies with the charge — a bluff is true or false in the moment it is called, and keeping a
+// ledger of past lies would turn a read into bookkeeping.
+export function commit(g, seat, unit, army, claim = null) {
   unit.onBoard = true;
-  const card = { owner: seat, arm: unit.arm, s: unit.s, ref: unit,
+  const card = { owner: seat, arm: unit.arm, s: unit.s, ref: unit, claim,
     broker: unit.isBroker ? unit.key : undefined, revealed: !!unit.faceUp };
   g.armies[army].push(card);
   if (g.leader[army] === null) g.leader[army] = seat;
@@ -351,7 +360,7 @@ export function playGame(factionKeys, seed) {
   for (let guard = 0; guard < 4000; guard++) {
     const acts = legalActions(g, seat);
     const act = choose(acts, acts.map((a) => score(g, seat, a)), rnd);
-    turns++;
+    turns++; g.turn++;
     if (act.pass) idle++;
     else {
       idle = 0;
@@ -371,6 +380,7 @@ export function playGame(factionKeys, seed) {
         const a = g.armies[act.army];
         a.splice(a.indexOf(act.withdraw), 1);
         act.withdraw.ref.onBoard = false;
+        act.withdraw.ref.readyAt = g.turn + n;      // recovers for one turn
         if (!a.length) g.leader[act.army] = null;
       } else commit(g, seat, act.unit, act.army);
     }
