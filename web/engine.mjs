@@ -8,7 +8,7 @@
 // rule appears here that is not a call into sim/, the online game is a different game from the
 // one the gates measured.
 
-import { FACTIONS, ARMS } from "../sim/cards.mjs";
+import { FACTIONS, ARMS, BROKERS } from "../sim/cards.mjs";
 import {
   NUM_ARMIES, ARMY_CAP, MAX_PER_ARMY, TARGET,
   makeRng, newGame, legalActions as modelActions, score, commit, charge, boardFull, recovering, declarationFor,
@@ -57,6 +57,7 @@ const note = (s, text, kind = "info", data = null) => {
   s.log.push({ charge: s.g.charge, text, kind, data });
   if (s.log.length > 200) s.log.shift();
 };
+const BROKER_NAME = Object.fromEntries(BROKERS.map((b) => [b.key, b.name]));
 const armyName = (i) => ["I", "II", "III", "IV"][i] ?? String(i + 1);
 
 // ---- actions -----------------------------------------------------------------
@@ -106,7 +107,12 @@ function doCharge(s, seat) {
       `${hit.u.arm[0]}${hit.u.s} (${nm(s, hit.u.owner)})`, "kill");
   }
   for (const [p, v] of r.scored) note(s, `${nm(s, p)} takes ${v} point${v === 1 ? "" : "s"}`, "score");
-  for (const [p] of r.recruited) note(s, `${nm(s, p)} lost units and recruits a Power Broker`, "recruit");
+  // WHO TOOK WHAT, and it stays on their seat — a taken broker is public information that
+  // changes how you deploy against that player (U092).
+  for (const [p, broker] of r.recruited) {
+    note(s, `${nm(s, p)} takes the ${BROKER_NAME[broker] || "Power Broker"} from the market`,
+      "recruit", { seat: p, broker });
+  }
   s.g.leader.forEach((now, a) => {
     if (now === null || now === leadersBefore[a]) return;
     note(s, `COMMAND OF ARMY ${armyName(a)} PASSES TO ${nm(s, now)}`, "command",

@@ -98,8 +98,8 @@ and the winning side **acts first** once the front reopens. Level strength, and 
 **6 · The living.** Every surviving unit **stays where it stands**, now **face up**. It does not
 return to your hand.
 
-**7 · The casualties.** Every player who lost at least one unit **takes one Power Broker from
-the MARKET** — the three face up beside the supply. **The heaviest loss chooses first**,
+**7 · The casualties.** Every player who lost at least one unit **takes ONE Power Broker from
+the MARKET** — one only, however many units they lost — the three face up beside the supply. **The heaviest loss chooses first**,
 measured in **total STRENGTH lost** — lose two units and you add them together. Ties break on
 units lost, then turn order. Only three are on offer, so a fourth casualty takes nothing. Turn
 the market back up to three afterwards.
