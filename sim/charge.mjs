@@ -376,7 +376,13 @@ export function charge(g) {
     g.armies[spy.ai][i] = taken.u; g.armies[taken.ai][j] = spy.u;
   }
 
-  g.victors = victors;              // the winning side moves first next
+  // THE WINNING SIDE ACTS FIRST once the front reopens, and it is the SENIOR PARTNER of that
+  // side who takes the turn. ⚠️ This was written in the rulebook and never implemented: the
+  // value was assigned here and read nowhere, so play simply carried on round the table. That
+  // made winning a charge worth strictly less than the rules promised — no points, and not the
+  // initiative either. `nextSeat` is null when strength was level and the rotation is unchanged.
+  g.victors = victors;
+  g.nextSeat = victors >= 0 ? g.leader[victors] : null;
   g.charge++;
   return { kills, scored, lost, recruited, swaps, victors };
 }
@@ -487,7 +493,8 @@ export function playGame(factionKeys, seed) {
     if (FORCED && boardFull(g)) { charge(g); charges++; }
     if (Math.max(...g.players.map((p) => p.vp)) >= TARGET) break;
     if (idle >= n * 2) break;                     // nobody can or will do anything
-    seat = (seat + 1) % n;
+    if (g.nextSeat !== null && g.nextSeat !== undefined) { seat = g.nextSeat; g.nextSeat = null; }
+    else seat = (seat + 1) % n;
   }
   const top = Math.max(...g.players.map((p) => p.vp));
   return {

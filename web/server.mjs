@@ -320,6 +320,20 @@ wss.on("connection", (ws) => {
   });
 });
 
+// ⚠️ FAIL LOUDLY ON A BUSY PORT. An orphaned server from an earlier run once kept answering on
+// this port while a new build failed to bind, so a test suite reported green against code that
+// was never running — and it hid two real crashes. An unhandled EADDRINUSE is a silent trap.
+http.on("error", (e) => {
+  if (e.code === "EADDRINUSE") {
+    console.error(`
+  PORT ${PORT} IS ALREADY IN USE — refusing to start.`);
+    console.error(`  Something else is answering there. Kill it, or set PORT to a free port.
+`);
+    process.exit(1);
+  }
+  throw e;
+});
+
 http.listen(PORT, () => {
   console.log(`GOD — Gambit of Deccan`);
   console.log(`  listening on http://localhost:${PORT}`);

@@ -227,7 +227,13 @@ export function apply(s, seat, action) {
 
     case "continue":
       if (s.end) s.phase = PHASE.OVER;
-      else { s.phase = PHASE.PLAY; s.toAct = (s.toAct + 1) % s.n; }
+      else {
+        s.phase = PHASE.PLAY;
+        // the senior partner of the winning side opens the new front (see charge.mjs)
+        if (s.g.nextSeat !== null && s.g.nextSeat !== undefined) {
+          s.toAct = s.g.nextSeat; s.g.nextSeat = null;
+        } else s.toAct = (s.toAct + 1) % s.n;
+      }
       break;
 
     default:

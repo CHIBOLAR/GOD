@@ -11,7 +11,8 @@
     "start": "node web/server.mjs",
     "serve": "node web/server.mjs",
     "parity": "node web/parity.mjs",
-    "gates:round": "node sim/gates-round.mjs"
+    "gates:round": "node sim/gates-round.mjs",
+    "smoke": "node web/smoke.mjs"
   },
   "engines": {
     "node": ">=18"
