@@ -15,12 +15,14 @@ paid for is **killing**.
 every arm — so every ruler can answer every arm.
 
 **Fifteen Power Brokers**, three of each of five kinds, shuffled face down into a **supply**.
-If the supply ever empties, shuffle the discards to make a new one.
+**Three of them lie FACE UP beside it — the MARKET.** If the supply ever empties, shuffle the
+discards to make a new one.
 
 ## Setup
 
-Each player takes a ruler and holds their whole Force. Shuffle the supply. Choose a start player.
-Two armies form on the ground between you. Both begin empty.
+Each player takes a ruler and holds their whole Force. Shuffle the supply and **turn three
+Power Brokers face up** beside it. Choose a start player. Two armies form on the ground between
+you. Both begin empty.
 
 ---
 
@@ -51,17 +53,20 @@ On your turn you take **exactly one** of these. Then play passes to your left.
 | --- | --- |
 | **DEPLOY** | Put one unit from your hand **face down** into an army. |
 | **WITHDRAW** | Take one of your units off the ground and back into your hand. |
-| **DEFECT** | Move **all** your units from the army they stand in to the other one. |
+| **DEFECT** | Move your **single** standing unit to the other army. |
 | **CALL THE CHARGE** | If you are a **senior partner**, the armies charge at once. |
 | **HOLD** | Do nothing. |
 
 **You may only ever be in ONE army.** Once a unit of yours stands in an army, every unit you
 deploy afterwards joins that same army, until you have none left there.
 
-**That is why defection is all or nothing.** You cannot leave a foot in both camps — changing
-sides takes your whole contingent with you. The army you abandon loses that strength and the
-army you join gains it, both at once, and after a charge the front is face up, so everybody sees
-exactly what you did and exactly what it cost them.
+**One unit, one turn — and defection is not exempt.** You may cross only when you are down to a
+**single standing unit**. Two units cannot both move, because that is two actions; and one
+cannot move alone, because that would leave you standing in both armies.
+
+**So betrayal takes preparation.** Withdraw until one unit remains, sit through its recovery,
+then cross. Everyone watching an ally thin out can see it coming — and after a charge the front
+is face up, so they also see exactly what it cost them. Treachery is a plan, never a whim.
 
 **An army holds four units and four players.** Anyone may join an army that has room.
 
@@ -93,8 +98,10 @@ and the winning side **acts first** once the front reopens. Level strength, and 
 **6 · The living.** Every surviving unit **stays where it stands**, now **face up**. It does not
 return to your hand.
 
-**7 · The casualties.** Every player who lost at least one unit **recruits one Power Broker**
-from the supply, face down into their hand.
+**7 · The casualties.** Every player who lost at least one unit **takes one Power Broker from
+the MARKET** — the three face up beside the supply. **They choose in order of seniority**, the
+greatest surviving strength choosing first. Only three are on offer, so a fourth casualty takes
+nothing. Turn the market back up to three afterwards.
 
 ---
 
@@ -129,6 +136,9 @@ If nobody can act and nobody will, the game ends and the most points wins.
 Three of each, fifteen in the supply, and **the only way to get one is to lose units.** Each is
 one strength above its arm's Force unit, so a Force unit and a Broker can never tie.
 
+**Three lie face up at all times.** Everybody can see what the next casualty will be armed with,
+and everybody can see what was taken — so the market is a public read, not a private lottery.
+
 | | | Arm | When | |
 | --- | ---: | --- | --- | --- |
 | **Siege Elephant** | 10 | ELEPHANT | ON DEPLOY | Deploy FACE UP. Look at one enemy unit — it stays face up. |
@@ -146,8 +156,10 @@ ring can fire again — on your unit as readily as on theirs.
 
 **Withdrawing is how a jammed front reopens.** A full board of units that cannot hurt each other is a dead board. Pulling one home makes room for something that can kill.
 
-**Losing arms you.** Every casualty is a Power Broker, and the player being killed most is armed
-fastest. The player in front is the one player who cannot buy the game's sharpest cards.
+**Losing arms you.** Every casualty takes a Power Broker, and the player being killed most is
+armed fastest. The player in front is the one player who cannot buy the game's sharpest cards.
+But seniority chooses first, so the *least* damaged casualty gets the pick of the three — being
+hurt arms you, being hurt worst arms you last.
 
 ---
 
@@ -166,8 +178,11 @@ it wins the initiative, and its ON VICTORY abilities.
 
 **RING** — the cycle of five arms. Each kills the next two along it.
 
+**MARKET** — the three Power Brokers lying face up beside the supply. Casualties choose from it.
+
 **SENIOR PARTNER** — the first player to deploy into an army; afterwards, whoever has the
-greatest surviving strength in it. Only a senior partner may call the charge.
+greatest surviving strength in it. Only a senior partner may call the charge, and seniority also
+sets the order in which casualties pick from the market.
 
 **STRENGTH** — the printed number. It decides seniority, and which unit the ring reaches for
 first. It never decides who kills whom.

@@ -74,6 +74,30 @@ export function makeRng(seed) {
 // ---- the ring, with the pairing kept ------------------------------------------
 // WHO killed WHAT is now a RULE, not a display detail — the kill is the point. Strongest
 // canceller first, each taking the strongest legal target, so the result never depends on order.
+// MARKET=0 restores the old blind draw from the supply.
+export const MARKET_SIZE = Number(process.env.MARKET ?? 3);
+export const PICK_ORDER = process.env.PICKORDER || "senior";
+
+export function refillMarket(g) {
+  while (g.market.length < MARKET_SIZE && g.supply.length) g.market.push(g.supply.pop());
+}
+
+// WHICH BROKER A PLAYER TAKES. ⚠️ D045: a choice the decision function ignores is untestable, so
+// this is a real preference and not a coin flip — take the arm you are thinnest in, and break
+// ties on strength. That makes the market measurably different from the blind draw it replaces.
+export function chooseBroker(market, player) {
+  const held = new Map();
+  for (const u of player.hand) if (!u.spent) held.set(u.arm, (held.get(u.arm) || 0) + 1);
+  let best = 0, bestKey = null;
+  market.forEach((c, i) => {
+    const key = [-(held.get(c.arm) || 0), c.s];
+    if (!bestKey || key[0] > bestKey[0] || (key[0] === bestKey[0] && key[1] > bestKey[1])) {
+      best = i; bestKey = key;
+    }
+  });
+  return best;
+}
+
 export function resolveCharge(armies) {
   const all = [];
   armies.forEach((a, ai) => a.forEach((u, ui) => all.push({ u, ai, ui })));
@@ -145,8 +169,8 @@ export function newGame(factionKeys, rnd) {
     const j = Math.floor(rnd() * (i + 1));
     [supply[i], supply[j]] = [supply[j], supply[i]];
   }
-  return {
-    supply, charge: 0, turn: 0, start: 0,
+  const g = {
+    supply, market: [], charge: 0, turn: 0, start: 0,
     armies: Array.from({ length: NUM_ARMIES }, () => []),
     leader: new Array(NUM_ARMIES).fill(null),
     players: factionKeys.map((k, i) => {
@@ -154,6 +178,8 @@ export function newGame(factionKeys, rnd) {
       return { seat: i, faction: f, vp: 0, hand: f.units.map((u) => ({ ...u, spent: false })) };
     }),
   };
+  refillMarket(g);            // the row is face up from the first turn, before anyone has lost
+  return g;
 }
 
 const armyOf = (g, seat) => g.armies.findIndex((a) => a.some((c) => c.owner === seat));
@@ -187,7 +213,13 @@ export function legalActions(g, seat) {
   if (mine >= 0) {
     for (const c of g.armies[mine]) if (c.owner === seat) acts.push({ withdraw: c, army: mine });
   }
-  if (DEFECT && mine >= 0) {
+  // ONE UNIT, ONE TURN — the rule the whole game runs on, and defection is not exempt.
+  //
+  // ⚠️ You may cross only when you are down to a SINGLE unit. Two units cannot both move (that
+  // would be two actions in one turn) and one cannot move alone (that would leave you standing
+  // in both armies, which no rule in this game allows). So betrayal takes PREPARATION: withdraw
+  // until one unit remains, sit through its recovery, then cross. It is a plan, never a whim.
+  if (DEFECT && mine >= 0 && g.armies[mine].filter((c) => c.owner === seat).length === 1) {
     const contingent = g.armies[mine].filter((c) => c.owner === seat);
     for (let a = 0; a < NUM_ARMIES; a++) {
       if (a === mine) continue;
@@ -287,13 +319,41 @@ export function charge(g) {
   // supply instead is worse again, because brokers are strong cards and more of them in
   // circulation widens the gap (4.9 at 15, 5.5 at 20, 6.6 at 25). A broad, even rubber band is
   // what holds the eight rulers together, and the price is a supply that finishes nearly spent.
+  // ---- THE MARKET. Three brokers face up, and casualties CHOOSE. -------------------------
+  // Compensation used to be a blind draw, which made the strongest cards in the game a lottery
+  // paid to the people already losing. A face-up row of three turns it into a decision everyone
+  // at the table can see coming, and gives SENIORITY A SECOND JOB — until now it decided only
+  // who may call the charge.
+  //
+  // ⚠️ SENIORITY IS THE WRONG WAY ROUND FOR A CATCH-UP MECHANIC and it is worth saying plainly:
+  // pick order runs on surviving strength, so among the casualties the LEAST damaged chooses
+  // first, and a player wiped out entirely has no strength and picks last. Brokers exist to arm
+  // whoever is being killed most. PICKORDER=damage reverses it (heaviest loss picks first) and
+  // PICKORDER=turn ignores both; all three are measured.
   const recruited = new Map();
-  for (const [seat] of lost) {
-    const card = g.supply.pop();
-    if (!card) continue;
-    g.players[seat].hand.push({ ...card, spent: false });
-    recruited.set(seat, 1);
+  const order = [...lost.keys()];
+  if (PICK_ORDER === "senior") {
+    const str = new Map();
+    for (const a of g.armies) for (const c of a) str.set(c.owner, (str.get(c.owner) || 0) + c.s);
+    order.sort((x, y) => (str.get(y) || 0) - (str.get(x) || 0) || x - y);
+  } else if (PICK_ORDER === "damage") {
+    order.sort((x, y) => lost.get(y) - lost.get(x) || x - y);
   }
+  for (const seat of order) {
+    if (!MARKET_SIZE) {                      // MARKET=0 restores the old blind draw
+      const card = g.supply.pop();
+      if (!card) continue;
+      g.players[seat].hand.push({ ...card, spent: false });
+      recruited.set(seat, card.broker);
+      continue;
+    }
+    if (!g.market.length) break;             // three a charge, and no more
+    const i = chooseBroker(g.market, g.players[seat]);
+    const [card] = g.market.splice(i, 1);
+    g.players[seat].hand.push({ ...card, spent: false });
+    recruited.set(seat, card.broker);
+  }
+  refillMarket(g);
 
   // the Spy's exchange: the two cards change owner for good
   for (const { spy, taken } of swaps) {
@@ -423,5 +483,6 @@ export function playGame(factionKeys, seed) {
     winners: g.players.filter((p) => p.vp === top).map((p) => p.seat),
     charges, turns, end: top >= TARGET ? "target" : "stall",
     supplyLeft: g.supply.length,
+    market: g.market.map((c) => ({ broker: c.broker, name: c.name, arm: c.arm, s: c.s, text: c.text })),
   };
 }
