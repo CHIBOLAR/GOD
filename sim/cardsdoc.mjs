@@ -5,11 +5,11 @@
 //   node sim/cardsdoc.mjs        (npm run cards)
 
 import { writeFileSync } from "node:fs";
-import { ARMS, FORCE, BROKERS, FACTIONS, GLYPH, PREY, VICTORY_TARGET } from "./cards.mjs";
+import { ARMS, RING, ringIndex, FORCE, BROKERS, FACTIONS, GLYPH, PREY, VICTORY_TARGET } from "./cards.mjs";
 
 const out = [];
 const w = (s = "") => out.push(s);
-const nextArm = (a) => ARMS[(ARMS.indexOf(a) + 1) % 5];
+const nextArm = (a) => RING[(ringIndex(a) + 1) % 5];
 const order = ["ELEPHANT", "CANNON", "HORSEMAN", "RIFLEMAN", "WARRIOR"];
 const unitOf = (a) => FORCE.find((u) => u.arm === a);
 const hand = (f) => order.flatMap((a) => Array(f.counts[a]).fill(GLYPH[a] + unitOf(a).s));
@@ -26,7 +26,7 @@ w();
 
 w("## The ring");
 w();
-w("> " + ARMS.join(" → ") + " → back to " + ARMS[0]);
+w("> " + RING.join(" → ") + " → back to " + RING[0]);
 w();
 w("Each arm cancels the **next two** along the ring, and is cancelled by the two behind it.");
 w();

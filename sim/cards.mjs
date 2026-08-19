@@ -2,14 +2,23 @@
 
 // ---- the ring ---------------------------------------------------------------
 // Each arm cancels the NEXT TWO along the ring, and is cancelled by the two behind it.
-//   ELEPHANT -> RIFLEMAN -> WARRIOR -> HORSEMAN -> WARRIOR -> back to ELEPHANT
+//   ELEPHANT -> RIFLEMAN -> CANNON -> HORSEMAN -> WARRIOR -> back to ELEPHANT
+// ⚠️ TWO ORDERS, AND THEY ARE NOT THE SAME THING. `ARMS` is the LISTING order: it is what
+// ARMSTR, ARMMOD and the roster's per-arm counts are read against, and it never moves. `RING`
+// is the KILL ORDER, and it is a lever — every kill relationship in the game derives from it
+// and from nothing else. Keeping them apart is what lets the ring be re-cut without silently
+// permuting eight rulers' decks, which is exactly what reordering ARMS would have done.
 export const ARMS = ["ELEPHANT", "RIFLEMAN", "CANNON", "HORSEMAN", "WARRIOR"];
 export const GLYPH = { ELEPHANT: "E", RIFLEMAN: "R", CANNON: "C", HORSEMAN: "H", WARRIOR: "W" };
+export const RING = (process.env.RING || ARMS.join(",")).split(",").map((a) => a.trim().toUpperCase());
+if (RING.length !== 5 || ARMS.some((a) => !RING.includes(a)))
+  throw new Error(`RING must be a permutation of the five arms, got: ${RING.join(",")}`);
 export const armIndex = (a) => ARMS.indexOf(a);
-export const beatsIdx = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;
-export const beats = (a, b) => beatsIdx(armIndex(a), armIndex(b));
+export const ringIndex = (a) => RING.indexOf(a);
+export const beatsIdx = (x, y) => y === (x + 1) % 5 || y === (x + 2) % 5;   // RING indices
+export const beats = (a, b) => beatsIdx(ringIndex(a), ringIndex(b));
 export const PREY = Object.fromEntries(
-  ARMS.map((a, i) => [a, [ARMS[(i + 1) % 5], ARMS[(i + 2) % 5]]]));
+  RING.map((a, i) => [a, [RING[(i + 1) % 5], RING[(i + 2) % 5]]]));
 
 // ---- the Force and the supply, one card per arm each -------------------------
 // Strength is a property of the ARM. The supply is an upgraded shadow of the Force: one Power
@@ -22,20 +31,31 @@ export const PREY = Object.fromEntries(
 // The ladder is the lever on faction balance: the RATIO between the cheapest and dearest arm
 // is what an Archer-heavy faction has to overcome. 1..9 is a 9x ratio; shifting the whole
 // ladder up compresses it without touching the gaps or the odd/even broker shadow.
-// ARMSTR assigns a strength to each arm IN RING ORDER (ELEPHANT, RIFLEMAN, WARRIOR,
-// HORSEMAN, WARRIOR). Which strength sits on which arm is the one lever that can level the
+// ARMSTR assigns a strength to each arm IN ARMS ORDER (ELEPHANT, RIFLEMAN, CANNON,
+// HORSEMAN, WARRIOR) — the listing order, which no re-cutting of the RING moves. Which strength sits on which arm is the one lever that can level the
 // factions without touching the ring the designer specified — the relationships stay exactly
 // as written, only the numbers move.
 export const ARMSTR = (process.env.ARMSTR || "9,3,7,5,1").split(",").map(Number);
 
-// ARMBITE — HOW HARD AN ARM HITS ITS PREY, in ring order, independent of what it can absorb.
+// ARMMOD — THE ATTACK MODIFIER, in ARMS order. It is ADDED TO STRENGTH, and only along the ring.
 //
-// ⚠️ Strength used to do both jobs and could not do either well. As pure durability under the
-// damage rule, a WARRIOR 1 dealt 1 and its kills collapsed from 809 to 202 — it could not finish
-// a RIFLEMAN 3 without three of them. Splitting the two numbers is what lets a unit be fragile
-// AND dangerous: the warrior dies to anything and bites deep, the elephant absorbs everything
-// and lands a lesser blow. Strength is what you survive; BITE is what you do.
-export const ARMBITE = (process.env.ARMBITE || "2,4,3,4,5").split(",").map(Number);
+// A unit hits for its printed STRENGTH. Against the two arms it beats it hits for STRENGTH plus
+// this modifier; against anything else there is no chain, so there is no modifier and it hits
+// for strength alone. A WARRIOR 1 with a +5 lands 6 on an Elephant or a Rifleman and 1 on
+// anything else; a RIFLEMAN 3 with a +4 lands 7 on a Cannon.
+//
+// ⚠️ One number could not do both jobs. As pure durability, a WARRIOR 1 dealt 1 and its kills
+// collapsed from 809 to 202 — it could not finish a RIFLEMAN 3 without three of them. The
+// modifier is what lets a unit be fragile AND dangerous: strength is what you SURVIVE, strength
+// plus the modifier is what you DO to the things you are built to beat.
+export const ARMMOD = (process.env.ARMMOD || "2,4,3,4,5").split(",").map(Number);
+// ARMMUL — the alternative to ARMMOD: a MULTIPLIER on your own strength along the chain, so a
+// unit hits for s x ARMMUL against its prey and for s against everything else. Unset (0), the
+// additive ARMMOD is used instead.
+// ⚠️ A multiplier and a modifier pull in OPPOSITE directions. A flat +3 is transformative for a
+// strength 2 and rounding error on a 10; a x2 gives the 10 twice what it gives the 2. One arms
+// the cheap unit against the dear one, the other widens the gap that already exists.
+export const ARMMUL = Number(process.env.ARMMUL || 0);
 const S = Object.fromEntries(ARMS.map((a, i) => [a, ARMSTR[i]]));
 export const FORCE = [
   { key: "warrior", name: "Warrior", arm: "WARRIOR", s: S.WARRIOR },
@@ -112,8 +132,11 @@ const ABILITY = {
     text: "Kills TWO enemy units instead of one." },
 };
 const ABIL = (process.env.ABIL || "siege,sepoy,rockets,spy,subhedar").split(",");
+// BROKEROFF — how far a broker sits from its arm's Force unit. It must be ODD so that a Force
+// unit and a broker can never tie; +1 prints the broker above its Force counterpart, -1 below.
+export const BROKEROFF = Number(process.env.BROKEROFF || 1);
 export const BROKERS = ARMS.map((arm, i) => ({
-  key: ABIL[i], arm, s: S[arm] + 1, copies: Number(process.env.COPIES || 3), ...ABILITY[ABIL[i]],
+  key: ABIL[i], arm, s: S[arm] + BROKEROFF, copies: Number(process.env.COPIES || 3), ...ABILITY[ABIL[i]],
 }));
 // THREE of each, 15 in the supply - 64 Force cards + 15 = 79 in the box.
 // The supply shrank with the move to eight-card hands. It is drawn down to ~14 of 15 at eight
@@ -156,7 +179,7 @@ export const PATTERN = (process.env.PATTERN || "3,2,2,2,1").split(",").map(Numbe
 // THE SHAPE OF THE ANSWER: every ruler carries the arm that answers ITS OWN predator.
 // The Sultan's Elephants die to Warriors, so the Sultan fields Warriors. Three separate slot
 // sweeps landed on this independently — it is the single strongest pattern in the roster.
-//   counts are [ELEPHANT, RIFLEMAN, CANNON, HORSEMAN, WARRIOR], in ring order.
+//   counts are [ELEPHANT, RIFLEMAN, CANNON, HORSEMAN, WARRIOR] — ARMS order, NOT the ring.
 const ROSTER = [
   ["sultan",   "The Sultan",   "war elephants, and the muskets and foot that walk beside them", "ELEPHANT", [2, 2, 1, 1, 2]],
   ["badshah",  "The Badshah",  "the imperial gun train and its levies",              "CANNON",   [1, 1, 3, 1, 2]],
@@ -214,13 +237,18 @@ const ACTIVE_ROSTER = ROSTERSPEC
     })
   : ROSTER;
 
-// `shape` is either an explicit per-arm count array in ring order (the shipped roster) or the
+// `shape` is either an explicit per-arm count array in ARMS order (the shipped roster) or the
 // name of a SHAPE, which is then read from the ruler's lead arm round the ring (ROSTERSPEC).
 export const FACTIONS = ACTIVE_ROSTER.map(([key, name, era, lead, shape]) => {
   const explicit = Array.isArray(shape);
-  const k = explicit ? 0 : armIndex(lead);
+  // an explicit vector is read in ARMS order, so the shipped roster is fixed decks that no
+  // re-cutting of the ring can disturb; a SHAPE is read from the lead arm ROUND THE RING, which
+  // is what makes "the next arm along" mean anything.
+  const k = explicit ? 0 : ringIndex(lead);
   const counts = {};
-  (explicit ? shape : SHAPE[shape]).forEach((n, g) => { counts[ARMS[(g + k) % 5]] = n; });
+  (explicit ? shape : SHAPE[shape]).forEach((n, g) => {
+    counts[explicit ? ARMS[g] : RING[(g + k) % 5]] = n;
+  });
   const units = [];
   for (const arm of ARMS) for (let i = 0; i < counts[arm]; i++) units.push({ ...forceByArm[arm] });
   return { key, name, era, lead, archetype: explicit ? "custom" : shape, counts, units,
@@ -242,8 +270,12 @@ export function validate() {
   // ROSTERSPEC may hold any number, so that all 15 possible identities can be measured at once.
   if (new Set(FACTIONS.map((f) => f.key)).size !== FACTIONS.length) p.push("duplicate faction keys");
   if (!ROSTERSPEC && FACTIONS.length !== 8) p.push("expected 8 distinct factions");
-  for (const u of FORCE) if (u.s % 2 !== 1) p.push(`${u.name}: Force strengths must be odd`);
-  for (const b of BROKERS) if (b.s % 2 !== 0) p.push(`${b.name}: broker strengths must be even`);
+  // ⚠️ THE INVARIANT IS OPPOSITE PARITY, not "Force odd". What matters is that a Force unit and
+  // a Power Broker can never tie; which side holds the odd numbers is a free choice.
+  const par = FORCE[0].s % 2;
+  for (const u of FORCE) if (u.s % 2 !== par) p.push(`${u.name}: Force strengths must all share a parity`);
+  for (const b of BROKERS) if (b.s % 2 === par) p.push(`${b.name}: brokers must be the opposite parity to the Force`);
+  for (const b of BROKERS) if (b.s < 1) p.push(`${b.name}: strength ${b.s} is below 1`);
   if (new Set(BROKERS.map((b) => b.arm)).size !== 5) p.push("brokers do not cover all five arms");
   const timings = new Set(Object.values(TIMING));
   for (const b of BROKERS) if (!timings.has(b.when)) p.push(`${b.name}: needs a timing keyword`);

@@ -24,7 +24,7 @@
 // The board is capped, so it also jams: once both armies are full nobody can commit, and the
 // charge is the only thing that clears room. Calling it is how the game breathes.
 
-import { FACTIONS, BROKERS, ARMS, ARMSTR, ARMBITE, PREY, beats } from "./cards.mjs";
+import { FACTIONS, BROKERS, ARMS, ARMSTR, ARMMOD, ARMMUL, RING, ringIndex, PREY, beats } from "./cards.mjs";
 
 export const NUM_ARMIES = Number(process.env.ARMIES || 2);
 
@@ -120,8 +120,17 @@ export const INITIATIVE = process.env.INITIATIVE !== "0";
 // HEAL=1 — wounds do NOT carry between charges; every survivor stands back up at full
 // strength. Tests whether persistent wounds are what makes going first so valuable.
 export const HEAL = process.env.HEAL === "1";
-// what an arm DEALS to its prey — never its own strength, which is what it can absorb
-export const BITE = Object.fromEntries(ARMS.map((a, i) => [a, ARMBITE[i]]));   // EXPERIMENT: fails seat deviation, see D052
+// OPENFIRE — may a unit strike something it does not beat? The ring stops deciding WHO can be
+// hit and decides only HOW HARD. OPENFIRE=0 restores ring-gated targeting: prey only.
+export const OPENFIRE = process.env.OPENFIRE !== "0";
+const STR = Object.fromEntries(ARMS.map((a, i) => [a, ARMSTR[i]]));
+const MOD = Object.fromEntries(ARMS.map((a, i) => [a, ARMMOD[i]]));
+// WHAT ONE BLOW LANDS: your strength, plus your modifier if the target is prey. No chain, no
+// modifier. This is the only place damage is priced, and everything — the resolver and the
+// policy alike — reads it here.
+export const dealt = (from, to) => !beats(from, to) ? STR[from]
+  : ARMMUL ? STR[from] * ARMMUL                      // a multiple of your own strength
+  : STR[from] + MOD[from];                           // or a flat modifier on top of it
 
 export function resolveCharge(armies) {
   const all = [];
@@ -134,16 +143,19 @@ export function resolveCharge(armies) {
     for (const t of all) if (t.u.hp === undefined) t.u.hp = t.u.s;
     const incoming = new Map();                       // target -> [{from, amount}]
     const aim = (k) => {
-      let best = null;
+      let best = null, bestD = 0;
       for (const t of all) {
-        if (t.ai === k.ai || !beats(k.u.arm, t.u.arm)) continue;
+        if (t.ai === k.ai) continue;
+        if (!OPENFIRE && !beats(k.u.arm, t.u.arm)) continue;
         // ⚠️ D045: the policy must USE the rule or the rule is untestable. Prefer something this
-        // blow can finish outright; otherwise hit the biggest thing you can reach.
-        const finishes = BITE[k.u.arm] >= t.u.hp;
-        if (!best) { best = t; continue; }
-        const bf = BITE[k.u.arm] >= best.u.hp;
-        if (finishes !== bf) { if (finishes) best = t; continue; }
-        if (finishes ? t.u.hp > best.u.hp : t.u.hp > best.u.hp) best = t;
+        // blow can finish outright; then the target this blow hits HARDEST, which is what the
+        // modifier is for; then the biggest thing still standing.
+        const d = dealt(k.u.arm, t.u.arm);
+        if (!best) { best = t; bestD = d; continue; }
+        const finishes = d >= t.u.hp, bf = bestD >= best.u.hp;
+        if (finishes !== bf) { if (finishes) { best = t; bestD = d; } continue; }
+        if (d !== bestD) { if (d > bestD) { best = t; bestD = d; } continue; }
+        if (t.u.hp > best.u.hp) { best = t; bestD = d; }
       }
       return best;
     };
@@ -153,7 +165,7 @@ export function resolveCharge(armies) {
         const t = aim(k);
         if (!t) break;
         if (!incoming.has(t)) incoming.set(t, []);
-        incoming.get(t).push({ from: k, amount: BITE[k.u.arm] });
+        incoming.get(t).push({ from: k, amount: dealt(k.u.arm, t.u.arm) });
       }
     }
     for (const [t, hits] of incoming) {
@@ -325,7 +337,7 @@ export function declarationFor(unit, rnd) {
   const r = rnd();
   if (r < 0.35) return null;                                   // say nothing
   if (r < 0.65) return unit.arm;                               // the truth
-  return ARMS[(ARMS.indexOf(unit.arm) + 3) % 5];               // the trap
+  return RING[(ringIndex(unit.arm) + 3) % 5];                   // the trap, read off the ring
 }
 
 export const boardFull = (g) => g.armies.every((a) => a.length >= ARMY_CAP);
@@ -464,12 +476,20 @@ export function charge(g) {
 // ---- the policy ------------------------------------------------------------------
 // It must value the thing that scores: kills. Committing is worth what it is likely to kill,
 // less what it is likely to lose to. Charging is worth the harvest already on the table.
+const AVG_DEALT = Object.fromEntries(ARMS.map((a) =>
+  [a, ARMS.reduce((n, t) => n + dealt(a, t), 0) / ARMS.length]));
 function expectedKills(g, seat, arm, army) {
   const prey = PREY[arm];
   let n = 0;
   for (let a = 0; a < NUM_ARMIES; a++) {
     if (a === army) continue;
     for (const c of g.armies[a]) {
+      // Under damage a blow is worth the FRACTION OF A KILL it represents against that target,
+      // which is the only reading that can tell a +5 into an Elephant from a 1 into one.
+      if (DAMAGE) {
+        n += c.revealed ? Math.min(1, dealt(arm, c.arm) / (c.hp ?? c.s)) : 0.4 * AVG_DEALT[arm] / 5;
+        continue;
+      }
       if (c.revealed ? prey.includes(c.arm) : prey.length / 5) n += c.revealed ? 1 : 0.4;
     }
   }
@@ -480,18 +500,20 @@ function expectedKills(g, seat, arm, army) {
 // Under damage that is simply false — the warrior takes a ninth of it. Risk is now the fraction
 // of your strength the enemy can actually deal, which is the only reading that lets the policy
 // see durability at all.
-const STR = Object.fromEntries(ARMS.map((a, i) => [a, ARMSTR[i]]));
 function expectedRisk(g, seat, arm, army, hp) {
   const killers = ARMS.filter((t) => beats(t, arm));
   const mine = hp ?? STR[arm];
-  // an unrevealed unit is a 2-in-5 chance of being a killer, at the average killer's strength
-  const avgKiller = killers.reduce((n, k) => n + BITE[k], 0) / killers.length;
+  // what an unseen enemy is worth against me: the average blow the five arms land on this arm,
+  // which under OPENFIRE includes the ones that have no chain on me and hit for strength alone
+  const avgIn = ARMS.reduce((n, k) => n + (OPENFIRE || beats(k, arm) ? dealt(k, arm) : 0), 0) / ARMS.length;
   let n = 0;
   for (let a = 0; a < NUM_ARMIES; a++) {
     if (a === army) continue;
     for (const c of g.armies[a]) {
       if (!DAMAGE) { n += c.revealed ? (killers.includes(c.arm) ? 1 : 0) : 0.4; continue; }
-      n += c.revealed ? (killers.includes(c.arm) ? BITE[c.arm] : 0) : 0.4 * avgKiller;
+      n += c.revealed
+        ? (OPENFIRE || killers.includes(c.arm) ? dealt(c.arm, arm) : 0)
+        : 0.4 * avgIn;
     }
   }
   return Math.min(1, DAMAGE ? n / mine : n);
