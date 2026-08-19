@@ -131,6 +131,11 @@ function doCharge(s, seat) {
       hit: { owner: hit.u.owner, arm: hit.u.arm, s: hit.u.s, army: hit.ai, slot: hit.ui },
     })),
     scored: [...r.scored], lost: [...r.lost], recruited: [...r.recruited],
+    // U035: the reveal has to LAND ON THE SUMMED NUMBER, not just the flips — Dire Wolf shipped
+    // exactly this as a fix. Surviving strength per army and who took the charge, so the client
+    // never has to derive the figure the whole sequence is building towards.
+    totals: s.g.armies.map((a) => a.reduce((n, c) => n + c.s, 0)),
+    victors: r.victors,          // army index that took the charge, or -1 for level
     calledBy: seat,
   };
   s.phase = PHASE.CHARGE;

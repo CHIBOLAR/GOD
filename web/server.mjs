@@ -112,7 +112,12 @@ function step(room) {
   if (!s || s.phase === PHASE.OVER) { broadcast(room); return; }
 
   if (s.phase === PHASE.CHARGE) {
-    // hold the charge on screen long enough to watch, then let the front resume
+    // ⚠️ THE FRONT RESUMES WHEN EVERYONE HAS ACTUALLY SEEN THE CHARGE, not on a fixed guess.
+    // A charge takes 2.7–7.7s to play depending on the viewer's speed setting, so any single
+    // hold is either too short for the slowest or dead air for the fastest. Each client reports
+    // when its sequence ends; REVEAL_HOLD is only the backstop for a client that never does.
+    room.watched = new Set();
+    room.watching = s.lastCharge?.n ?? 0;
     room.timer = setTimeout(() => { apply(s, 0, { type: "continue" }); step(room); }, REVEAL_HOLD);
     broadcast(room);
     return;
@@ -252,6 +257,21 @@ wss.on("connection", (ws) => {
         foyer.queue = foyer.queue.filter((s) => s !== ws);
         pushFoyer();
         break;
+      }
+
+      // Not a player action — the client saying "my animation finished". See step().
+      case "watched": {
+        const r = c.room;
+        if (!r || !r.state || r.state.phase !== PHASE.CHARGE) return;
+        if (m.n !== r.watching) return;
+        r.watched?.add(c.seat);
+        const humans = r.seats.filter((x) => !x.bot && x.ws && x.ws.readyState === 1).length;
+        if ((r.watched?.size ?? 0) >= humans) {
+          clearTimeout(r.timer); r.timer = null;
+          apply(r.state, 0, { type: "continue" });
+          step(r);
+        }
+        return;
       }
 
       case "act": {

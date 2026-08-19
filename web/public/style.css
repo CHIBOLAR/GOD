@@ -276,3 +276,21 @@ h1 { font-family: Cinzel, serif; font-weight: 600; letter-spacing: .12em; margin
 }
 
 @media (max-width: 560px) { .sides { grid-template-columns: 1fr; } }
+
+/* ---------- the charge sequence ---------------------------------------------- */
+.shout { text-align: center; padding: 10px 0 16px; min-height: 74px; }
+.shout .big {
+  font-family: Cinzel, serif; font-size: clamp(17px,4.6vw,27px);
+  letter-spacing: .1em; color: var(--parch);
+}
+.shout .small { color: var(--text-soft); font-size: 15px; margin-top: 4px; }
+
+.chargeboard { display: flex; flex-direction: column; gap: 18px; }
+/* U034: a unit that dies without killing gets a grey-out, never a flourish. */
+.slot.struck { border-color: var(--verm); }
+.slot.struck .pip { opacity: .2; }
+.slot.struck::after {
+  content: ""; position: absolute; width: 30px; height: 1px; background: var(--verm-lit);
+  transform: rotate(-32deg);
+}
+.slot { position: relative; }

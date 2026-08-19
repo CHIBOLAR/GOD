@@ -4,6 +4,7 @@
 // computes game state.
 
 import { h, ARMS, pip, ring } from "./view/dom.mjs";
+import { play, chargeBoard, chargeCaption, SPEEDS, speed, setSpeed } from "./view/charge.mjs";
 
 const app = document.getElementById("app");
 const S = {
@@ -15,6 +16,9 @@ const S = {
   seen: 0,          // highest log sequence already staged
   queue: [],        // moments waiting to be shown
   showing: null,
+  frame: null,      // the charge sequence's current picture
+  playing: 0,       // reveal.n currently being played
+  cancel: null,
 };
 
 // ---- transport ---------------------------------------------------------------
@@ -29,7 +33,7 @@ function connect() {
     if (m.t === "seated")  { S.code = m.code; S.seat = m.seat; S.screen = "lobby"; render(); return; }
     if (m.t === "lobby")   { S.lobby = m; S.screen = m.started ? "game" : "lobby"; render(); return; }
     if (m.t === "started") { S.screen = "game"; render(); return; }
-    if (m.t === "view")    { S.v = m.view; S.screen = "game"; harvest(); render(); return; }
+    if (m.t === "view")    { S.v = m.view; S.screen = "game"; harvest(); startCharge(); render(); return; }
   };
   ws.onclose = () => { S.err = "connection lost — reconnecting"; render(); setTimeout(connect, 1500); };
 }
@@ -92,6 +96,23 @@ function moment() {
       theirs.length ? h("div", { class: "rule" }) : null,
       theirs.length ? h("div", { class: "army" }, theirs.map((u) => pip(u, S.v.players))) : null,
     ));
+}
+
+// ---- the charge ---------------------------------------------------------------
+function startCharge() {
+  const r = S.v.reveal;
+  if (S.v.phase !== "charge" || !r || r.n === S.playing) {
+    if (S.v.phase !== "charge" && S.frame) { S.cancel?.(); S.frame = null; }
+    return;
+  }
+  S.playing = r.n;
+  S.cancel?.();
+  S.cancel = play(r, (f) => { S.frame = f; render(); }, () => {
+    S.cancel = null;
+    // tell the server we have actually watched it — this is what carries the game on, not a
+    // button and not a fixed timer (see server.mjs step()).
+    send({ t: "watched", n: r.n });
+  });
 }
 
 // ---- screens -----------------------------------------------------------------
@@ -293,12 +314,22 @@ function game() {
       h("span", { class: "stat caps" }, "charge ", h("b", {}, v.charge)),
       h("span", { class: "spacer" }),
       h("span", { class: "stat caps" }, "you ", h("b", { class: "mono" }, `${you.vp}/${v.target}`)),
-      h("span", { class: "stat caps" }, "supply ", h("b", { class: "mono" }, v.supplyLeft))),
+      h("span", { class: "stat caps" }, "supply ", h("b", { class: "mono" }, v.supplyLeft)),
+      h("button", { class: "caps", style: "flex:0 0 auto;min-height:30px;padding:0 8px",
+        title: "how fast a charge plays",
+        onclick: () => { const i = SPEEDS.indexOf(speed());
+          setSpeed(SPEEDS[(i + 1) % SPEEDS.length]); render(); } }, `${speed()}×`)),
     seats(),
-    h("div", { class: "ground" },
-      armyBlock(v.armies[0]),
-      ring(),
-      armyBlock(v.armies[1])),
+    v.phase === "charge" && v.reveal && S.frame
+      ? h("div", { class: "ground" },
+          (() => { const [big, small] = chargeCaption(v.reveal, S.frame, v.players);
+            return h("div", { class: "shout" },
+              h("div", { class: "big" }, big), h("div", { class: "small" }, small)); })(),
+          chargeBoard(v.reveal, S.frame, v.players, v.cap))
+      : h("div", { class: "ground" },
+          armyBlock(v.armies[0]),
+          ring(),
+          armyBlock(v.armies[1])),
     h("div", { class: "handwrap" }, hand()),
     actions(),
     S.err ? h("p", { class: "err pad" }, S.err) : null,
