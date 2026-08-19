@@ -51,8 +51,10 @@ export function createGame({ factions, seed = Date.now(), names = [] }) {
 }
 
 const nm = (s, i) => s.g.players[i].name;
-const note = (s, text, kind = "info") => {
-  s.log.push({ charge: s.g.charge, text, kind });
+// EVENTS, NOT LOG LINES. The log box is going away; these are the moments the client stages.
+// `data` lets it build a banner without parsing English out of `text`.
+const note = (s, text, kind = "info", data = null) => {
+  s.log.push({ charge: s.g.charge, text, kind, data });
   if (s.log.length > 200) s.log.shift();
 };
 const armyName = (i) => ["I", "II", "III", "IV"][i] ?? String(i + 1);
@@ -94,6 +96,7 @@ function finish(s, end) {
 function doCharge(s, seat) {
   const before = s.g.armies.map((a) => a.map((c) => ({
     owner: c.owner, arm: c.arm, s: c.s, broker: c.broker, revealed: c.revealed })));
+  const leadersBefore = [...s.g.leader];
   const r = charge(s.g);
 
   for (const { by, hit } of r.kills) {
@@ -104,6 +107,11 @@ function doCharge(s, seat) {
   }
   for (const [p, v] of r.scored) note(s, `${nm(s, p)} takes ${v} point${v === 1 ? "" : "s"}`, "score");
   for (const [p] of r.recruited) note(s, `${nm(s, p)} lost units and recruits a Power Broker`, "recruit");
+  s.g.leader.forEach((now, a) => {
+    if (now === null || now === leadersBefore[a]) return;
+    note(s, `COMMAND OF ARMY ${armyName(a)} PASSES TO ${nm(s, now)}`, "command",
+      { army: a, leader: now, from: leadersBefore[a], reason: "seniority" });
+  });
   if (!r.kills.length) note(s, `the charge falls on nothing — no unit could reach another`, "info");
 
   s.g.players.forEach((p) => p.hand.forEach(stamp));
@@ -138,11 +146,23 @@ export function apply(s, seat, action) {
       // A DECLARATION IS PART OF DEPLOYING, not a separate turn. You put a unit down face down
       // and say what it is — truthfully or not. The claim dies with the charge.
       const claim = ARMS.includes(action.claim) ? action.claim : null;
+      // ALLIANCE IS THE POLITICS OF THIS GAME AND IT WAS INVISIBLE. Deploying into an army
+      // somebody else already leads is JOINING THEM — read both facts before the commit changes
+      // them, because commit() installs a leader when the army is empty.
+      const leaderBefore = s.g.leader[action.army];
+      const alreadyIn = s.g.armies[action.army].some((c) => c.owner === seat);
       commit(s.g, seat, unit, action.army, claim);
       s.stats[seat].deploys++;
       note(s, claim
         ? `${nm(s, seat)} deploys into Army ${armyName(action.army)} and declares ${claim}`
         : `${nm(s, seat)} deploys into Army ${armyName(action.army)} and says nothing`, "deploy");
+      if (leaderBefore === null) {
+        note(s, `${nm(s, seat)} RAISES ARMY ${armyName(action.army)}`, "command",
+          { army: action.army, leader: seat, reason: "raised" });
+      } else if (!alreadyIn && leaderBefore !== seat) {
+        note(s, `${nm(s, seat)} JOINS THE ALLIANCE LED BY ${nm(s, leaderBefore)}`, "alliance",
+          { army: action.army, joined: seat, leader: leaderBefore });
+      }
       endTurn(s, true);
       break;
     }
@@ -150,6 +170,7 @@ export function apply(s, seat, action) {
     case "defect": {
       // your whole contingent changes sides at once — you may never stand in two armies
       const from = s.g.armies[action.from], to = s.g.armies[action.to];
+      const betrayed = s.g.leader[action.from], joining = s.g.leader[action.to];
       const moving = from.filter((c) => c.owner === seat);
       for (const c of moving) { from.splice(from.indexOf(c), 1); to.push(c); }
       if (!from.length) s.g.leader[action.from] = null;
@@ -159,7 +180,12 @@ export function apply(s, seat, action) {
         s.g.leader[action.from] = [...by.entries()].sort((x, y) => y[1] - x[1])[0][0];
       }
       if (s.g.leader[action.to] === null) s.g.leader[action.to] = seat;
-      note(s, `${nm(s, seat)} DEFECTS to Army ${armyName(action.to)}`, "defect");
+      note(s, betrayed !== null && betrayed !== seat
+        ? `${nm(s, seat)} ABANDONS ${nm(s, betrayed)}` +
+          (joining !== null && joining !== seat ? ` AND JOINS ${nm(s, joining)}` : "")
+        : `${nm(s, seat)} DEFECTS to Army ${armyName(action.to)}`, "defect",
+        { seat, from: action.from, to: action.to, betrayed, joining,
+          units: moving.length });
       endTurn(s, true);
       break;
     }

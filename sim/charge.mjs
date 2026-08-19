@@ -264,11 +264,18 @@ export function charge(g) {
     });
     g.armies[a] = keep;
     if (!keep.length) g.leader[a] = null;
-    else if (!keep.some((c) => c.owner === g.leader[a])) {
-      // seniority passes to the greatest surviving strength, as before
+    else {
+      // SENIORITY PASSES TO THE GREATEST SURVIVING STRENGTH. Ties keep the incumbent.
+      //
+      // ⚠️ This used to reassign ONLY when the incumbent had no survivors left, which is not the
+      // rule — it let a senior partner reduced to a Warrior 1 keep command over an ally standing
+      // with an Elephant 9. Command is the right to call the charge, so the wrong holder is a
+      // real advantage handed to whoever happened to deploy first, forever.
       const by = new Map();
       for (const c of keep) by.set(c.owner, (by.get(c.owner) || 0) + c.s);
-      g.leader[a] = [...by.entries()].sort((x, y) => y[1] - x[1])[0][0];
+      const top = Math.max(...by.values());
+      g.leader[a] = by.get(g.leader[a]) === top ? g.leader[a]
+        : [...by.entries()].filter(([, v]) => v === top).sort((x, y) => x[0] - y[0])[0][0];
     }
   }
 
