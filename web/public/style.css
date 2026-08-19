@@ -97,8 +97,8 @@ html, body {
   border: 1px solid var(--edge); border-radius: 2px; padding: 0 4px;
   font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--text-soft);
 }
-.claim.t { border-color: var(--verd);  color: #7FD3AC; }   /* revealed true */
-.claim.f { border-color: var(--verm);  color: var(--verm-lit); }   /* revealed a lie */
+/* No true/false variants by design — see app.mjs. The UI shows what was said and shows what
+   was revealed, and lets the player put the two together. */
 
 /* ---------- the ground ------------------------------------------------------- */
 .ground { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 8px 14px; }

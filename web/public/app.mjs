@@ -135,12 +135,13 @@ const legal = (type) => (S.v.actions || []).filter((a) => a.type === type);
 
 function seats() {
   return h("div", { class: "seats" }, S.v.players.map((p) => {
-    // this round's declarations, on the seat — never in a log (U017)
+    // This round's declarations, on the seat — never in a log (U017).
+    // ⚠️ NOT STAMPED true or false. The claim is on the seat and the revealed unit is on the
+    // board; catching the lie is the player's job. Marking it would be tracking by another name,
+    // and bluffs here are round-relevant only.
     const said = S.v.armies.flatMap((a) => a.units)
       .filter((u) => u.owner === p.seat && u.claim)
-      .map((u) => h("span", {
-        class: "claim" + (u.arm === undefined ? "" : u.arm === u.claim ? " t" : " f"),
-      }, u.claim.slice(0, 4)));
+      .map((u) => h("span", { class: "claim" }, u.claim.slice(0, 4)));
     return h("div", {
       class: "seat" + (p.seat === S.v.you ? " you" : "") + (p.seat === S.v.toAct ? " onturn" : ""),
     },
@@ -211,8 +212,7 @@ function side(a, joinable) {
       // what they SAID — the read you are buying by standing next to them
       theirs.some((u) => u.claim)
         ? h("div", { class: "claims" }, theirs.filter((u) => u.claim).map((u) =>
-            h("span", { class: "claim" + (u.arm === undefined ? "" : u.arm === u.claim ? " t" : " f") },
-              u.claim.slice(0, 4))))
+            h("span", { class: "claim" }, u.claim.slice(0, 4))))
         : h("div", { class: "caps", style: "color:var(--text-faint)" }, "said nothing"));
   });
   return h("button", { class: "side", disabled: !joinable,
