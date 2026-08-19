@@ -1,305 +1,447 @@
 <title>DECCAN</title>
-<!--
-  DERIVED. rules/RULEBOOK.md is the canon (DECISIONS.md D003) and wins any disagreement.
-  This is a shareable rendering for playtesters. If a rule changes, change RULEBOOK.md first.
--->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Eczar:wght@500;600;700&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
 <style>
-  :root {
-    --ground: #E8E9E4;
-    --surface: #F3F4F0;
-    --sunk: #DDDFD8;
-    --ink: #191D1B;
-    --muted: #5D6462;
-    --rule: #C7CAC3;
-    --gold: #8A6210;
-    --gold-soft: #B8912F;
-    --eleph: #6C4A78;
-    --cannon: #A24137;
-    --horse: #2F4E85;
-    --rifle: #37634A;
-    --warrior: #8A6210;
-    --shadow: 0 1px 2px rgba(25,29,27,.07), 0 8px 24px -16px rgba(25,29,27,.3);
-    --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    --body: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+/* ── tokens ──────────────────────────────────────────────────────────────────
+   Bidriware: the blackened zinc-alloy-and-silver inlay of Bidar, in the Deccan.
+   Light = manuscript paper, cool grey-green. Dark = the blackened metal itself. */
+:root {
+  --ground:      #E8E9E1;
+  --surface:     #F2F3EC;
+  --surface-sunk:#DFE1D8;
+  --ink:         #262A22;
+  --ink-strong:  #171A14;
+  --ink-mute:    #62675A;
+  --rule:        #C7CABD;
+  --rule-soft:   #D7DACE;
+  --lapis:       #24406E;
+  --on-lapis:    #F2F3EC;
+  --lapis-soft:  #E0E5EE;
+  --vermilion:   #A8331C;
+  --verm-soft:   #F2E3DF;
+  --gold:        #8A6A1F;
+  --shadow:      0 1px 0 rgba(23,26,20,.05), 0 8px 28px -20px rgba(23,26,20,.5);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #131512;
+    --surface:     #1B1E19;
+    --surface-sunk:#0E100D;
+    --ink:         #D6D9CE;
+    --ink-strong:  #F1F2E9;
+    --ink-mute:    #8E9384;
+    --rule:        #2F332C;
+    --rule:        #2F332C;
+    --rule-soft:   #23271F;
+    --lapis:       #8FAFDF;
+  --on-lapis:    #131512;
+    --lapis-soft:  #1A2233;
+    --vermilion:   #DE7355;
+    --verm-soft:   #2B1B16;
+    --gold:        #C9A24A;
+    --shadow:      0 1px 0 rgba(0,0,0,.4), 0 8px 28px -20px #000;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --ground: #14181A; --surface: #1C2125; --sunk: #101315;
-      --ink: #DBDFD9; --muted: #8C9490; --rule: #2C3237;
-      --gold: #E0A22B; --gold-soft: #A87C24;
-      --eleph: #B78FC4; --cannon: #D97A6C; --horse: #7FA3D8; --rifle: #7DB48C; --warrior: #E0A22B;
-      --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -16px rgba(0,0,0,.9);
-    }
-  }
-  :root[data-theme="dark"] {
-    --ground: #14181A; --surface: #1C2125; --sunk: #101315;
-    --ink: #DBDFD9; --muted: #8C9490; --rule: #2C3237;
-    --gold: #E0A22B; --gold-soft: #A87C24;
-    --eleph: #B78FC4; --cannon: #D97A6C; --horse: #7FA3D8; --rifle: #7DB48C; --warrior: #E0A22B;
-    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -16px rgba(0,0,0,.9);
-  }
+}
+:root[data-theme="dark"] {
+  --ground:      #131512;
+  --surface:     #1B1E19;
+  --surface-sunk:#0E100D;
+  --ink:         #D6D9CE;
+  --ink-strong:  #F1F2E9;
+  --ink-mute:    #8E9384;
+  --rule:        #2F332C;
+  --rule-soft:   #23271F;
+  --lapis:       #8FAFDF;
+  --on-lapis:    #131512;
+  --lapis-soft:  #1A2233;
+  --vermilion:   #DE7355;
+  --verm-soft:   #2B1B16;
+  --gold:        #C9A24A;
+  --shadow:      0 1px 0 rgba(0,0,0,.4), 0 8px 28px -20px #000;
+}
 
-  * { box-sizing: border-box; }
-  body { background: var(--ground); color: var(--ink); font-family: var(--body);
-    font-size: 16.5px; line-height: 1.62; margin: 0; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 47rem; margin: 0 auto; padding: clamp(2rem,6vw,4.5rem) clamp(1.1rem,4vw,2rem) 6rem;
-    display: flex; flex-direction: column; gap: 3.25rem; }
-  section { display: flex; flex-direction: column; gap: 1rem; }
-  p { margin: 0; max-width: 62ch; }
-  h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 600; text-wrap: balance; }
-  .eyebrow { font-size: .715rem; font-weight: 650; letter-spacing: .16em; text-transform: uppercase;
-    color: var(--gold); margin: 0; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Spectral, Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 940px; margin: 0 auto; padding: 0 24px 96px; }
+.measure { max-width: 66ch; }
 
-  h1 { font-size: clamp(3.4rem,13vw,6rem); line-height: .9; letter-spacing: .04em; }
-  header { display: flex; flex-direction: column; gap: 1.5rem; }
-  .meta { display: flex; flex-wrap: wrap; gap: .55rem 1.4rem; font-size: .8rem; letter-spacing: .09em;
-    text-transform: uppercase; color: var(--muted); font-weight: 600;
-    padding-bottom: 1.4rem; border-bottom: 1px solid var(--rule); }
-  .standfirst { font-size: 1.16rem; line-height: 1.55; }
+h1, h2, h3, .display {
+  font-family: Eczar, Georgia, serif;
+  color: var(--ink-strong);
+  text-wrap: balance;
+  line-height: 1.14;
+  margin: 0;
+}
+p { margin: 0; }
+strong { font-weight: 600; color: var(--ink-strong); }
+em { font-style: italic; }
+a { color: var(--lapis); }
+:focus-visible { outline: 2px solid var(--lapis); outline-offset: 3px; border-radius: 2px; }
 
-  .ring { background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
-    padding: 1.5rem 1.3rem; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 1rem; }
-  .ring-line { font-family: var(--display); font-size: clamp(.95rem,2.6vw,1.24rem); text-align: center;
-    line-height: 1.5; }
-  .ring-line b { font-weight: 600; }
-  .ring-rule { text-align: center; font-size: .95rem; color: var(--muted); }
-  .ring-rule strong { color: var(--ink); font-weight: 650; }
+.label {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
-  .scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
-  th, td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--rule); }
-  th { font-size: .7rem; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
-    font-weight: 650; border-bottom-color: var(--ink); }
-  td.num, th.num { text-align: center; font-variant-numeric: tabular-nums; }
-  tbody tr:last-child td { border-bottom: none; }
+/* ── masthead ───────────────────────────────────────────────────────────── */
+header.mast {
+  border-bottom: 1px solid var(--rule);
+  padding: 72px 0 34px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+header.mast h1 {
+  font-size: clamp(52px, 12vw, 104px);
+  font-weight: 700;
+  letter-spacing: .012em;
+}
+.tagline { font-size: clamp(19px, 2.4vw, 23px); font-weight: 300; color: var(--ink-mute); max-width: 46ch; }
+.mast-facts { display: flex; flex-wrap: wrap; gap: 8px 26px; }
 
-  .chip { font-family: var(--mono); font-size: .76rem; font-weight: 600; padding: .1rem .34rem;
-    border-radius: 2px; border: 1px solid; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .E { color: var(--eleph); border-color: var(--eleph); }
-  .C { color: var(--cannon); border-color: var(--cannon); }
-  .H { color: var(--horse); border-color: var(--horse); }
-  .R { color: var(--rifle); border-color: var(--rifle); }
-  .W { color: var(--warrior); border-color: var(--warrior); }
-  .lead { background: var(--sunk); }
+/* ── the ladder: the thesis of the game ─────────────────────────────────── */
+.ladder-sec { padding: 52px 0; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 26px; }
+.ladder { display: flex; flex-direction: column; gap: 3px; }
+.rung {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.rung .v {
+  display: flex; align-items: center; justify-content: center;
+  font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 25px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ground);
+  background: var(--ink-strong);
+}
+.rung.first .v { background: var(--gold); color: var(--surface-sunk); }
+.rung.last  .v { background: var(--lapis); color: var(--on-lapis); }
+.rung .u { padding: 13px 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.rung .name { font-family: Eczar, serif; font-weight: 600; font-size: 19px; color: var(--ink-strong); }
+.rung .note { font-size: 14.5px; color: var(--ink-mute); font-style: italic; }
+.ladder-ends { display: flex; justify-content: space-between; }
 
-  .round { display: flex; flex-direction: column; }
-  .step { display: grid; grid-template-columns: 2.4rem 1fr; gap: 0 1.1rem; padding: 1.1rem 0;
-    border-top: 1px solid var(--rule); }
-  .step:last-child { border-bottom: 1px solid var(--rule); }
-  .step-n { font-family: var(--display); font-size: 1.45rem; line-height: 1.1; color: var(--gold-soft);
-    font-variant-numeric: tabular-nums; }
-  .step h3 { font-size: 1.2rem; margin-bottom: .3rem; }
-  .step p, .step li { font-size: .95rem; }
-  .step ul { margin: .5rem 0 0; padding-left: 1.05rem; display: flex; flex-direction: column; gap: .35rem; }
+/* ── generic sections ───────────────────────────────────────────────────── */
+section { padding: 52px 0; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 22px; }
+section > h2 { font-size: clamp(27px, 4vw, 35px); font-weight: 600; }
+section h3 { font-size: 20px; font-weight: 600; margin-top: 6px; }
+.stack { display: flex; flex-direction: column; gap: 15px; }
 
-  .decree { border-left: 3px solid var(--gold); padding: .1rem 0 .1rem 1.15rem;
-    font-family: var(--display); font-size: 1.22rem; line-height: 1.45; }
+/* ── cards / definitions ────────────────────────────────────────────────── */
+.defs { display: flex; flex-direction: column; gap: 1px; background: var(--rule-soft); border: 1px solid var(--rule-soft); border-radius: 2px; }
+.def { display: grid; grid-template-columns: 168px 1fr; gap: 20px; background: var(--surface); padding: 15px 18px; }
+.def dt { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--lapis); padding-top: 4px; }
+.def dd { margin: 0; font-size: 16px; }
 
-  .advice { display: flex; flex-direction: column; gap: 1.1rem; }
-  .advice div { display: flex; flex-direction: column; gap: .25rem; }
-  .advice h3 { font-size: 1.05rem; }
-  .advice p { font-size: .95rem; color: var(--muted); }
+.actions { display: flex; flex-direction: column; gap: 14px; }
+.action { border-left: 2px solid var(--rule); padding: 2px 0 2px 18px; }
+.action .an { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600; letter-spacing: .13em; color: var(--ink-strong); }
+.action.charge { border-left-color: var(--gold); }
 
-  dl { margin: 0; display: flex; flex-direction: column; gap: .65rem; }
-  dt { font-size: .74rem; letter-spacing: .13em; text-transform: uppercase; font-weight: 700; color: var(--gold); }
-  dd { margin: .1rem 0 0; font-size: .93rem; color: var(--muted); }
+/* ── the charge: a real sequence, so it is really numbered ──────────────── */
+ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 20px; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 38px 1fr; gap: 16px; }
+ol.steps > li::before {
+  content: counter(s);
+  font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 14px;
+  color: var(--lapis); border-top: 2px solid var(--lapis); padding-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.substep { border-left: 2px solid var(--lapis-soft); background: var(--lapis-soft); padding: 12px 16px; margin-top: 12px; border-radius: 2px; display: flex; flex-direction: column; gap: 8px; font-size: 16px; }
 
-  footer { border-top: 1px solid var(--rule); padding-top: 1.3rem; font-size: .83rem; color: var(--muted); }
+/* ── warning: reserved for genuinely unsettled rules ────────────────────── */
+.warn {
+  background: var(--verm-soft);
+  border: 1px solid var(--vermilion);
+  border-left-width: 3px;
+  border-radius: 2px;
+  padding: 15px 18px;
+  display: flex; flex-direction: column; gap: 9px;
+  font-size: 16px;
+}
+.warn .wl { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--vermilion); }
+
+/* ── tables ─────────────────────────────────────────────────────────────── */
+.tw { overflow-x: auto; border: 1px solid var(--rule-soft); border-radius: 2px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--surface); }
+th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
+th { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-mute); }
+tbody tr:last-child td { border-bottom: 0; }
+td.n { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; text-align: right; color: var(--gold); font-weight: 500; }
+td.deck { white-space: normal; color: var(--ink-mute); }
+
+/* ── worked example ─────────────────────────────────────────────────────── */
+.ledger { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.who { background: var(--surface); border: 1px solid var(--rule-soft); border-radius: 2px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
+.who.paid { border-color: var(--gold); }
+.who .wn { font-family: Eczar, serif; font-weight: 600; font-size: 17px; color: var(--ink-strong); }
+.who .wg { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+.who.paid .wg { color: var(--gold); font-weight: 600; }
+.who .wg.none { color: var(--ink-mute); }
+
+.open { display: flex; flex-direction: column; gap: 16px; }
+.open .item { display: grid; grid-template-columns: 15px 1fr; gap: 14px; }
+.open .item::before { content: ""; width: 7px; height: 7px; background: var(--vermilion); border-radius: 50%; margin-top: 9px; }
+
+footer { padding: 40px 0 0; color: var(--ink-mute); font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .def { grid-template-columns: 1fr; gap: 5px; }
+  .rung { grid-template-columns: 50px 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 
 <div class="wrap">
 
-  <header>
-    <h1>DECCAN</h1>
-    <div class="meta"><span>2&ndash;8 players</span><span>30&ndash;45 minutes</span><span>76 cards</span></div>
-    <p class="standfirst">
-      Two armies form on one piece of ground. You do not command an army &mdash; you put units
-      <em>into</em> one, alongside whoever else wants the same ground, and it pays out to whoever
-      is still standing when the dust settles.
-    </p>
-    <p class="standfirst">
-      <strong>Every unit you commit to a losing army is gone for good.</strong> Win, and your units
-      come home to fight again. Lose, and a Power Broker comes to you instead &mdash; so the players
-      who are behind are the only ones who ever get the game&rsquo;s best cards.
-    </p>
-  </header>
+<header class="mast">
+  <div class="label">A card game of the Deccan · 2–8 players · about 20 minutes</div>
+  <h1>DECCAN</h1>
+  <p class="tagline">Two armies form on one field. You do not command either of them — you put your units into one, alongside rivals doing the same, and you are paid for what you kill.</p>
+  <div class="mast-facts">
+    <span class="label">72 cards</span>
+    <span class="label">8 rulers × 9 units</span>
+    <span class="label">Seven kills wins</span>
+  </div>
+</header>
 
-  <section class="ring" aria-label="The ring">
-    <div class="ring-line">
-      <b>ELEPHANT</b> &rarr; <b>RIFLEMAN</b> &rarr; <b>CANNON</b> &rarr; <b>HORSEMAN</b> &rarr;
-      <b>WARRIOR</b> &rarr; back to <b>ELEPHANT</b>
+<section class="ladder-sec">
+  <div class="stack measure">
+    <h2>Value is agility, inverted</h2>
+    <p>Every unit has one number. It is what the unit <strong>deals</strong>, what it can <strong>survive</strong>, and — read backwards — <strong>when it acts</strong>.</p>
+    <p>A charge resolves band by band, cheapest first. <strong>A unit killed before its band comes up never strikes.</strong> So three Horsemen can take an Elephant off the field before it swings once, and the Elephant — the most expensive card in the box — is the one that acts last.</p>
+  </div>
+
+  <div class="ladder">
+    <div class="rung first">
+      <div class="v">1</div>
+      <div class="u"><span class="name">Commander · Spy · Scout</span><span class="note">strike first — nothing in the game is faster</span></div>
     </div>
-    <div class="ring-rule">
-      <strong>Each arm cancels the next two along the ring.</strong> It is cancelled by the two behind it.
+    <div class="rung">
+      <div class="v">2</div>
+      <div class="u"><span class="name">Horseman</span><span class="note">quick and thin: strikes before the foot, dies to less</span></div>
     </div>
-  </section>
-
-  <section>
-    <p class="eyebrow">The ring</p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Arm</th><th class="num">Str</th><th>cancels</th><th>cancelled by</th></tr></thead>
-        <tbody>
-          <tr><td><span class="chip E">Elephant</span></td><td class="num">9</td><td>Rifleman &middot; Cannon</td><td>Horseman &middot; Warrior</td></tr>
-          <tr><td><span class="chip C">Cannon</span></td><td class="num">7</td><td>Horseman &middot; Warrior</td><td>Elephant &middot; Rifleman</td></tr>
-          <tr><td><span class="chip H">Horseman</span></td><td class="num">5</td><td>Warrior &middot; Elephant</td><td>Rifleman &middot; Cannon</td></tr>
-          <tr><td><span class="chip R">Rifleman</span></td><td class="num">3</td><td>Cannon &middot; Horseman</td><td>Elephant &middot; Warrior</td></tr>
-          <tr><td><span class="chip W">Warrior</span></td><td class="num">1</td><td>Elephant &middot; Rifleman</td><td>Cannon &middot; Horseman</td></tr>
-        </tbody>
-      </table>
+    <div class="rung">
+      <div class="v">3</div>
+      <div class="u"><span class="name">Warrior</span></div>
     </div>
-    <p class="decree">A Warrior 1 cancels an Elephant 9.</p>
-    <p>
-      The cheapest card in the game answers the dearest. The number on a card says how much it is
-      worth <em>if it survives</em> &mdash; never whether it will.
-    </p>
-  </section>
-
-  <section>
-    <p class="eyebrow">A round</p>
-    <div class="round">
-      <div class="step"><div class="step-n">1</div><div>
-        <h3>Muster</h3>
-        <p>Clockwise from the start player, <strong>commit one unit face down</strong> to one of the
-          two armies, or <strong>pass</strong>. Turns keep going round until everyone passes in succession.</p>
-        <ul>
-          <li>Two armies only. Each holds <strong>three units and at most three players</strong>.</li>
-          <li>First into an army is its <strong>leader</strong>. To join an army you are not already
-            in, offer the unit &mdash; the leader accepts or refuses <strong>without looking</strong>.
-            Once in, you reinforce freely.</li>
-          <li><strong>A refusal does not end your turn.</strong> Offer to the other army, or open it
-            yourself. One offer per army per turn.</li>
-          <li>Never both armies. Passing is not folding.</li>
-        </ul>
-      </div></div>
-      <div class="step"><div class="step-n">2</div><div>
-        <h3>Charge</h3><p>Turn every committed unit face up.</p>
-      </div></div>
-      <div class="step"><div class="step-n">3</div><div>
-        <h3>Battle</h3>
-        <p><strong>First the ring, then the abilities, then the count.</strong></p>
-        <ul>
-          <li>Every unit <strong>cancels one</strong> unit of an arm it beats &mdash; the
-            <strong>strongest</strong> it can reach.</li>
-          <li>Work it out from the armies <strong>as revealed</strong>: a unit that is itself
-            cancelled still cancels.</li>
-          <li><strong>A cancelled unit does nothing</strong> &mdash; no strength, and its ability
-            never happens.</li>
-          <li>Surviving Power Brokers resolve, then total the survivors.
-            <strong>The higher total takes the ground</strong>; level totals, and both armies take it.</li>
-        </ul>
-      </div></div>
-      <div class="step"><div class="step-n">4</div><div>
-        <h3>Spoils</h3>
-        <p><strong>Each player in an army that took the ground scores one point for every surviving
-          unit of theirs.</strong> Then settle the armies and pass the start player left.</p>
-      </div></div>
+    <div class="rung">
+      <div class="v">4</div>
+      <div class="u"><span class="name">Rifleman</span></div>
     </div>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>After the battle</th><th>What happens to your units</th></tr></thead>
-        <tbody>
-          <tr><td><strong>Took the ground</strong></td><td>They <strong>recover</strong> &mdash; back in your hand after the next round.</td></tr>
-          <tr><td><strong>Did not</strong></td><td>They are <strong>gone for good</strong>, and you <strong>recruit one Power Broker</strong> &mdash; one per defeated player, whatever you committed.</td></tr>
-        </tbody>
-      </table>
+    <div class="rung">
+      <div class="v">5</div>
+      <div class="u"><span class="name">Cannon</span></div>
     </div>
-  </section>
-
-  <section>
-    <p class="eyebrow">The eight rulers</p>
-    <h2>Seven units each</h2>
-    <p>
-      A <strong>specialist</strong> takes three of one arm. A <strong>pair</strong> takes two of its
-      arm and two of the next arm round the ring. Everyone holds at least one of every arm, so
-      every ruler can answer everything.
-    </p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Ruler</th><th>Leads on</th><th>Force</th></tr></thead>
-        <tbody>
-          <tr><td><strong>The Sultan</strong></td><td>three elephant</td><td><span class="chip E lead">E9</span> <span class="chip E lead">E9</span> <span class="chip E lead">E9</span> <span class="chip C">C7</span> <span class="chip H">H5</span> <span class="chip R">R3</span> <span class="chip W">W1</span></td></tr>
-          <tr><td><strong>The Badshah</strong></td><td>three cannon</td><td><span class="chip C lead">C7</span> <span class="chip C lead">C7</span> <span class="chip C lead">C7</span> <span class="chip E">E9</span> <span class="chip H">H5</span> <span class="chip R">R3</span> <span class="chip W">W1</span></td></tr>
-          <tr><td><strong>The Peshwa</strong></td><td>three horseman</td><td><span class="chip H lead">H5</span> <span class="chip H lead">H5</span> <span class="chip H lead">H5</span> <span class="chip E">E9</span> <span class="chip C">C7</span> <span class="chip R">R3</span> <span class="chip W">W1</span></td></tr>
-          <tr><td><strong>The Governor</strong></td><td>three rifleman</td><td><span class="chip R lead">R3</span> <span class="chip R lead">R3</span> <span class="chip R lead">R3</span> <span class="chip E">E9</span> <span class="chip C">C7</span> <span class="chip H">H5</span> <span class="chip W">W1</span></td></tr>
-          <tr><td><strong>The Rana</strong></td><td>three warrior</td><td><span class="chip W lead">W1</span> <span class="chip W lead">W1</span> <span class="chip W lead">W1</span> <span class="chip E">E9</span> <span class="chip C">C7</span> <span class="chip H">H5</span> <span class="chip R">R3</span></td></tr>
-          <tr><td><strong>The Nizam</strong></td><td>two cannon + two horseman</td><td><span class="chip C lead">C7</span> <span class="chip C lead">C7</span> <span class="chip H lead">H5</span> <span class="chip H lead">H5</span> <span class="chip E">E9</span> <span class="chip R">R3</span> <span class="chip W">W1</span></td></tr>
-          <tr><td><strong>The Nawab</strong></td><td>two rifleman + two cannon</td><td><span class="chip R lead">R3</span> <span class="chip R lead">R3</span> <span class="chip C lead">C7</span> <span class="chip C lead">C7</span> <span class="chip E">E9</span> <span class="chip H">H5</span> <span class="chip W">W1</span></td></tr>
-          <tr><td><strong>The Maharaja</strong></td><td>two horseman + two warrior</td><td><span class="chip H lead">H5</span> <span class="chip H lead">H5</span> <span class="chip W lead">W1</span> <span class="chip W lead">W1</span> <span class="chip E">E9</span> <span class="chip C">C7</span> <span class="chip R">R3</span></td></tr>
-        </tbody>
-      </table>
+    <div class="rung last">
+      <div class="v">6</div>
+      <div class="u"><span class="name">Elephant</span><span class="note">strikes last, and may not get to strike at all</span></div>
     </div>
-  </section>
+  </div>
+  <div class="ladder-ends"><span class="label">First to act</span><span class="label">Last to act</span></div>
+</section>
 
-  <section>
-    <p class="eyebrow">The supply</p>
-    <h2>Twenty Power Brokers, recruited only by losing</h2>
-    <p>
-      Four of each. A Power Broker is a unit in every way &mdash; it has an arm, it fights at its
-      strength, and it can be cancelled. Only the Siege Elephant&rsquo;s look survives being
-      cancelled, because it happens as you deploy.
-    </p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Power Broker</th><th class="num">Str</th><th>Ability</th></tr></thead>
-        <tbody>
-          <tr><td><span class="chip E">Siege Elephant</span></td><td class="num">10</td><td>Deploy <strong>face up</strong>. On deployment, look at any one committed enemy unit; it stays face up.</td></tr>
-          <tr><td><span class="chip C">Sultan Rockets</span></td><td class="num">8</td><td>If your army <strong>loses</strong>, burn every recovering unit of the winning army.</td></tr>
-          <tr><td><span class="chip H">Spy</span></td><td class="num">6</td><td>Swap with the strongest unit of the opposing army. <strong>The exchange is permanent</strong> &mdash; each card joins the other player&rsquo;s Force for the rest of the game.</td></tr>
-          <tr><td><span class="chip R">Sepoy</span></td><td class="num">4</td><td>While <strong>alone</strong> in your army, fight at double strength.</td></tr>
-          <tr><td><span class="chip W">Subhedar</span></td><td class="num">2</td><td>Remove the weakest unit of the opposing army.</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+<section>
+  <h2>The words that carry rules</h2>
+  <dl class="defs">
+    <div class="def"><dt>Value</dt><dd>The number on a unit. What it deals, what it survives, and inverted, when it acts.</dd></div>
+    <div class="def"><dt>Band</dt><dd>Every unit of the same value. A band strikes together, at one instant.</dd></div>
+    <div class="def"><dt>The charge</dt><dd>The battle. Both armies turn face up and resolve at once.</dd></div>
+    <div class="def"><dt>The line</dt><dd>An army is a <strong>line, not a pile</strong>. Units are laid left to right in the order they were committed, and never reordered. The leftmost card has been standing longest.</dd></div>
+    <div class="def"><dt>Leftmost wins</dt><dd><strong>The one tie-breaker in the game.</strong> Whenever two units are equally eligible for anything — taking a blow, taking the credit for a kill, being named by a Spy — the leftmost is chosen. You never need to remember anything: look at the table.</dd></div>
+    <div class="def"><dt>Stand</dt><dd>A unit that survives a charge stays on the field, face up, undamaged.</dd></div>
+    <div class="def"><dt>Recover</dt><dd>A unit that leaves the field returns to its owner's hand and sits out one full lap of the table.</dd></div>
+    <div class="def"><dt>Senior partner</dt><dd>The player holding the most value standing in an army. Only they may call the charge.</dd></div>
+  </dl>
+</section>
 
-  <section>
-    <p class="eyebrow">Winning</p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Players</th><th class="num">2</th><th class="num">3</th><th class="num">4</th><th class="num">5</th><th class="num">6</th><th class="num">7</th><th class="num">8</th></tr></thead>
-        <tbody><tr><td>Points to win</td><td class="num">5</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">4</td></tr></tbody>
-      </table>
-    </div>
-    <p>
-      First to the target wins; two reaching it in the same round share it. If two rounds pass with
-      nothing committed, or nobody has a unit left to commit, the game ends and the most points wins.
-    </p>
-  </section>
+<section>
+  <h2>The cards</h2>
+  <p class="measure">Eight units: five bodies, and three that do something. <strong>Three verbs, and they do not overlap — the Commander hits, the Spy removes, the Scout looks.</strong></p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Unit</th><th style="text-align:right">Value</th><th style="white-space:normal">What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Elephant</td><td class="n">6</td><td class="deck">—</td></tr>
+        <tr><td>Cannon</td><td class="n">5</td><td class="deck">—</td></tr>
+        <tr><td>Rifleman</td><td class="n">4</td><td class="deck">—</td></tr>
+        <tr><td>Warrior</td><td class="n">3</td><td class="deck">—</td></tr>
+        <tr><td>Horseman</td><td class="n">2</td><td class="deck">—</td></tr>
+        <tr><td>Commander</td><td class="n">1</td><td class="deck">Strikes for the value of the highest enemy unit on the field.</td></tr>
+        <tr><td>Spy</td><td class="n">1</td><td class="deck">One enemy unit leaves without a fight. No choice.</td></tr>
+        <tr><td>Scout</td><td class="n">1</td><td class="deck">Deploys face up. Look at one face-down enemy unit — it stays face down.</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-  <section class="advice">
-    <p class="eyebrow">Three things worth knowing</p>
-    <div><h3>Your best card is the first one shot at.</h3>
-      <p>A cancelling unit always takes the strongest thing it can reach, so an Elephant draws fire
-        that a Warrior never would.</p></div>
-    <div><h3>Losing is how you get stronger.</h3>
-      <p>Every defeat hands you a Power Broker, and only the defeated ever hold one. The leader is
-        the one player who cannot buy the game&rsquo;s sharpest cards.</p></div>
-    <div><h3>A ruler with three of one arm still holds one of every other.</h3>
-      <p>However hard you lean on your speciality, you always have an answer to everything &mdash;
-        and so does everyone else.</p></div>
-  </section>
+  <div class="stack measure">
+    <h3>The Commander</h3>
+    <p>It copies the <strong>blow, not the body</strong>. Its durability stays 1 — anything kills it. It copies the <em>enemy's</em> best, not its own army's, and <strong>Commanders do not copy Commanders</strong>, or two facing each other would define one another. Facing nothing but Commanders it strikes for 1.</p>
+    <p>Because it reads the field <em>after</em> the Spies have fired, a Spy that pulls out the enemy Elephant also shrinks the enemy Commander's blow.</p>
 
-  <section>
-    <p class="eyebrow">Glossary</p>
-    <dl>
-      <div><dt>Arm</dt><dd>Elephant, Cannon, Horseman, Rifleman or Warrior. Printed on every unit.</dd></div>
-      <div><dt>Cancel</dt><dd>Take a unit out of the battle. It adds no strength and its ability does not happen.</dd></div>
-      <div><dt>Commit</dt><dd>Place a unit face down into an army. It cannot be taken back.</dd></div>
-      <div><dt>Force</dt><dd>The seven units a ruler starts with.</dd></div>
-      <div><dt>Ground</dt><dd>What the two armies are fighting over. Taken by the higher surviving total.</dd></div>
-      <div><dt>Leader</dt><dd>The first player to commit to an army. Accepts or refuses every unit offered to it, without looking.</dd></div>
-      <div><dt>Power Broker</dt><dd>An earned unit. Recruited only by losing a battle.</dd></div>
-      <div><dt>Recover</dt><dd>Set aside after a victory, and taken back into hand after the next round.</dd></div>
-      <div><dt>Strength</dt><dd>The number on a unit. It never changes.</dd></div>
-    </dl>
-  </section>
+    <h3>The Spy</h3>
+    <p>It names the highest-value enemy unit. That unit <strong>goes home and recovers</strong>. It does not strike, it cannot be killed, and <strong>nobody scores a point for it</strong>. Two Spies may not name the same unit. The Spy is not spent doing this — it stays and fights on.</p>
+    <p><strong>Spies facing each other do not cancel out.</strong> Each names the <em>highest</em> enemy unit, which is almost never the other Spy — so both Elephants walk home and the two Spies are left standing in an empty field, killing each other for a point apiece.</p>
 
-  <footer>
-    Nine glossary terms, one page of rules, 76 cards. Balance measured across 2&ndash;8 players:
-    every seat level to within 2.6 percentage points, every ruler to within 2.0 at eight players,
-    and an alliance forms in 83% of rounds.
-  </footer>
+    <h3>The Scout</h3>
+    <p>It goes out face up, so the whole table knows you scouted. <strong>What you saw is yours</strong> — the card you looked at stays face down for everyone else. Then it stands there, where everybody can see that you know something they do not.</p>
+  </div>
+
+  <div class="warn measure">
+    <span class="wl">Decided, not yet built</span>
+    <p>The model still deploys the Scout face down and gives it a <strong>public reveal</strong> — the card turns face up for the whole table — rather than a private <strong>look</strong>. Those are different cards: a reveal buys something for everyone and is paid for by one person. Nothing about the Scout should be quoted from a measurement until this is fixed.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Setup</h2>
+  <div class="stack measure">
+    <p>Each player takes a <strong>ruler</strong> — a fixed deck of nine units, held in hand.</p>
+    <p>Put out two army areas, each with room for a line of four. <strong>An army holds at most four units, from at most four players.</strong></p>
+    <p>Youngest player begins; play passes to the left.</p>
+  </div>
+</section>
+
+<section>
+  <h2>A turn</h2>
+  <p class="measure">Take <strong>exactly one</strong> action.</p>
+  <div class="actions measure">
+    <div class="action"><div class="an">DEPLOY</div><p>Put one unit from your hand <strong>face down</strong> into an army, <strong>at the right-hand end of the line</strong>. <em>(A Scout deploys face up.)</em> You may only ever stand in <strong>one</strong> army — once you have a unit in one, every later unit joins it.</p></div>
+    <div class="action"><div class="an">WITHDRAW</div><p>Take one of <em>your</em> units off the field. It recovers. This is what un-jams a full line, and it costs a turn and nothing else.</p></div>
+    <div class="action"><div class="an">DEFECT</div><p>Move your whole contingent to the other army. <strong>Only legal when a single unit is all you have standing</strong> — so crossing takes preparation: withdraw down to one, sit through its recovery, then go. An ally thinning out is visibly getting ready to leave.</p></div>
+    <div class="action charge"><div class="an">CALL THE CHARGE</div><p>Only the <strong>senior partner</strong> of an army, and only when <strong>both armies hold at least one unit</strong>. You cannot charge at nobody.</p></div>
+    <div class="action"><div class="an">PASS</div><p>Do nothing.</p></div>
+  </div>
+  <p class="measure"><strong>If both armies are full, the charge happens immediately</strong>, whether anyone wants it or not — that is what stops the game dying of hesitation. If the table passes round and round with nobody willing to act, the game ends where it stands.</p>
+</section>
+
+<section>
+  <h2>The charge</h2>
+  <ol class="steps">
+    <li><div><strong>Reveal.</strong> Every face-down unit in both armies turns face up.</div></li>
+    <li><div><strong>The Spies fire.</strong> Each Spy names the highest-value enemy unit still unnamed. Those units leave the field and recover. They never fought, and no one is paid for them.</div></li>
+    <li><div>
+      <strong>The bands resolve, lowest value first.</strong> Everything printed 1 strikes, then 2, and so on up to 6. Within a band, everything strikes at the same instant; after a band resolves, anything that has taken damage equal to its value is dead.
+      <p style="margin-top:10px"><strong>A unit killed in an earlier band never strikes.</strong></p>
+      <p style="margin-top:10px">Each striker puts its blow into the enemy unit it can <em>finish</em>; if it can finish none, into the <em>biggest one still standing</em>. Ties go leftmost. Damage stacks across bands — two Warriors together finish a Cannon neither could finish alone.</p>
+      <p style="margin-top:10px"><strong>A big unit usually never gets to choose.</strong> A Cannon 5 facing a Horseman 2 and a Warrior 3 takes 2 and then 3 and is dead at band 3, before band 5 comes round.</p>
+    </div></li>
+    <li><div>
+      <strong>Count the kills.</strong> For each unit that died, work out who takes the credit — <strong>one point, to one player, and it cannot be split.</strong>
+      <div class="substep">
+        <div><strong>a. The single largest blow takes it.</strong> A Rifleman 4 at the back of the line beats a Horseman 2 at the front, because 4 is bigger than 2.</div>
+        <div><strong>b. If the largest blows tie, the leftmost takes it</strong> — the unit that has been standing in the line longest.</div>
+      </div>
+    </div></li>
+    <li><div><strong>The Scouts look.</strong></div></li>
+    <li><div>
+      <strong>The field — but only if the charge drew blood.</strong> If nothing died, <strong>nobody takes the field</strong>. Otherwise the army with more surviving value takes it. It scores nothing at all — the field is worth only the turn that comes with it. If the values tie, nobody takes it.
+      <p style="margin-top:10px"><em>Why the blood condition exists: after a charge the front is quiet by construction, so a second charge straight away kills nothing. Without this the caller's side would still take the field on surviving value, hand the turn back to its own senior partner, and they could do it again — and again, for ever.</em></p>
+    </div></li>
+    <li><div><strong>Sort out the survivors.</strong> The dead go home and recover. <strong>Survivors stand, face up, whole</strong> — damage does not carry between charges. They keep their place in the line; gaps close without reshuffling, and anything committed afterwards goes to their right, so a veteran outranks every fresh card.</div></li>
+    <li><div>
+      <strong>Work out seniority again, then play on.</strong> With the dead cleared, each army's senior partner is whoever <em>now</em> holds the most value standing in it. <strong>The senior partner of the army that took the field takes the next turn</strong>; if nobody took the field, play continues in order.
+      <div class="warn" style="margin-top:12px">
+        <span class="wl">The starter is often not the caller</span>
+        <p>Seniority is recounted on the survivors, so calling a charge that kills your own biggest unit hands the next turn — and the army — to somebody else. Over <span class="num">14,664</span> charges, seniority changed hands in <strong>41%</strong> of the charges that had a winner.</p>
+      </div>
+    </div></li>
+  </ol>
+</section>
+
+<section>
+  <h2>First to commit, not first to strike</h2>
+  <div class="stack measure">
+    <p>Units of the same value are the same band and strike <strong>at the same instant</strong> — there is no first blow and no last blow to point at. The tie is broken by something that happened turns earlier, when the card was put down.</p>
+    <p><strong>That is the whole reason an army is laid out as a line.</strong> Who committed first is not something anyone has to remember: it is the card on the left.</p>
+    <p>Three players each commit a Horseman against an Elephant. 2 + 2 + 2 is exactly 6, so all three blows are needed, and all three tie:</p>
+  </div>
+  <div class="ledger">
+    <div class="who paid"><span class="wn">A — leftmost</span><span class="wg">spent a Horseman → 1 point</span></div>
+    <div class="who"><span class="wn">B</span><span class="wg none">spent a Horseman → nothing</span></div>
+    <div class="who"><span class="wn">C</span><span class="wg none">spent a Horseman → nothing</span></div>
+  </div>
+  <p class="measure"><strong>You fight together and you are scored separately.</strong> Somebody has to commit first, everyone can see who has not, and the front of the line is worth having.</p>
+</section>
+
+<section>
+  <h2>Scoring</h2>
+  <div class="stack measure">
+    <p style="font-size:21px"><strong>One point for every enemy unit your units killed. Seven points wins.</strong></p>
+    <p>Nothing else scores. Not holding the field, not surviving, not the size of what you killed — an Elephant and a Scout are each worth exactly one point.</p>
+    <p><strong>A charge can carry two players past seven at once, and they share the win.</strong> Not a freak result — over <span class="num">9,000</span> games it happens <strong>11.5%</strong> of the time, because a single charge pays several players and the seventh point is often not the last one scored. If your table wants a single winner, break it on <strong>who holds the field</strong>.</p>
+    <h3>Seniority</h3>
+    <p>The first player to put a unit into an empty army is its senior partner. After that it is whoever holds the <strong>most value standing</strong> in it; on a tie the incumbent keeps it. Lose everything and the army has no senior partner until someone deploys.</p>
+    <p>The senior partner chooses <strong>when</strong> the charge happens — for everybody, including the three players whose units are standing in the line beside theirs.</p>
+  </div>
+</section>
+
+<section>
+  <h2>The rulers</h2>
+  <div class="warn measure">
+    <span class="wl">This is a placeholder, not the roster</span>
+    <p>Each ruler below holds one of every unit plus a second of its own. It exists to measure <em>what one duplicated card is worth</em> — the evidence the real eight get built from. It is not a set of identities and it is not balanced: deck totals run from <strong>29 down to 24</strong>, and win rate in this game climbs with deck total.</p>
+    <p>The named eight — the Sultan, Nawab, Governor, Maharaja, Rana, Nizam, Badshah and Peshwa — exist in the search, but <strong>it has never been run against the current cards.</strong> Every composition on record was tuned against a different game: a different ladder, a Slinger instead of a Commander, an exchanging Spy, and one simultaneous instant instead of the band ladder.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Ruler</th><th style="white-space:normal">Deck</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>
+        <tr><td>Elephant</td><td class="deck">2 Elephant · 1 each of the rest</td><td class="n">29</td></tr>
+        <tr><td>Cannon</td><td class="deck">2 Cannon · 1 each of the rest</td><td class="n">28</td></tr>
+        <tr><td>Rifleman</td><td class="deck">2 Rifleman · 1 each of the rest</td><td class="n">27</td></tr>
+        <tr><td>Warrior</td><td class="deck">2 Warrior · 1 each of the rest</td><td class="n">26</td></tr>
+        <tr><td>Horseman</td><td class="deck">2 Horseman · 1 each of the rest</td><td class="n">25</td></tr>
+        <tr><td>Spy</td><td class="deck">2 Spy · 1 each of the rest</td><td class="n">24</td></tr>
+        <tr><td>Scout</td><td class="deck">2 Scout · 1 each of the rest</td><td class="n">24</td></tr>
+        <tr><td>Commander</td><td class="deck">2 Commander · 1 each of the rest</td><td class="n">24</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="label">Nine cards each · eight rulers · 72 cards in the box</p>
+</section>
+
+<section>
+  <h2>Why it is built this way</h2>
+  <div class="stack measure">
+    <p><strong>Everything recovers. Nothing is destroyed.</strong> A killed unit goes home, waits a lap, and comes back. The cost of losing is tempo, not material — which is what lets a twenty-minute game contain seven kills and still have every deck intact at the end.</p>
+    <p><strong>After a charge the front is quiet by construction.</strong> Every survivor stands facing units it could not finish, or it would have. Nothing more dies until somebody commits a fresh card — so every deployment is a deliberate act of violence, and withdrawing is a real move rather than a concession.</p>
+    <p><strong>Timing is the game.</strong> Charge now against a thin line for a small harvest, or wait while both sides thicken and the killing gets bigger — knowing the enemy is arming too, and that whoever calls it chooses the moment for everyone.</p>
+    <p><strong>Your army is not your team.</strong> Kills are scored by the player who landed the blow, so the four of you in one line are competing for the same corpses.</p>
+  </div>
+</section>
+
+<section style="border-bottom:0">
+  <h2>What is not settled</h2>
+  <div class="open measure">
+    <div class="item"><div><strong>The roster.</strong> The eight real rulers have not been searched against these cards. This is the largest open item in the game.</div></div>
+    <div class="item"><div><strong>The Scout.</strong> Decided as a private <em>look</em>; the model still implements a public <em>reveal</em>.</div></div>
+    <div class="item"><div><strong>What an ability costs.</strong> The roster search prices Spy, Scout and Commander at their printed 1 — one <em>less</em> than the cheapest fighter — so an ability is a discount, and the box has to be stocked by a quota rather than by the card being worth taking.</div></div>
+    <div class="item"><div><strong>Two players.</strong> Seven kills heads-up runs longer per person than at any other count.</div></div>
+    <div class="item"><div><strong>Whether anyone will ever gang up.</strong> Three Horsemen are needed to kill an Elephant and only one of the three is paid. That is either the central tension of a game where you fight together and score apart, or the reason cheap units never combine and the band ladder never fires at a table. <strong>A simulation cannot answer it</strong> — bots do not mind being used. Play it.</div></div>
+  </div>
+</section>
+
+<footer>
+  <div class="label">Derived from rules/RULEBOOK.md</div>
+  <div>Every rule on this page was checked against the resolver in <span class="num">sim/simple.mjs</span>, not against memory.</div>
+</footer>
 
 </div>

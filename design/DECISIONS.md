@@ -1385,3 +1385,552 @@ unmoved (4.5 / 2.8 / 82% / 60 turns), `npm run smoke` still passes over the wire
 **The standing lesson: parity is not a formality, and it is not a statistical test.** Both bugs
 were invisible in `end`/`vp`/`winners` on most games and would never have shown up in a gate —
 they are the kind of drift that makes the played game quietly easier than the measured one.
+
+## 2026-08-19 — D054. THE SIMPLE MODEL: no ring, damage only, three abilities. IT WORKS
+
+**The ring is gone.** Nothing beats anything. A unit deals its STRENGTH as damage to ONE enemy
+unit of its choosing, and dies when the damage on it reaches its strength. Strength is what you
+deal and strength is what you survive, and that is the whole combat system.
+
+> ELEPHANT 5 · CANNON 4 · RIFLEMAN 3 · HORSEMAN 2 · WARRIOR 1 · SPY 1 · SCOUT 1 · SLINGER 1
+
+**Three abilities exist in the game**, all printed on strength-1 units: the **SLINGER** kills the
+highest enemy unit, the **SPY** exchanges itself with the highest enemy unit permanently, the
+**SCOUT** turns one hidden enemy unit face up. No Power Brokers, no supply, no market, no timing
+keywords, no combos. Eight rulers of nine cards, 72 in the box.
+
+**WINNING UNITS STAND, LOSING UNITS RECOVER.** Nothing is ever destroyed: a killed unit goes home
+and sits out a lap. One victory point per enemy unit killed, four to win. Deploy, withdraw,
+defect and the charge are unchanged.
+
+⚠️ **THE ONE RULE THE MODEL RESTS ON: THE BATTLE IS A SINGLE SIMULTANEOUS REVEAL.** Every blow
+and every ability lands in the same instant, and nothing is conditional on its carrier living.
+This was built the other way round first — abilities only for survivors — and it does not work,
+for a reason worth keeping. **A strength-1 unit lives through 15% of charges at three players and
+5% at six**, because every attacker can finish a 1 and almost none can finish an Elephant, so all
+the spare damage lands on the smallest cards on the table. Gated behind survival, the Spy and the
+Scout resolved **0.05 times per game**. They were not weak cards; they were cards that did not
+exist. Simultaneous, they resolve **1.2–2.8 times**, and the signature gate moves from a 7.0 warn
+to a 2.8 pass.
+
+⚠️ **Raising their price in the policy did nothing** — at 4× the valuation the Spy still swapped
+0.13 times a game. The constraint was never how much a bot wanted the card. It was the rule.
+
+**Measured, 10,000 games per player count, placeholder roster:**
+
+| | |
+| --- | ---: |
+| games decided on the target | 100% at every player count (see D055) |
+| worst seat deviation | 4.1 |
+| worst signature deviation | 2.8 |
+| game length | 3.0–3.5 charges, 37–65 turns |
+| kills per charge | 1.76 – 5.85 |
+
+**7 gates · 7 pass · 0 warn · 0 fail**, and it holds across samples — signature deviation reads
+**6.1 / 3.3 / 2.8 at 2,000 / 6,000 / 10,000** games, the usual behaviour of a max over many cells.
+
+**THE ROSTER IS A PLACEHOLDER AND THAT IS DELIBERATE.** Ruler *i* holds one of every type plus a
+second of its own, so the faction column is not a verdict on eight finished rulers — it reads
+**what ONE extra card of each type is worth**, which is the evidence the real compositions get
+built from. Across 3–8 players every signature lands between **0.97 and 1.04** of a fair share.
+The Elephant is the best card in the game at **1.04** and the Slinger is second at **1.03** —
+the heaviest unit and the card that answers it, priced within a point of each other without
+anyone tuning them. **That is the trade the whole model rests on, and it holds.**
+
+**What is NOT settled:** the eight compositions. (The two-player game was the other open item and
+is closed in D055.)
+
+## 2026-08-19 — D055. THE TWO-PLAYER GAME, and why the ground cannot pay
+
+**Two players reached the victory target only 76% of the time**, and 40% of the failures ended
+with NOBODY on any points — the game was not stalemating near the finish, it was never starting.
+
+**The cause was the ending condition, not the design.** "Nobody can or will act" was a full lap of
+passes, `n * 2` — which at eight players means sixteen refusals in a row and at TWO players means
+each of them passing twice. **A floor of 8 takes 2p to 100%** and is provably free from four
+players up, where `n * 2` already exceeds it. It saturates: 8, 10, 14 and 20 measure identically.
+**All seven gates now pass at every player count.**
+
+## The scoring rule: six were measured, one works
+
+| rule | target | on target | seat | signature | turns | kills/charge | gates |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| **1 VP per kill** | 4 | 100% | 4.2 | 3.5 | 79 | **1.76** | **7 pass · 0 · 0** |
+| hold — every ally in the winning army scores | 4 | 100% | 5.5 | 3.3 | 64 | 0.17 | 5 · 1 · 1 |
+| hold | 7 | 100% | 4.7 | 3.0 | 121 | 0.14 | 5 · 1 · 1 |
+| hold, top contributor only | 4 | 100% | **18.8** | 3.5 | 80 | — | 5 · 0 · 2 |
+| hold, but only if blood was drawn | 4 | 99% | 3.7 | 7.3 | **352** | 1.43 | 5 · 1 · 1 |
+| kill + hold | 4 | 100% | 7.7 | 4.1 | 24 | 0.30 | 4 · 2 · 1 |
+
+⚠️ **WHEN THE GROUND PAYS, KILLING IS A COST WITH NO RETURN.** You spend a card to lower the
+enemy's total — but the same point comes from simply HAVING the bigger total, which is cheaper.
+Every version of paying-for-the-ground hits this, and the two escapes are the two failures above:
+let it be bloodless (a two-player game contains 0.7 deaths across 4.1 charges, and the Slinger,
+Spy and Scout each fire 0.1 times) or require blood (nothing pays until someone dies, so the game
+grinds to 352 turns at target 4 and 555 at target 6). **Killing pays for itself only when killing
+IS the point.**
+
+⚠️ **Raising the victory target is not a lever on this.** Across targets 4, 5, 6 and 7 the hold
+rule reads 0.17 / 0.15 / 0.14 / 0.14 kills per charge — it gets slightly MORE bloodless, because
+each extra battle needed is another battle better won by comparison than by fighting. What the
+target does move is seat fairness (5.5 → 4.7, passing at 7) and length (64 → 121 turns).
+
+⚠️ **"Top contributor only" measured 18.8 seat deviation, but part of that is a bad tie-break**
+copied from the killing-blow rule — ties broke on lowest seat, the exact anti-pattern D053 names.
+It was not re-measured with a fair tie-break, because the design objection stands on its own:
+**paying only the largest contributor makes joining an ally's army pay nothing**, which turns the
+alliance into an arms race between allies. That is a rule about the politics, not about a number.
+
+**ADOPTED: one victory point per enemy unit killed, first to four.** The trade the designer named
+is what it delivers — commit more and you can kill more, but you have put more on the table to be
+killed.
+
+## 2026-08-19 — D056. NO WOUNDS. A unit that is not killed stands back up whole
+
+An Elephant 5 that takes 4 and lives is an Elephant 5 again at the next charge. Damage is
+resolved and forgotten; only death persists, and even death only sends a unit home to recover.
+
+**Why it is the right rule and not just the simple one:** a wound can only ever happen to a heavy
+unit. Measured over 4,000 games at six players, of every unit that stood in a charge —
+
+| | ELEPHANT | CANNON | RIFLEMAN | HORSEMAN | WARRIOR · SPY · SCOUT · SLINGER |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| survived **wounded** | 24% | 14% | 9% | 6% | **0%** |
+
+**A strength-1 unit can never be wounded, because anything that reaches it kills it.** So
+"wounds carry" is not a general rule at all — it is a rule about Elephants, and to a lesser
+extent Cannons, and it touches nothing else in the game. It would also put a damage token on the
+table in a game whose whole premise is that a card is a name and a number.
+
+⚠️ **The WOUNDS lever was inert when first built** — the wound was written to the card in hand
+and read back off the card on the ground, so `WOUNDS=1` measured identically to `WOUNDS=0` and
+would have been reported as "persistent damage changes nothing". It is fixed and kept, off by
+default, so the rule can be re-tested rather than re-argued. **Every gate result in D054 and D055
+was measured with wounds off, which is now the adopted rule.**
+
+## 2026-08-19 — D057. SEVEN KILLS TO WIN — five at two players — and the clock became a gate
+
+**More battles is less variance.** Under VP-per-kill, raising the target moves fairness and
+nothing else breaks:
+
+| target | 4 | 5 | 6 | **7** | 8 | 10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| worst seat deviation | 4.6 | 3.6 | 3.6 | **3.0** | 3.1 | 3.1 |
+| worst signature deviation | 4.1 | 4.1 | 4.1 | **3.5** | 3.9 | 3.7 |
+| games on the target | 100% | 100% | 100% | 100% | 100% | 99% |
+
+No single lucky charge decides as much of the game. It plateaus after seven, so seven is where
+the improvement stops rather than where it was capped. **Nothing needed rebalancing to get there.**
+
+⚠️ **THE PRICE IS PAID ENTIRELY BY THE TWO-PLAYER GAME.** An extra point costs ~19 table turns.
+At 3–8 players those are shared out and the count runs 69–89 turns; at two players they land on
+one person, and seven kills took heads-up to 133 turns — **66 decisions each**. Two players
+therefore plays to **five**, which is 97 turns and 48 each. Precedent: the old game also gave 2p
+its own target.
+
+⚠️ **THE LENGTH GATE WAS A PROXY, AND A PROXY CAN PASS WHILE THE GAME TAKES HALF AN HOUR.**
+DECCAN is a **15–20 minute game**, and no gate in this repo had ever said so — they counted turns,
+which is not a unit anybody experiences. The estimate is now made out loud from two stated,
+tunable numbers: **8 seconds for a plain action** (a card down, a card back) and **45 seconds for
+a charge** (reveal, damage assigned and resolved, recovery sorted).
+
+**Measured, every player count: 13–16 minutes.** Two gates were added — turns per player, because
+a 133-turn game is 66 decisions at two players and 8.6 at eight and one number hides that, and
+minutes, because it is the actual brief.
+
+**9 gates · 9 pass · 0 warn · 0 fail** — seat deviation 3.0 and signature deviation 3.5, the best
+fairness the game has measured.
+
+## 2026-08-20 — D058. THE COMMANDER replaces the SLINGER, and it bought back 5 minutes
+
+**The Slinger killed the highest enemy unit. The Commander STRIKES AT ITS STRENGTH.** Printed
+strength 1; in a charge it lands a blow equal to the biggest enemy unit on the ground. Facing an
+Elephant 5 it hits for 5; facing a line of Warriors it hits for 1.
+
+**Why a scaling answer beats a binary one.** Without the ring, raw strength is simply better, and
+it is measurable: over nine-card decks spanning totals 9 to 41, win rate ran **0.42 → 0.64 → 1.28
+→ 2.11 → 2.74**, monotonically, with no exception. The Slinger answered that with a guillotine.
+The Commander answers it with a mirror — it is exactly as big as the problem opposite it, so the
+bigger the enemy's Elephant, the bigger their answer, and a cheap deck can fight an expensive one.
+
+⚠️ **IT COPIES THE BLOW, NOT THE BODY.** Durability stays 1 — anything kills it. Letting it copy
+durability too would make it *become* an Elephant for one point of printed strength, and printed
+strength is the exact quantity every deck in the roster is balanced on. One big swing, and it
+dies to a Warrior.
+
+⚠️ **It copies the ENEMY's best, not its own army's.** Copying your own side was considered and
+is the wrong card twice over: amplifying a strong army deepens the one imbalance the numbers
+actually show, and it is dead weight in a weak army — useless precisely when its owner needs it.
+
+**Commanders do not copy Commanders**, or two of them opposite each other define each other.
+
+**Measured on the placeholder roster, against the same roster with Slingers:**
+
+| | Slinger | **Commander** |
+| --- | ---: | ---: |
+| longest game | 133 turns | **92** |
+| turns per player | 66.7 warn | **46.1 ok** |
+| **minutes** | 22 warn | **17 ok** |
+| kills per charge | 1.76 | **1.81** |
+| signature deviation | 3.4 | 5.8 warn |
+| gates | 7 pass · 2 warn | **8 pass · 1 warn** |
+
+⚠️ **IT SOLVED THE TWO-PLAYER LENGTH PROBLEM THAT D057 HAD PAID FOR.** Seven kills at every
+count cost heads-up 22 minutes and 66 decisions each — accepted deliberately, to avoid an
+exception. Because the Commander scales, charges bite harder and the board resolves instead of
+grinding: **17 minutes, at every player count, with the single target intact.**
+
+⚠️ **FOUR IN ONE DECK IS TOO MANY.** A Peshwa holding four Commanders measured **1.28** of a fair
+share — the strongest ruler in the game — because each copies the enemy's best, so they multiply:
+four heavy blows for four points of printed strength. No ruler holds more than three of anything,
+which also makes every identity read the same way at the table: three of yours, one of everything
+else, and two spare.
+
+**Open:** the compositions were tuned against the Slinger and must be re-searched. The Commander
+is now the most load-bearing card in the game — the brake on strength AND the reason a game
+finishes in 17 minutes — which makes it the one most worth a sensitivity check before print.
+
+## 2026-08-20 — D059. ARMY COMMAND, measured and NOT adopted — and what it exposed instead
+
+The designer's reading was that the three abilities are not being priced into the roster, and the
+proposal was **army command**: once you stand in an army you may act on any unit in it, so you can
+pull a comrade's Scout out of the line on your own turn and deny the enemy the kill. Both halves
+were measured. The first is **correct and worse than stated**. The second **does not follow from
+it**, and the reason is a mechanism, not a tuning number.
+
+### The readout was broken, so the busiest ability read as a dead card
+
+`gates-simple.mjs` printed a "slinger kills" column fed by `kills.filter(k => k.by.u.arm ===
+"SLINGER")`. D058 deleted the Slinger. The filter has therefore matched nothing since, and the
+ability table has printed **0.00 for the Commander in every run after D058** — including the runs
+that chose the strength ladder. Counting the Commander instead: **1.6 kills a game at two players
+rising to 4.6 at eight.** It was never inert; nothing was looking at it.
+
+⚠️ **A READOUT THAT CANNOT FAIL REPORTS A CARD AS INERT WHETHER IT IS INERT OR NOT.** The same
+shape as D045 — a rule the decision function ignores is untestable — one layer further out: a
+card the *measurement* ignores is untestable too, and it fails silently, as a plausible zero.
+
+### The roster prices an ability at its printed strength, which is a DISCOUNT
+
+`roster.mjs` enumerates every nine-card deck at a fixed **printed strength** total and searches
+only inside that band. Spy, Scout and Commander are printed 1 — one *less* than the cheapest
+fighter, the Warrior 2 — so in the only currency the search has, taking an ability is not merely
+free, it **hands a point back to spend elsewhere**. The search still will not take them: the box
+has to be stocked by the `MINCOPIES=6` quota, and the comment on that quota records what happened
+without it — every spare slot filled with Scouts, ten in the box, and the answer to an Elephant
+appearing twice.
+
+**A quota is standing where a price should be.** That is the defect, and it is upstream of any
+roster: the search cannot want a card whose value its cost model cannot see.
+
+### ⚠️ AND THE VALUE IT CANNOT SEE MEASURES AT ZERO — IN A MODEL THAT CANNOT SEE IT EITHER
+
+**Read the table below with the designer's objection attached, because the objection is right.**
+The Spy and the Scout are INFORMATION cards, and this simulation cannot price information. The
+policy reads a hidden enemy as a flat average and a revealed one as its strength, so a bot that
+learns something barely changes what it does; `V_SPY` and `V_SCOUT` are stated judgements, not
+measurements; and no bot bluffs, reads a face-down commitment, or changes WHEN it calls the charge
+because of what it just learned. **A zero here is the model's silence, not the card's.**
+
+That is D045 turned on its author: a rule the decision function ignores is untestable, and its
+measurement is an artifact of the omission rather than a reading of the card. It condemns the
+Commander readout in the section above and it condemns this number in the same breath. **The Spy
+and the Scout are NOT hereby judged decoration.** They are unmeasured, and in this chassis they
+are unmeasurable — the question goes to OPEN.md, where only a table can answer it.
+
+⚠️ **DO NOT CUT A CARD ON THE STRENGTH OF A NUMBER THIS MODEL IS NOT ENTITLED TO PRODUCE.**
+
+**What survives the objection**, because neither depends on the policy at all: the readout bug,
+and the cost model. The search would price a Spy at 1 however good or blank the card is.
+
+### The numbers themselves
+
+Abilities switched off one at a time on the placeholder roster (`OFF=`, 2,000 games/count), which
+leaves the unit in the game as a plain strength-1 body and isolates the ABILITY:
+
+| ruler, mean over 7 counts | abilities on | its own ability off | all three off |
+| --- | ---: | ---: | ---: |
+| spy | 1.02 | — | 0.92 |
+| scout | 0.96 | — | 0.96 |
+| commander | 0.98 | — | 0.97 |
+| **elephant** | **1.09** | 1.15 *(COMMANDER off)* | **1.19** |
+
+⚠️ **THE ABILITIES HOLD THE ELEPHANT DOWN FOR THE WHOLE TABLE AND NOBODY IS PAID FOR CARRYING
+ONE — AS THESE BOTS PLAY THEM.** Turning all three off moves the ruler that holds a second copy by ≤0.02 — under noise —
+and moves the ELEPHANT ruler from 1.09 to 1.19. The Commander alone accounts for about half of
+that. The board work is real (spy swaps 1.5–6.2 a game, scout reveals 1.4–5.5, commander kills
+1.6–4.6); **none of it accrues to the player who brought the card.** ⚠️ Only the COMMANDER's line
+here is trustworthy — a blow is a blow whoever throws it. The other two are the model's silence.
+
+### Army command: measured at three strengths, and it is a turn sink
+
+`ARMYCMD=1` — you may withdraw any unit in your army, not only your own. It is a **withdrawal**
+rule only: deploying another player's card would spend your turn to hand them the kill and the
+point. An ally's unit is scored for what it DENIES (`V_DENY`, a stated judgement, env-tunable).
+
+| 5 players | turns | minutes | covers/game |
+| --- | ---: | ---: | ---: |
+| off | 84 | **15** | — |
+| on, `V_DENY=0.05` | 115 | 19 | 12.8 |
+| on, `V_DENY=0.3` | 194 | **30** | 41.5 |
+
+Monotonic in the weight, with no free setting. The cause is structural rather than numeric:
+covering is almost always worth a little, and it is available to **every player against every unit
+in the line, every lap** — so it is taken over and over and the front becomes the shuffling
+contest that the recovery rule exists to prevent.
+
+Two brakes bring it back inside every gate. **`ARMYSEEN=1` — you may only pull back a comrade you
+can SEE, a face-up unit** — is the one that binds: 16 minutes, 1.9–2.6 covers a game, 8 pass · 1
+warn, the same scorecard as the rule switched off. `ARMYONCE=1` (one cover between charges) costs
+3–5 minutes and, stacked on SEEN, changes nothing (2.62 → 2.53 covers): under SEEN the cap never
+binds.
+
+### ⚠️ BUT IT SAVES ELEPHANTS, NOT SCOUTS — AND IT CANNOT DO OTHERWISE
+
+Share of all covers, by what was covered, under the version that fits:
+
+| ELEPHANT 6 | CANNON 5 | RIFLEMAN 4 | HORSEMAN 3 | WARRIOR 2 | SPY 1 | SCOUT 1 | COMMANDER 1 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 29.6% | 25.2% | 17.5% | 12.4% | 6.5% | 2.3% | 2.3% | 4.2% |
+
+**8.8% of covers reach the three ability cards** — the exact cards the proposal was meant to
+protect — and the ability rulers gain nothing: spy 1.05 → 0.97, scout 0.96 → 0.95, commander
+0.97 → 0.98, elephant 1.14 → 1.14.
+
+Two reasons, and the second is the general one:
+
+* The brake that makes the rule affordable is the brake that excludes the fragile cards. **A
+  strength-1 unit almost never survives a charge, so it is almost never face up** — SEEN can only
+  reach the units that were already durable enough not to need saving.
+* ⚠️ **A KILL PAYS ONE POINT WHATEVER DIED.** Denying a kill on an Elephant is worth exactly what
+  denying one on a Scout is worth, and saving the Elephant *also* keeps six points of blow in the
+  line. So covering will always flow to the biggest unit, at any weight, under any brake.
+  **Army command cannot make abilities matter, because nothing in the scoring rule knows an
+  ability exists.**
+
+`VPMODE=strength` (a kill pays the victim's strength, `TARGET=21`) was tried as the obvious answer
+and is worse: it pays you most for killing the biggest thing, which dies anyway, and the Elephant
+ruler goes **1.14 → 1.18**, or 1.28 with abilities off. The ability rulers do not move.
+
+**NOT ADOPTED.** Kept behind `ARMYCMD` / `ARMYSEEN` / `ARMYONCE`, default off, with `sim/armycmd.mjs`
+as the A/B harness. The Commander readout fix IS adopted — it is a bug.
+
+**The live question it leaves, and it is a COST question, not a card question:** the roster search
+prices every ability at its printed strength, so it cannot stock the box on merit whether the card
+is brilliant or blank. **Fix the price.** Whether the Spy and the Scout deserve their slots is a
+separate question, it is in OPEN.md, and nothing in this repo can answer it.
+
+## 2026-08-20 — D060. THE NUMBER IS CALLED VALUE, and AGILITY breaks the one thing nothing else could
+
+Two changes from the designer, one free and one structural.
+
+### VALUE, not STRENGTH — and horse before foot
+
+One number does damage, durability, seniority and now initiative. **"Strength" names only the
+first of those**, so the stat is renamed **VALUE** throughout the simple model. `VALUE` replaces
+`STR`, `u.v` replaces `u.s`, and the env lever is `VALUE=`. ⚠️ Verified **byte-identical gate
+output** before and after, in both resolution modes — a rename that changes a number is a rename
+that changed something else too.
+
+**The rename immediately paid for itself.** Under the old name nothing objected to a WARRIOR 2
+and a HORSEMAN 3. The moment the number also decides who moves first, a man on foot striking
+before a man on a horse is absurd, so the two swap: **WARRIOR 3 · HORSEMAN 2.** The Horseman is
+the light, quick, fragile one; the Warrior is the one who stands. Also inert — the ladder is
+still 6,5,4,3,2,1,1,1 and the placeholder decks are the same multiset, so this costs nothing and
+buys the theme.
+
+⚠️ **A NAME THAT UNDERSTATES WHAT A NUMBER DOES WILL HIDE A DESIGN ERROR FOR AS LONG AS IT
+STANDS.** The ladder was wrong from the moment agility was proposed, and the only thing that
+found it was calling the stat what it actually is.
+
+### AGILITY — value is also initiative, inverted
+
+`AGILITY=1`. The battle stops being one instant and becomes a ladder: **everything printed 1
+strikes, then 2, then 3, up to the Elephant 6. A unit killed before its band comes up never
+strikes.** Ties resolve as a band — everything at one value strikes together — so the three
+ability cards need no order among themselves and ganging works within a band as well as across.
+
+⚠️ **IT REVERSES THE RULE THIS CHASSIS WAS BUILT ON, AND IT IS THE ONE REVERSAL THAT DOES NOT
+RE-BREAK WHAT THAT RULE PROTECTED.** D054 threw out the survival test because a value-1 card
+lived through 5% of charges, so the Spy and the Scout resolved 0.05 times a game — "not weak
+cards, cards that did not exist." Under agility the 1s act FIRST, before anything can reach them.
+The old failure cannot recur: nothing resolves before band 1, so an ability card gets its text off
+unconditionally.
+
+**Gates, placeholder roster, 2,000 games/count:**
+
+| | one instant | **AGILITY** |
+| --- | ---: | ---: |
+| **signature deviation** | 6.5 warn | **4.7 ok** |
+| **elephant ruler** | **1.14** | **0.99** |
+| seat deviation | 2.7 | 2.7 |
+| kills per charge | 1.70 | 1.41 |
+| charges | 6.2 | 6.8 |
+| minutes | 18 | 19 |
+| gates | 8 pass · 1 warn | 8 pass · 1 warn |
+
+**The signature gate passes clean for the first time**, and the Elephant ruler lands on its fair
+share. Nothing else has done that — not the ladder sweep, not the Commander, not a scoring rule.
+
+### ⚠️ AND IT DOES IT BY A DIFFERENT MECHANISM THAN THE ONE PROPOSED
+
+The proposal was that cheap units gang up and drop the Elephant before it swings. Survival per
+unit, 1,500 games at 3/5/8 players (`sim/who.mjs`), says something better:
+
+| | ELEP 6 | CANN 5 | RIFL 4 | WARR 3 | HORS 2 | SPY 1 | SCOUT 1 | CMDR 1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| one instant | **51.7%** | 43.4% | 35.9% | 28.9% | 20.8% | 7.1% | 8.1% | 11.9% |
+| **AGILITY** | 48.7% | **54.3%** | 52.3% | 43.6% | 32.4% | 18.5% | 19.1% | 31.8% |
+
+**The Elephant barely dies more — it falls 51.7% to 48.7%. What changes is that everything else
+stops being wiped out.** Under one instant, survival is strictly monotonic in value: 51.7 > 43.4 >
+35.9 > 28.9 > 20.8 > 8. **Value literally buys survival, in order, with no exception** — which is
+the "raw value is strictly better" problem the Commander was printed to brake. Under the ladder
+that ordering BREAKS: the **Cannon 5 outlives the Elephant 6**, and the Rifleman 4 draws level
+with it. Value stops being monotonically better, structurally, without a card to enforce it.
+
+The reason is the rule itself: a unit killed in an early band never strikes, so the damage that
+used to land on the cheap units is never thrown. Cheap units do not win — **they stop being free
+kills.**
+
+⚠️ **AND IT HANDS THE ABILITY CARDS BACK THEIR SURVIVAL.** Spy 7.1 → 18.5%, Scout 8.1 → 19.1%,
+Commander 11.9 → 31.8%. A card that lives is a card that can be played again, which is the
+condition D054 was chasing when it removed the survival test in the first place. The open Spy and
+Scout question in OPEN.md should be re-asked at a table under AGILITY, not under one instant.
+
+**The price:** kills per charge 1.70 → 1.41, because the dead no longer answer, and one extra
+minute. Both cheap.
+
+**Status: measured, recommended, DEFAULT STILL OFF** (`AGILITY=1`) pending the designer's call,
+because it reverses a recorded core rule and that is not a change to make on a subagent's opinion.
+The VALUE rename and the horse-before-foot swap ARE adopted — both are provably inert.
+
+## 2026-08-20 — D061. AGILITY ADOPTED. And a policy that priced initiative played 2:1 WORSE
+
+**`AGILITY` is now the default** (`AGILITY=0` restores the single instant). Value is also
+initiative, inverted: everything printed 1 strikes, then 2, up to the Elephant 6, and a unit
+killed before its band never strikes. Gates on the placeholder roster: **9 gates · 8 pass · 1
+warn · 0 fail**, signature deviation **4.7**, Elephant ruler **0.99**, 19 minutes. The evidence is
+in D060.
+
+### ⚠️ THE POLICY WAS TAUGHT TO PRICE INITIATIVE AND IT GOT WORSE. 32-35% AGAINST 65-68%
+
+The reasoning was sound and the result was not. If value decides who strikes first, a policy
+written for one simultaneous instant is blind to the central new fact, and measuring abilities
+with it would repeat exactly the artifact D059 was corrected for. So `expectedPreempt` was added —
+the chance a card is silenced before it swings, counting only enemies of strictly lower value,
+since a tie is the same band — and the kill term and the ability term were both gated on surviving
+to act.
+
+**It broke the game.** Kills per charge fell 1.41 → 0.96, the longest game went 102 turns → 217,
+and two gates hard-failed at 37 minutes. Two corrections were tried. Making the pre-emption a
+SHARE of the enemy's early damage rather than the sum of it — because the aim heuristic spreads
+blows across the line — recovered 3 minutes. Adding `V_SOAK`, the credit a silenced body earns by
+eating early blows that would otherwise have finished two cheap cards, recovered 3 more across a
+sweep from 0 to 1.3. Neither came close: the best configuration still ran 28 minutes at 1.15 kills
+a charge, against 19 minutes and 1.41 for the policy that ignores initiative entirely.
+
+So the two policies were sat at the same table, alternating seats, rotating the offset every game
+(`sim/tempo-h2h.mjs`, 4,000 games each at 4, 6 and 8 players):
+
+| | tempo-aware | tempo-blind |
+| --- | ---: | ---: |
+| 4 players | 31.6% | **68.4%** |
+| 6 players | 32.9% | **67.1%** |
+| 8 players | 34.6% | **65.4%** |
+
+⚠️ **A POLICY THAT PLAYS WORSE MEASURES WORSE, WHATEVER IT UNDERSTANDS.** Reverted to default off,
+kept behind `TEMPO=1` as a recorded failure. It is also a finding about the GAME and not only
+about the code: **being pre-empted costs far less than the term charges for it.** A silenced
+Elephant 6 has still eaten six points of early blows, and the bots that simply play value and
+ignore who moves first beat the ones that fret about it two to one.
+
+### The abilities, re-measured under agility — and STILL NOT ADMISSIBLE
+
+The designer's argument for re-measuring was that agility gives the cards real texture: the Spy
+trades into a bigger unit but inherits its slowness, the Scout's information now says WHEN a card
+acts and not merely how big it is, and a value-1 card can be thrown out as bait. Ability survival
+does triple under agility (D060), so the cards at least persist. `sim/ability.mjs`, 1,200 games at
+3, 5 and 8 players, its own ability switched off so the body stays and only the text goes:
+
+| | kills/charge | spy ruler | scout ruler | commander ruler |
+| --- | ---: | ---: | ---: | ---: |
+| all on | 3.29 | 0.94 | 0.99 | 0.99 |
+| `OFF=SPY` | 3.24 | **1.01** | — | — |
+| `OFF=SCOUT` | 3.24 | — | **0.99** | — |
+| `OFF=COMMANDER` | 3.18 | — | — | **0.93** |
+
+**The Scout is flat to three decimal places of nothing: 0.99 with its text, 0.99 without.** The
+Spy's ruler gets BETTER when the ability is switched off, 0.94 → 1.01. The Commander is worth
+about 0.06, which is at the noise floor. Columns that should not have moved at all swing ±0.07
+between runs, so the honest reading of every one of these numbers is ZERO.
+
+⚠️ **AND THAT READING IS STILL NOT ENTITLED TO A VERDICT, FOR THE REASON IN D059.** Agility made
+the cards SURVIVE; it did not make the model able to price INFORMATION. No bot bluffs, none baits,
+none re-times a charge on what it just learned, and none values trading into a big slow card
+against staying quick — the term that would have priced exactly that trade is the one measured
+above as playing 2:1 worse. **Every hypothesis the designer offered for why agility should rescue
+these cards names a behaviour this simulation does not have.**
+
+The Spy and the Scout remain in OPEN.md. Nothing here cuts them, and nothing here should be quoted
+as though it could.
+
+## 2026-08-20 — D062. THE SPY WITHDRAWS AN ENEMY. And the mutual clause was wrong, twice over
+
+**The Spy stops exchanging and starts removing.** ON REVEAL, one enemy unit LEAVES WITHOUT A
+FIGHT — no choice, it does not strike, it cannot be killed, and nobody scores off it. Under
+AGILITY the Spy is band 1 and nothing acts before band 1, so the withdrawal lands before contact.
+`SPYMODE=exchange` restores the printed card.
+
+Three verbs, three value-1 cards, no overlap: the **Commander hits**, the **Spy removes**, the
+**Scout looks**.
+
+### ⚠️ THE MUTUAL CLAUSE WAS RECOMMENDED ON A PREDICTION AND THE PREDICTION WAS WRONG
+
+The argument for spending the Spy along with its target was that an unconditional withdrawal at
+band 1 always resolves and cannot be answered — a value-1 card deleting a 6 from every charge, for
+free — which is the shape `LESSONS.md` records as what ended the old game: the broker that
+measured +38.8 and sat in all 50 of the top 50 armies because nothing could answer it.
+
+Both halves of that were tested and both failed.
+
+| | exchange | withdraw, **mutual** | withdraw, **solo** |
+| --- | ---: | ---: | ---: |
+| kills per charge | 1.41 | 1.24 | **1.35** |
+| charges | 6.8 | 8.6 | 7.6 |
+| minutes | 19 | **22** warn | **20** ok |
+| turns per player | 51 | **61** warn | 53 |
+| signature deviation | 4.7 ok | **5.3** warn | **4.5** ok |
+| seat deviation | 2.7 | 2.4 | 3.8 |
+| **spy ruler** | **0.95** | **0.95** | **0.99** |
+| gates | 8 pass · 1 warn | **6 pass · 3 warn** | **8 pass · 1 warn** |
+
+**Solo is better than mutual on every gate**, and it is not remotely overpowered: the ruler
+holding two of them measures **0.99**, closer to a fair share than either alternative and than the
+printed card. Spending the Spy made the game longer, the charges smaller and the signature gate
+worse, and bought nothing.
+
+⚠️ **AND THE LESSONS.md ANALOGY DID NOT APPLY, FOR A REASON WORTH KEEPING.** That broker was
++38.8 because it **won you the ground** — a payoff that landed in one pair of hands. **Denial is
+not private.** Removing the enemy's Elephant helps everyone facing it, and its owner captures only
+a fraction. An unanswerable card cannot run away with the game when its output is shared. "Nothing
+can answer it" is only dangerous when it is also **paid to one person** — the two properties were
+conflated, and only the second one is the hazard.
+
+This is the same mechanism D059 found holding every ability at zero, seen from the other side: it
+caps the ceiling as surely as it caps the floor.
+
+### What it costs, and what it does not fix
+
+Against the printed exchange, solo costs **0.06 kills per charge and one minute**, and moves seat
+deviation 2.7 → 3.8 (inside the gate, worth watching). The prediction that a denial mechanic would
+shrink charges and stretch the game held in direction for all three variants — mildly for solo,
+badly for mutual.
+
+⚠️ **It still does not PAY its owner.** 0.99 is a fair share, not a premium: the Spy remains a card
+you carry rather than a card that wins. The cost problem D059 recorded is untouched — the roster
+search still prices it at its printed 1.
+
+**ADOPTED: `solo` is the default.** The enemy unit leaves; the Spy stays and fights on.
+`SPYMODE=mutual` keeps the spent-Spy variant and `SPYMODE=exchange` the printed card, both as
+recorded failures rather than live options.

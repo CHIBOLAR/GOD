@@ -146,3 +146,15 @@ Everything else — the ring, the card list, the eight rulers, the supply, the e
 targets and the ending conditions — is settled and measured. Every change from here should start
 by running `npm run gates` — **at 12,000 games, not the default 4,000, and across more than one
 seed, if the result is going to be believed.**
+
+## Are the Spy and the Scout worth their slots? — ONLY A TABLE CAN ANSWER (D059)
+
+Both are INFORMATION cards, and `sim/simple.mjs` cannot price information: the policy reads a
+hidden enemy as a flat average, `V_SPY`/`V_SCOUT` are stated judgements, and no bot bluffs, reads
+a face-down commitment, or changes when it calls the charge because of what it just learned. They
+measure at zero. ⚠️ **That zero is the model's silence and must never be quoted as a verdict on
+the cards** — the same objection D045 makes about any rule the decision function ignores.
+
+What a table has to answer: does knowing one face-down unit change WHEN you charge? Does taking
+the enemy's best card permanently feel like the swing its text promises? If the answer is no at a
+table too, then they are decoration — but that is a table's finding to make, not this repo's.
