@@ -334,15 +334,18 @@ export function charge(g) {
   // who was hurt least, and a player wiped out entirely has nothing left and picks last. That
   // points the rubber band backwards.
   //
-  // MOST UNITS LOST, then GREATEST STRENGTH LOST, then seat order. The tiebreak is not a detail:
-  // most casualties lose exactly one unit, so strength-lost is what actually decides most picks,
-  // and losing an Elephant 9 should outrank losing a Warrior 1.
-  // PICKORDER=senior and PICKORDER=turn restore the alternatives for measurement.
+  // THE MEASURE IS TOTAL STRENGTH LOST. Lose two units and it is the two added together.
+  //
+  // ⚠️ Not unit count. Counting units made two Warriors (2 strength) outrank one Elephant (9),
+  // which is not what "hurt worst" means — the ring kills without regard to strength, so the
+  // player who loses an Elephant has lost far more of their Force than the player who loses a
+  // pair of Warriors. Unit count survives only as a tiebreak, then seat order.
+  // PICKORDER=senior (REJECTED, see above) and PICKORDER=turn remain for measurement only.
   const recruited = new Map();
   const order = [...lost.keys()];
   if (PICK_ORDER === "damage") {
-    order.sort((x, y) => lost.get(y) - lost.get(x)
-      || (lostStr.get(y) || 0) - (lostStr.get(x) || 0) || x - y);
+    order.sort((x, y) => (lostStr.get(y) || 0) - (lostStr.get(x) || 0)
+      || lost.get(y) - lost.get(x) || x - y);
   } else if (PICK_ORDER === "senior") {
     const str = new Map();
     for (const a of g.armies) for (const c of a) str.set(c.owner, (str.get(c.owner) || 0) + c.s);

@@ -259,8 +259,15 @@ wss.on("connection", (ws) => {
         const s = c.room.state;
         // the server re-derives legality; a client can never talk the engine into an illegal move
         const legal = legalActions(s, c.seat);
-        const ok = legal.some((a) => a.type === m.action?.type
-          && (a.type !== "commit" || (a.uid === m.action.uid && a.army === m.action.army)));
+        // ⚠️ This used to guard on "commit", a verb from the game this engine replaced, so the
+        // clause never fired and ANY uid/army was accepted as long as some deploy was legal.
+        // Every field a client can choose is now matched against the legal action itself.
+        const A = m.action || {};
+        const ok = legal.some((a) => a.type === A.type && (
+          a.type === "deploy"   ? a.uid === A.uid && a.army === A.army
+          : a.type === "withdraw" ? a.card === A.card && a.army === A.army
+          : a.type === "defect"   ? a.from === A.from && a.to === A.to
+          : true));
         if (!ok) return fail("not a legal move right now");
         apply(s, c.seat, m.action);
         step(c.room);
