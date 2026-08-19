@@ -24,7 +24,7 @@
 // The board is capped, so it also jams: once both armies are full nobody can commit, and the
 // charge is the only thing that clears room. Calling it is how the game breathes.
 
-import { FACTIONS, BROKERS, ARMS, PREY, beats } from "./cards.mjs";
+import { FACTIONS, BROKERS, ARMS, ARMSTR, PREY, beats } from "./cards.mjs";
 
 export const NUM_ARMIES = Number(process.env.ARMIES || 2);
 
@@ -98,11 +98,69 @@ export function chooseBroker(market, player) {
   return best;
 }
 
+// ---- DAMAGE. A unit dies when its strength reaches ZERO. -------------------------------------
+// ⚠️ THE BUG THIS FIXES: under one-hit kills every unit killed exactly one thing, so every unit
+// EARNED exactly the same — and strength bought only two things, seniority and being the ring's
+// preferred target. One is weak, the other is a liability. Measured over 400 games, an ELEPHANT
+// sat in hand being passed over 18,039 times while every other arm left within a few turns, and
+// when it was finally played it died 49% of the time against a Warrior's 36%. Deployed least,
+// died most, killed no more. Strength was a cost with no return.
+//
+// Damage gives it one, using the number already printed on the card and no new vocabulary:
+// YOU TAKE DAMAGE EQUAL TO WHAT HIT YOU, AND AT ZERO YOU ARE DEAD. The ring is unchanged — who
+// may hit whom is still the five arms — but an ELEPHANT 9 can no longer be removed by any single
+// enemy, because its killers are a HORSEMAN 5 and a WARRIOR 1. It takes two horsemen.
+//
+// Damage is summed SIMULTANEOUSLY, so nothing depends on order, exactly as before. The kill is
+// credited to the largest single contributor, ties to the earlier seat — the same "largest
+// contributor" principle the game already used for spoils.
+export const DAMAGE = process.env.DAMAGE === "1";   // EXPERIMENT: fails seat deviation, see D052
+
 export function resolveCharge(armies) {
   const all = [];
   armies.forEach((a, ai) => a.forEach((u, ui) => all.push({ u, ai, ui })));
   const dead = armies.map((a) => new Array(a.length).fill(false));
   const kills = [];
+
+  if (DAMAGE) {
+    // hp carries between charges — a unit that survived wounded stays wounded on the front
+    for (const t of all) if (t.u.hp === undefined) t.u.hp = t.u.s;
+    const incoming = new Map();                       // target -> [{from, amount}]
+    const aim = (k) => {
+      let best = null;
+      for (const t of all) {
+        if (t.ai === k.ai || !beats(k.u.arm, t.u.arm)) continue;
+        // ⚠️ D045: the policy must USE the rule or the rule is untestable. Prefer something this
+        // blow can finish outright; otherwise hit the biggest thing you can reach.
+        const finishes = k.u.s >= t.u.hp;
+        if (!best) { best = t; continue; }
+        const bf = k.u.s >= best.u.hp;
+        if (finishes !== bf) { if (finishes) best = t; continue; }
+        if (finishes ? t.u.hp > best.u.hp : t.u.hp > best.u.hp) best = t;
+      }
+      return best;
+    };
+    for (const k of [...all].sort((x, y) => y.u.s - x.u.s || x.ai - y.ai || x.ui - y.ui)) {
+      const swings = k.u.broker === "sepoy" ? SEPOY_SWINGS : 1;
+      for (let n = 0; n < swings; n++) {
+        const t = aim(k);
+        if (!t) break;
+        if (!incoming.has(t)) incoming.set(t, []);
+        incoming.get(t).push({ from: k, amount: k.u.s });
+      }
+    }
+    for (const [t, hits] of incoming) {
+      const total = hits.reduce((n, x) => n + x.amount, 0);
+      t.u.hp -= total;
+      if (t.u.hp > 0) continue;
+      dead[t.ai][t.ui] = true;
+      // the killing blow: largest single contributor, earliest seat on a tie
+      const blow = hits.reduce((b, x) =>
+        !b || x.amount > b.amount || (x.amount === b.amount && x.from.u.owner < b.from.u.owner)
+          ? x : b, null);
+      kills.push({ by: blow.from, hit: t });
+    }
+  } else {
   const pick = (k) => {
     let best = null;
     for (const t of all) {
@@ -121,6 +179,7 @@ export function resolveCharge(armies) {
       kills.push({ by: k, hit: t });
 
     }
+  }
   }
 
   // ---- survivors act. Only what lives through the ring gets to do anything.
@@ -401,14 +460,26 @@ function expectedKills(g, seat, arm, army) {
   }
   return Math.min(1, n);                        // a unit cancels at most one thing
 }
-function expectedRisk(g, seat, arm, army) {
+// ⚠️ D045 AGAIN, and this one invalidated a whole measurement. Risk used to count each killer as
+// 1.0 regardless of its strength, so a single WARRIOR 1 read as certain death for an ELEPHANT 9.
+// Under damage that is simply false — the warrior takes a ninth of it. Risk is now the fraction
+// of your strength the enemy can actually deal, which is the only reading that lets the policy
+// see durability at all.
+const STR = Object.fromEntries(ARMS.map((a, i) => [a, ARMSTR[i]]));
+function expectedRisk(g, seat, arm, army, hp) {
   const killers = ARMS.filter((t) => beats(t, arm));
+  const mine = hp ?? STR[arm];
+  // an unrevealed unit is a 2-in-5 chance of being a killer, at the average killer's strength
+  const avgKiller = killers.reduce((n, k) => n + STR[k], 0) / killers.length;
   let n = 0;
   for (let a = 0; a < NUM_ARMIES; a++) {
     if (a === army) continue;
-    for (const c of g.armies[a]) n += c.revealed ? (killers.includes(c.arm) ? 1 : 0) : 0.4;
+    for (const c of g.armies[a]) {
+      if (!DAMAGE) { n += c.revealed ? (killers.includes(c.arm) ? 1 : 0) : 0.4; continue; }
+      n += c.revealed ? (killers.includes(c.arm) ? c.s : 0) : 0.4 * avgKiller;
+    }
   }
-  return Math.min(1, n);
+  return Math.min(1, DAMAGE ? n / mine : n);
 }
 
 export function score(g, seat, act) {
@@ -443,7 +514,11 @@ export function score(g, seat, act) {
   }
   const k = expectedKills(g, seat, act.unit.arm, act.army);
   const r = expectedRisk(g, seat, act.unit.arm, act.army);
-  return KILL_WEIGHT * k - RISK_WEIGHT * r + SURVIVE_BONUS * (1 - r) - 0.02 * act.unit.s;
+  // ⚠️ The -0.02*s term taught the policy to PREFER CHEAP UNITS, which is exactly backwards once
+  // strength is durability — it was the single largest reason an Elephant sat in hand 19,000
+  // turns. Under damage, strength pays for itself through `r` and needs no thumb on the scale.
+  const bulk = DAMAGE ? 0 : 0.02 * act.unit.s;
+  return KILL_WEIGHT * k - RISK_WEIGHT * r + SURVIVE_BONUS * (1 - r) - bulk;
 }
 
 function choose(acts, scores, rnd) {
