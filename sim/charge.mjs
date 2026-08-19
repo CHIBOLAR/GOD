@@ -76,7 +76,7 @@ export function makeRng(seed) {
 // canceller first, each taking the strongest legal target, so the result never depends on order.
 // MARKET=0 restores the old blind draw from the supply.
 export const MARKET_SIZE = Number(process.env.MARKET ?? 3);
-export const PICK_ORDER = process.env.PICKORDER || "senior";
+export const PICK_ORDER = process.env.PICKORDER || "damage";
 
 export function refillMarket(g) {
   while (g.market.length < MARKET_SIZE && g.supply.length) g.market.push(g.supply.pop());
@@ -285,13 +285,14 @@ export function charge(g) {
   }
 
   // the cancelled burn; everything else stands, now face up
-  const lost = new Map();
+  const lost = new Map(), lostStr = new Map();
   for (let a = 0; a < NUM_ARMIES; a++) {
     const keep = [];
     g.armies[a].forEach((c, i) => {
       if (dead[a][i]) {
         c.ref.spent = true; c.ref.onBoard = false;
         lost.set(c.owner, (lost.get(c.owner) || 0) + 1);
+        lostStr.set(c.owner, (lostStr.get(c.owner) || 0) + c.s);
       } else { c.revealed = true; keep.push(c); }
     });
     g.armies[a] = keep;
@@ -325,19 +326,27 @@ export function charge(g) {
   // at the table can see coming, and gives SENIORITY A SECOND JOB — until now it decided only
   // who may call the charge.
   //
-  // ⚠️ SENIORITY IS THE WRONG WAY ROUND FOR A CATCH-UP MECHANIC and it is worth saying plainly:
-  // pick order runs on surviving strength, so among the casualties the LEAST damaged chooses
-  // first, and a player wiped out entirely has no strength and picks last. Brokers exist to arm
-  // whoever is being killed most. PICKORDER=damage reverses it (heaviest loss picks first) and
-  // PICKORDER=turn ignores both; all three are measured.
+  // THE BIGGEST LOSER CHOOSES FIRST. Brokers are compensation, so the order runs on what you
+  // LOST, never on what survived.
+  //
+  // ⚠️ Ordering by seniority was tried and is wrong, for a reason worth keeping written down:
+  // seniority is greatest SURVIVING strength, so it hands the pick of the row to the casualty
+  // who was hurt least, and a player wiped out entirely has nothing left and picks last. That
+  // points the rubber band backwards.
+  //
+  // MOST UNITS LOST, then GREATEST STRENGTH LOST, then seat order. The tiebreak is not a detail:
+  // most casualties lose exactly one unit, so strength-lost is what actually decides most picks,
+  // and losing an Elephant 9 should outrank losing a Warrior 1.
+  // PICKORDER=senior and PICKORDER=turn restore the alternatives for measurement.
   const recruited = new Map();
   const order = [...lost.keys()];
-  if (PICK_ORDER === "senior") {
+  if (PICK_ORDER === "damage") {
+    order.sort((x, y) => lost.get(y) - lost.get(x)
+      || (lostStr.get(y) || 0) - (lostStr.get(x) || 0) || x - y);
+  } else if (PICK_ORDER === "senior") {
     const str = new Map();
     for (const a of g.armies) for (const c of a) str.set(c.owner, (str.get(c.owner) || 0) + c.s);
     order.sort((x, y) => (str.get(y) || 0) - (str.get(x) || 0) || x - y);
-  } else if (PICK_ORDER === "damage") {
-    order.sort((x, y) => lost.get(y) - lost.get(x) || x - y);
   }
   for (const seat of order) {
     if (!MARKET_SIZE) {                      // MARKET=0 restores the old blind draw

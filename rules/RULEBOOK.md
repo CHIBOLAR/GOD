@@ -99,9 +99,9 @@ and the winning side **acts first** once the front reopens. Level strength, and 
 return to your hand.
 
 **7 · The casualties.** Every player who lost at least one unit **takes one Power Broker from
-the MARKET** — the three face up beside the supply. **They choose in order of seniority**, the
-greatest surviving strength choosing first. Only three are on offer, so a fourth casualty takes
-nothing. Turn the market back up to three afterwards.
+the MARKET** — the three face up beside the supply. **The heaviest loss chooses first**: most
+units lost, then greatest strength lost, then turn order. Only three are on offer, so a fourth
+casualty takes nothing. Turn the market back up to three afterwards.
 
 ---
 
@@ -156,10 +156,9 @@ ring can fire again — on your unit as readily as on theirs.
 
 **Withdrawing is how a jammed front reopens.** A full board of units that cannot hurt each other is a dead board. Pulling one home makes room for something that can kill.
 
-**Losing arms you.** Every casualty takes a Power Broker, and the player being killed most is
-armed fastest. The player in front is the one player who cannot buy the game's sharpest cards.
-But seniority chooses first, so the *least* damaged casualty gets the pick of the three — being
-hurt arms you, being hurt worst arms you last.
+**Losing arms you.** Every casualty takes a Power Broker, and **the worst-hurt player picks
+first** from the three on offer. The player in front is the one player who cannot buy the game's
+sharpest cards. Compensation runs on what you lost, never on what survived.
 
 ---
 
@@ -178,11 +177,11 @@ it wins the initiative, and its ON VICTORY abilities.
 
 **RING** — the cycle of five arms. Each kills the next two along it.
 
-**MARKET** — the three Power Brokers lying face up beside the supply. Casualties choose from it.
+**MARKET** — the three Power Brokers lying face up beside the supply. Casualties choose from it,
+heaviest loss first.
 
 **SENIOR PARTNER** — the first player to deploy into an army; afterwards, whoever has the
-greatest surviving strength in it. Only a senior partner may call the charge, and seniority also
-sets the order in which casualties pick from the market.
+greatest surviving strength in it. Only a senior partner may call the charge.
 
 **STRENGTH** — the printed number. It decides seniority, and which unit the ring reaches for
 first. It never decides who kills whom.
