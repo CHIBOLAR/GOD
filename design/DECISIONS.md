@@ -1344,3 +1344,44 @@ then cross. An ally thinning out is visibly getting ready to leave — the tell 
 
 Measured: faction deviation **6.0 → 4.1**, the best reading the game has had with the market in.
 Restricting defection did more for balance than any broker tuning.
+
+## 2026-08-19 — D053. PARITY RESTORED against THE CHARGE, and it found two real bugs
+
+*(D052 is skipped: `sim/charge.mjs` already cites it for the ARMBITE experiment, which has not
+been written up yet.)*
+
+**`npm run parity` had been dead for a day and nobody could tell.** `web/parity.mjs` still
+imported the round-and-ground `sim/game.mjs` — and called `playGame(factions, target, seed)`,
+a signature `charge.mjs` no longer has, so it was seeding the model with the victory target. It
+reported **3477 divergent games of 3500** and that number meant nothing at all.
+
+⚠️ **A harness pointing at the wrong model is worse than no harness**, because it reports a
+catastrophe every run and trains you to ignore it. When the model changes shape, the harness is
+the first thing that has to be rewritten, not the last.
+
+**The harness now compares turn by turn, not outcome to outcome.** `playGame` takes an optional
+read-only `opts.onTurn` observer, and both sides record one line per turn — clock, seat, action,
+scores, supply, and both armies down to who owns which card and whether it is face up. The report
+prints the **first line they part on** with its run-up. Everything after that first line is a
+consequence, not a finding.
+
+**It immediately found two bugs, and neither was visible in the final scores.**
+
+**1 · Bluffs were being paid for out of the game's own randomness.** `botAction` drew a bot's
+declaration with `declarationFor(unit, s.rnd)` — the same stream the model uses to *choose*. A
+claim decides nothing (nothing in the policy reads one), but drawing it consumed a number, and
+**every decision after the first deploy came out different**. The online game had drifted off the
+measured one because of a card's small talk. Declarations now run on their own stream.
+
+**2 · The clock was ticking in the wrong place, and not at all on a charge.** The model spends
+`g.turn` when a turn *starts*; the engine spent it at the end, so a withdrawn unit's `readyAt`
+landed one turn early and **every withdrawal recovered a turn sooner online than in the gates**.
+Worse, `case "charge"` never called `endTurn` at all — so calling the charge cost no clock, broke
+no idle run, and **handed the whole table a free turn of recovery** the measured game never gives.
+
+**Measured: 21,000 games across 2–8 players, every turn of every game identical.** Gates
+unmoved (4.5 / 2.8 / 82% / 60 turns), `npm run smoke` still passes over the wire.
+
+**The standing lesson: parity is not a formality, and it is not a statistical test.** Both bugs
+were invisible in `end`/`vp`/`winners` on most games and would never have shown up in a gate —
+they are the kind of drift that makes the played game quietly easier than the measured one.

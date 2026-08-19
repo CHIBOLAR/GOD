@@ -32,11 +32,17 @@ export function createGame({ factions, seed = Date.now(), names = [] }) {
     if (!FACTIONS.some((f) => f.key === k)) throw new Error(`unknown ruler: ${k}`);
   }
   const rnd = makeRng(seed >>> 0);
+  // ⚠️ A DECLARATION IS COSMETIC AND MUST NOT MOVE THE GAME. Nothing in the policy reads a
+  // claim, so a bot's bluff decides nothing — but drawing it from `rnd` consumed a number out
+  // of the stream the model uses to CHOOSE, and every decision after the first deploy came out
+  // different. The whole online game drifted off the measured one because of a card's small
+  // talk. Bluffs get their own stream; `npm run parity` is what caught it.
+  const declRng = makeRng(((seed >>> 0) ^ 0x5bf03635) >>> 0);
   const g = newGame(factions, rnd);
   g.players.forEach((p, i) => { p.name = names[i] ?? `Seat ${i + 1}`; p.hand.forEach(stamp); });
 
   return {
-    g, rnd, n, seed,
+    g, rnd, declRng, n, seed,
     phase: PHASE.PLAY,
     toAct: 0,
     idle: 0,
@@ -78,7 +84,6 @@ export function legalActions(s, seat) {
 }
 
 function endTurn(s, acted) {
-  s.g.turn++;                                   // the clock recovery is measured against
   s.idle = acted ? 0 : s.idle + 1;
 
   // ⚠️ A FULL BOARD CHARGES ITSELF — the model's rule, not a convenience. Waiting on a board
@@ -147,6 +152,13 @@ export function apply(s, seat, action) {
     && (a.type !== "deploy" || (a.uid === action.uid && a.army === action.army))
     && (a.type !== "withdraw" || a.card === action.card));
   if (!ok) throw new Error(`illegal action for seat ${seat}: ${JSON.stringify(action)}`);
+
+  // ⚠️ THE CLOCK TICKS AT THE START OF THE TURN, because that is where the model ticks it, and
+  // `readyAt` — how long a withdrawn unit sits out — is measured against it. Ticking at the end
+  // instead made every withdrawal recover a turn early, and CALLING THE CHARGE did not tick it
+  // at all: an army that charged handed the whole table a free turn of recovery that the
+  // measured game never gives. "continue" is the server's timer, not a turn, and never ticks.
+  if (action.type !== "continue") s.g.turn++;
 
   switch (action.type) {
     case "hold":
@@ -221,7 +233,10 @@ export function apply(s, seat, action) {
       s.stats[seat].charges++;
       note(s, `${nm(s, seat)} CALLS THE CHARGE`, "charge");
       doCharge(s, seat);
-      if (Math.max(...s.g.players.map((p) => p.vp)) >= TARGET) finish(s, "target");
+      // Calling it is a TURN — it spends the clock and breaks an idle run like any other action,
+      // and a board still full after the charge charges again. endTurn leaves `toAct` alone while
+      // the reveal is on screen; "continue" opens the new front.
+      endTurn(s, true);
       break;
     }
 
@@ -261,7 +276,7 @@ export function botAction(s, seat) {
     : pick.defect ? { type: "defect", from: pick.from, to: pick.to }
     : pick.withdraw ? { type: "withdraw", card: pick.withdraw.ref.uid, army: pick.army }
     : { type: "deploy", uid: pick.unit.uid, army: pick.army,
-        claim: declarationFor(pick.unit, s.rnd) };
+        claim: declarationFor(pick.unit, s.declRng) };
 }
 
 // ---- the per-seat view --------------------------------------------------------

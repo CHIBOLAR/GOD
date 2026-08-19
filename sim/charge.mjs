@@ -546,7 +546,10 @@ function choose(acts, scores, rnd) {
 }
 
 // ---- a whole game -----------------------------------------------------------------
-export function playGame(factionKeys, seed) {
+// `opts.onTurn` is a READ-ONLY observer, called once per completed turn with the live state.
+// It exists so `web/parity.mjs` can compare this loop against the online engine turn by turn
+// and name the turn they part on. It decides nothing and must never be given a return value.
+export function playGame(factionKeys, seed, opts = {}) {
   const rnd = makeRng(seed);
   const g = newGame(factionKeys, rnd);
   const n = g.players.length;
@@ -581,6 +584,7 @@ export function playGame(factionKeys, seed) {
     }
     // the board is full and nobody can add anything: the armies charge whether anyone meant it or not
     if (FORCED && boardFull(g)) { charge(g); charges++; }
+    opts.onTurn?.(g, seat, act, { turns, charges, idle });
     if (Math.max(...g.players.map((p) => p.vp)) >= TARGET) break;
     if (idle >= n * 2) break;                     // nobody can or will do anything
     if (g.nextSeat !== null && g.nextSeat !== undefined) { seat = g.nextSeat; g.nextSeat = null; }
