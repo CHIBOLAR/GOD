@@ -1297,3 +1297,50 @@ gate still warning and the next thing to solve.
 game for reference. The rulebook, `CARDS.md`, `PLAYER_AID.md`, `web/STATE_INVENTORY.md` and the
 whole online client still describe that game — **the deployed game and the designed game have
 diverged**, and closing that gap is the work that follows this entry.
+
+## 2026-08-19 — D049. Seniority passes on surviving strength, as the rulebook always said
+
+**A bug, not a design change.** The rulebook has always read "after a charge, the senior partner
+of each army is the player with the greatest surviving strength in it." The code reassigned
+seniority **only when the incumbent had no survivors left**, so a senior partner reduced to a
+Warrior 1 kept command over an ally standing with an Elephant 9.
+
+Command is the right to call the charge, so the wrong holder is a real advantage handed
+permanently to whoever happened to deploy first. Ties keep the incumbent, as written.
+
+Measured: no movement on any gate. But the rule now **fires** — "command passes" occurs 259 times
+across 40 six-player games, where before it was near-silent. That matters because seniority
+became visible in the client the same week.
+
+## 2026-08-19 — D050. THE MARKET. Three Power Brokers face up, and the worst-hurt casualty chooses
+
+**Compensation stopped being a lottery.** Three brokers lie face up beside the supply. Every
+player who lost at least one unit takes **one** — one only, however many units they lost — and
+they choose in order of **total STRENGTH lost**. Ties break on units lost, then turn order. Only
+three are on offer, so a fourth casualty takes nothing. The row refills after every charge.
+
+* ⚠️ **Ordered by seniority first, and that was wrong.** Seniority is greatest *surviving*
+  strength, so it handed the pick of the row to the casualty who was hurt least, and a player
+  wiped out entirely picked last. Brokers exist to arm whoever is being killed most; the order
+  has to run on what you LOST.
+* ⚠️ **Then ordered by unit count, and that was also wrong.** Counting units made two Warriors
+  (2 strength) outrank one Elephant (9). Strength is the measure; unit count is only a tiebreak.
+* **D045 applies:** a choice the decision function ignores is untestable, so `chooseBroker` is a
+  real preference — take the arm you are thinnest in, tie-break on strength.
+
+Measured across 2,500 games: blind draw 5.3 faction deviation, market 6.0 (seniority) / 5.8
+(damage). All inside the noise band, so **the market is balance-neutral** and was bought with
+agency and public information rather than numbers.
+
+## 2026-08-19 — D051. One unit, one turn — so defection needs a single standing unit
+
+Defection used to move your whole contingent. It now moves **one unit, and is legal only when
+that is all you have standing**. Two units cannot both cross, because that is two actions in one
+turn; and one cannot cross alone, because that would leave you in both armies, which no rule
+allows.
+
+**So betrayal takes preparation.** Withdraw until one unit remains, sit through its recovery,
+then cross. An ally thinning out is visibly getting ready to leave — the tell is the point.
+
+Measured: faction deviation **6.0 → 4.1**, the best reading the game has had with the market in.
+Restricting defection did more for balance than any broker tuning.
