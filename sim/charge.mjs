@@ -24,7 +24,7 @@
 // The board is capped, so it also jams: once both armies are full nobody can commit, and the
 // charge is the only thing that clears room. Calling it is how the game breathes.
 
-import { FACTIONS, BROKERS, ARMS, ARMSTR, PREY, beats } from "./cards.mjs";
+import { FACTIONS, BROKERS, ARMS, ARMSTR, ARMBITE, PREY, beats } from "./cards.mjs";
 
 export const NUM_ARMIES = Number(process.env.ARMIES || 2);
 
@@ -114,7 +114,14 @@ export function chooseBroker(market, player) {
 // Damage is summed SIMULTANEOUSLY, so nothing depends on order, exactly as before. The kill is
 // credited to the largest single contributor, ties to the earlier seat — the same "largest
 // contributor" principle the game already used for spoils.
-export const DAMAGE = process.env.DAMAGE === "1";   // EXPERIMENT: fails seat deviation, see D052
+export const DAMAGE = process.env.DAMAGE === "1";
+// INITIATIVE=0 turns off "the winning side acts first" so its cost can be measured alone
+export const INITIATIVE = process.env.INITIATIVE !== "0";
+// HEAL=1 — wounds do NOT carry between charges; every survivor stands back up at full
+// strength. Tests whether persistent wounds are what makes going first so valuable.
+export const HEAL = process.env.HEAL === "1";
+// what an arm DEALS to its prey — never its own strength, which is what it can absorb
+export const BITE = Object.fromEntries(ARMS.map((a, i) => [a, ARMBITE[i]]));   // EXPERIMENT: fails seat deviation, see D052
 
 export function resolveCharge(armies) {
   const all = [];
@@ -132,9 +139,9 @@ export function resolveCharge(armies) {
         if (t.ai === k.ai || !beats(k.u.arm, t.u.arm)) continue;
         // ⚠️ D045: the policy must USE the rule or the rule is untestable. Prefer something this
         // blow can finish outright; otherwise hit the biggest thing you can reach.
-        const finishes = k.u.s >= t.u.hp;
+        const finishes = BITE[k.u.arm] >= t.u.hp;
         if (!best) { best = t; continue; }
-        const bf = k.u.s >= best.u.hp;
+        const bf = BITE[k.u.arm] >= best.u.hp;
         if (finishes !== bf) { if (finishes) best = t; continue; }
         if (finishes ? t.u.hp > best.u.hp : t.u.hp > best.u.hp) best = t;
       }
@@ -146,7 +153,7 @@ export function resolveCharge(armies) {
         const t = aim(k);
         if (!t) break;
         if (!incoming.has(t)) incoming.set(t, []);
-        incoming.get(t).push({ from: k, amount: k.u.s });
+        incoming.get(t).push({ from: k, amount: BITE[k.u.arm] });
       }
     }
     for (const [t, hits] of incoming) {
@@ -154,10 +161,18 @@ export function resolveCharge(armies) {
       t.u.hp -= total;
       if (t.u.hp > 0) continue;
       dead[t.ai][t.ui] = true;
-      // the killing blow: largest single contributor, earliest seat on a tie
-      const blow = hits.reduce((b, x) =>
-        !b || x.amount > b.amount || (x.amount === b.amount && x.from.u.owner < b.from.u.owner)
-          ? x : b, null);
+      // THE KILLING BLOW: largest single contributor. ⚠️ THE TIE-BREAK MUST NOT MENTION THE SEAT.
+      // Breaking ties on the lower seat number handed seat 0 a systematic share of every
+      // contested kill, and under damage tied contributions are the COMMON case because two
+      // units of the same arm bite identically. Measured at 6 players: seat0 36.3% down to
+      // seat5 4.5%, and it grew with game length instead of averaging out. Ties now go to the
+      // unit that stood in most danger — lowest remaining strength — which no seat can farm.
+      const blow = hits.reduce((b, x) => {
+        if (!b || x.amount > b.amount) return x;
+        if (x.amount < b.amount) return b;
+        if (x.from.u.hp !== b.from.u.hp) return x.from.u.hp < b.from.u.hp ? x : b;
+        return x.from.ui < b.from.ui ? x : b;      // slot order: stable, and not a seat
+      }, null);
       kills.push({ by: blow.from, hit: t });
     }
   } else {
@@ -352,7 +367,7 @@ export function charge(g) {
         c.ref.spent = true; c.ref.onBoard = false;
         lost.set(c.owner, (lost.get(c.owner) || 0) + 1);
         lostStr.set(c.owner, (lostStr.get(c.owner) || 0) + c.s);
-      } else { c.revealed = true; keep.push(c); }
+      } else { c.revealed = true; if (HEAL) c.hp = c.s; keep.push(c); }
     });
     g.armies[a] = keep;
     if (!keep.length) g.leader[a] = null;
@@ -441,7 +456,7 @@ export function charge(g) {
   // made winning a charge worth strictly less than the rules promised — no points, and not the
   // initiative either. `nextSeat` is null when strength was level and the rotation is unchanged.
   g.victors = victors;
-  g.nextSeat = victors >= 0 ? g.leader[victors] : null;
+  g.nextSeat = INITIATIVE && victors >= 0 ? g.leader[victors] : null;
   g.charge++;
   return { kills, scored, lost, recruited, swaps, victors };
 }
@@ -470,13 +485,13 @@ function expectedRisk(g, seat, arm, army, hp) {
   const killers = ARMS.filter((t) => beats(t, arm));
   const mine = hp ?? STR[arm];
   // an unrevealed unit is a 2-in-5 chance of being a killer, at the average killer's strength
-  const avgKiller = killers.reduce((n, k) => n + STR[k], 0) / killers.length;
+  const avgKiller = killers.reduce((n, k) => n + BITE[k], 0) / killers.length;
   let n = 0;
   for (let a = 0; a < NUM_ARMIES; a++) {
     if (a === army) continue;
     for (const c of g.armies[a]) {
       if (!DAMAGE) { n += c.revealed ? (killers.includes(c.arm) ? 1 : 0) : 0.4; continue; }
-      n += c.revealed ? (killers.includes(c.arm) ? c.s : 0) : 0.4 * avgKiller;
+      n += c.revealed ? (killers.includes(c.arm) ? BITE[c.arm] : 0) : 0.4 * avgKiller;
     }
   }
   return Math.min(1, DAMAGE ? n / mine : n);

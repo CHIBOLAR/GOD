@@ -27,6 +27,15 @@ export const PREY = Object.fromEntries(
 // factions without touching the ring the designer specified — the relationships stay exactly
 // as written, only the numbers move.
 export const ARMSTR = (process.env.ARMSTR || "9,3,7,5,1").split(",").map(Number);
+
+// ARMBITE — HOW HARD AN ARM HITS ITS PREY, in ring order, independent of what it can absorb.
+//
+// ⚠️ Strength used to do both jobs and could not do either well. As pure durability under the
+// damage rule, a WARRIOR 1 dealt 1 and its kills collapsed from 809 to 202 — it could not finish
+// a RIFLEMAN 3 without three of them. Splitting the two numbers is what lets a unit be fragile
+// AND dangerous: the warrior dies to anything and bites deep, the elephant absorbs everything
+// and lands a lesser blow. Strength is what you survive; BITE is what you do.
+export const ARMBITE = (process.env.ARMBITE || "2,4,3,4,5").split(",").map(Number);
 const S = Object.fromEntries(ARMS.map((a, i) => [a, ARMSTR[i]]));
 export const FORCE = [
   { key: "warrior", name: "Warrior", arm: "WARRIOR", s: S.WARRIOR },
