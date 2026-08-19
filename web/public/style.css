@@ -1,0 +1,278 @@
+/* GOD — Gambit of Deccan. Deccani manuscript: lapis, gold, ink.
+   ⚠️ U009: value contrast is the primary visual decision, because the whole piece system
+   depends on silhouette. Arms differ by SHAPE first and colour second (U010), so the board
+   still reads with one ink or with no colour vision at all. */
+
+:root {
+  --ink:        #0B0C10;
+  --ink-2:      #14161D;
+  --ink-3:      #1D212B;
+  --edge:       #2B3140;
+  --edge-soft:  #1F242F;
+
+  --parch:      #EDE6D6;
+  --parch-dim:  #A9A395;
+  --text:       #E6E0D0;
+  --text-soft:  #9BA0AE;
+  --text-faint: #676D7C;
+
+  --lapis:      #2E5BD4;
+  --lapis-lit:  #6C93FF;
+  --lapis-deep: #16295E;
+  --gold:       #C9A227;
+  --gold-lit:   #E8D9A0;
+  --verm:       #C1352B;
+  --verm-lit:   #F0705F;
+  --verd:       #3E8F6F;
+
+  --r:   3px;
+  --gap: 10px;
+
+  /* U030–U032: every duration here is measured, not guessed. Nothing exceeds 500ms. */
+  --t-moment-in:  400ms;
+  --t-moment-out: 250ms;
+  --t-kill:       160ms;
+  --t-quick:      120ms;
+  --ease: cubic-bezier(.2,.7,.3,1);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; height: 100%;
+  background: var(--ink);
+  color: var(--text);
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 17px; line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+/* U062: safe-area insets — the action bar sits on the home indicator without them. */
+#app {
+  min-height: 100%;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.caps {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+}
+
+/* ---------- top bar ---------------------------------------------------------- */
+.bar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px; border-bottom: 1px solid var(--edge);
+  background: var(--ink-2);
+}
+.brand { font-family: Cinzel, serif; font-weight: 600; letter-spacing: .1em; color: var(--gold); }
+.bar .spacer { margin-left: auto; }
+.stat { display: flex; align-items: baseline; gap: 5px; color: var(--text-soft); }
+.stat b { color: var(--text); font-weight: 500; }
+
+/* ---------- seats ------------------------------------------------------------ */
+/* U015: everyone visible from the first frame. U016: off-turn tiny, on-turn loud. */
+.seats { display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; scrollbar-width: none; }
+.seats::-webkit-scrollbar { display: none; }
+
+.seat {
+  flex: 0 0 auto; min-width: 112px;
+  border: 1px solid var(--edge); border-radius: var(--r);
+  background: var(--ink-2); padding: 8px 10px;
+  transition: border-color var(--t-quick) var(--ease), background var(--t-quick) var(--ease);
+}
+.seat.you   { border-color: var(--gold); }
+.seat.onturn{ border-color: var(--lapis-lit); background: var(--lapis-deep); }
+.seat.out   { opacity: .45; }
+.seat .nm   { font-family: Cinzel, serif; font-size: 14px; letter-spacing: .04em; }
+.seat .sub  { color: var(--text-faint); }
+.seat .vp   { color: var(--gold-lit); }
+
+/* the per-seat evidence strip — U017/U018. Declarations live on the seat, never in a log. */
+.claims { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; min-height: 15px; }
+.claim {
+  border: 1px solid var(--edge); border-radius: 2px; padding: 0 4px;
+  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--text-soft);
+}
+.claim.t { border-color: var(--verd);  color: #7FD3AC; }   /* revealed true */
+.claim.f { border-color: var(--verm);  color: var(--verm-lit); }   /* revealed a lie */
+
+/* ---------- the ground ------------------------------------------------------- */
+.ground { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 8px 14px; }
+
+.armyhead { display: flex; align-items: baseline; gap: 8px; }
+.armyhead .who { color: var(--text-soft); }
+.armyhead .tot { margin-left: auto; color: var(--gold-lit); }   /* U012: always on screen */
+
+.slots { display: flex; gap: var(--gap); }
+.slot {
+  flex: 1 1 0; aspect-ratio: 3/4; max-width: 84px;
+  border: 1px dashed var(--edge); border-radius: var(--r);
+  display: grid; place-items: center;
+}
+.slot.filled { border-style: solid; border-color: var(--edge-soft); background: var(--ink-2); }
+
+/* the ring, permanently on screen — U011 */
+.ring {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 0; color: var(--text-faint);
+  border-top: 1px solid var(--edge-soft); border-bottom: 1px solid var(--edge-soft);
+  margin: 4px 0;
+}
+
+/* ---------- pieces: meeples, not cards (U007) -------------------------------- */
+.unit {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; position: relative;
+}
+.pip {
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  font-family: "JetBrains Mono", monospace; font-size: 13px; font-weight: 500;
+  color: var(--ink); background: var(--text);
+}
+/* SHAPE carries the arm. Colour is the second channel, never the only one. */
+.pip.elephant { clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); background: var(--lapis-lit); }
+.pip.rifleman { clip-path: polygon(30% 0,70% 0,70% 100%,30% 100%);                background: #6FC79E; }
+.pip.cannon   { clip-path: none;                                                   background: var(--verm-lit); }
+.pip.horseman { clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%);                 background: var(--gold-lit); }
+.pip.warrior  { border-radius: 50%;                                                background: var(--parch); }
+.pip.hidden   { background: var(--ink-3); color: var(--text-faint); border: 1px solid var(--edge); }
+.pip.broker   { box-shadow: 0 0 0 2px var(--gold); }
+
+.unit .owner { font-size: 10px; color: var(--text-faint); }
+.unit .said  { font-size: 9.5px; color: var(--lapis-lit); letter-spacing: .06em; }
+.unit.dead .pip { opacity: .25; }
+
+/* ---------- hand ------------------------------------------------------------- */
+/* U061: no negative margins. Every piece is its own tap target at 44px (U060). */
+.handwrap { border-top: 1px solid var(--edge); background: var(--ink-2); padding: 10px 14px; }
+.hand { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.hand::-webkit-scrollbar { display: none; }
+
+.card {
+  flex: 0 0 auto; min-width: 56px; min-height: 72px;
+  border: 1px solid var(--edge); border-radius: var(--r); background: var(--ink-3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 6px; cursor: pointer;
+  transition: border-color var(--t-quick) var(--ease), transform var(--t-quick) var(--ease);
+}
+.card:hover  { border-color: var(--lapis-lit); }
+.card.sel    { border-color: var(--gold); transform: translateY(-4px); }
+.card.locked { opacity: .4; cursor: default; }
+.card .lbl   { font-size: 10px; color: var(--text-faint); }
+
+/* a Power Broker is a CARD while a unit is a meeple — rarity legible before reading (U008) */
+.card.isbroker { min-width: 96px; border-color: var(--gold); background: #1A1710; }
+.card.isbroker .lbl { color: var(--gold-lit); font-size: 10.5px; }
+.card.isbroker .txt { font-size: 11px; color: var(--text-soft); text-align: center; line-height: 1.3; }
+
+/* ---------- actions ---------------------------------------------------------- */
+.acts { display: flex; gap: 8px; padding: 10px 14px 14px; }
+button {
+  flex: 1; min-height: 44px;                      /* U060 */
+  font-family: Cinzel, serif; font-size: 13px; letter-spacing: .08em;
+  color: var(--text); background: var(--ink-3);
+  border: 1px solid var(--edge); border-radius: var(--r);
+  cursor: pointer; touch-action: manipulation;
+  transition: background var(--t-quick) var(--ease), border-color var(--t-quick) var(--ease);
+}
+button:hover:not(:disabled)  { border-color: var(--lapis-lit); background: var(--ink-2); }
+button:disabled              { opacity: .35; cursor: default; }
+button.go                    { border-color: var(--gold); color: var(--gold-lit); }
+button.warn                  { border-color: var(--verm); color: var(--verm-lit); }
+:focus-visible               { outline: 2px solid var(--lapis-lit); outline-offset: 2px; }
+
+/* ---------- staged moments (U025, U084, U086) -------------------------------- */
+.moment {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center; text-align: center;
+  background: rgba(11,12,16,.94); padding: 24px;
+  animation: momentIn var(--t-moment-in) var(--ease);
+}
+.moment.out { animation: momentOut var(--t-moment-out) var(--ease) forwards; }
+.moment .who  { font-family: Cinzel, serif; font-size: clamp(26px,8vw,52px); letter-spacing: .14em; color: var(--parch); }
+.moment .verb { color: var(--text-soft); margin: 10px 0; }
+.moment .what { font-family: Cinzel, serif; font-size: clamp(22px,7vw,44px); letter-spacing: .2em; color: var(--gold-lit); }
+.moment.betray .what { color: var(--verm-lit); }
+.moment.ally   .what { color: #7FD3AC; }
+.moment .rule  { width: 120px; height: 1px; background: var(--edge); margin: 22px auto; }
+.moment .army  { display: flex; gap: 8px; justify-content: center; }
+
+@keyframes momentIn  { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes momentOut { to   { opacity: 0; } }
+
+/* U065: reduced motion jumps to the END STATE — it does not merely slow down. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}
+
+/* ---------- lobby ------------------------------------------------------------ */
+.pad { padding: 20px 16px; }
+.rulers { display: grid; grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 8px; }
+.ruler {
+  border: 1px solid var(--edge); border-radius: var(--r); background: var(--ink-2);
+  padding: 12px; min-height: 62px; cursor: pointer; text-align: left;
+}
+.ruler.taken { opacity: .35; cursor: default; }
+.ruler.mine  { border-color: var(--gold); }
+.ruler .n    { font-family: Cinzel, serif; font-size: 15px; }
+.ruler .e    { color: var(--text-faint); font-size: 12px; }
+
+h1 { font-family: Cinzel, serif; font-weight: 600; letter-spacing: .12em; margin: 0 0 4px; }
+.sub { color: var(--text-soft); margin: 0 0 18px; }
+.err { color: var(--verm-lit); min-height: 20px; }
+
+/* ---------- desktop ---------------------------------------------------------- */
+/* U063: portrait is the base and desktop is the enhancement, not the reverse. */
+@media (min-width: 900px) {
+  #app { max-width: 1100px; margin: 0 auto; width: 100%; }
+  .slot { max-width: 104px; }
+  .seats { flex-wrap: wrap; justify-content: center; overflow: visible; }
+}
+
+/* ---------- choosing an army: a full-screen decision ------------------------- */
+/* U016 — the acting seat owns the stage. Where you send a unit is the political act of the
+   game, so it is not a two-button strip: it is both alliances, side by side, with who is in
+   them, what they have killed, and what they have claimed. */
+.choose {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(11,12,16,.97);
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 22px 16px calc(22px + env(safe-area-inset-bottom));
+  animation: momentIn var(--t-moment-in) var(--ease);
+  overflow-y: auto;
+}
+.choose > .caps { text-align: center; color: var(--text-soft); }
+.sides { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+
+.side {
+  border: 1px solid var(--edge); border-radius: var(--r); background: var(--ink-2);
+  padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 10px;
+  cursor: pointer; min-height: 200px;
+  transition: border-color var(--t-quick) var(--ease), background var(--t-quick) var(--ease);
+}
+.side:hover:not(:disabled) { border-color: var(--gold); background: var(--ink-3); }
+.side:disabled { opacity: .3; cursor: default; }
+.side .nm  { font-family: Cinzel, serif; font-size: 19px; letter-spacing: .1em; color: var(--parch); }
+.side .str { color: var(--gold-lit); }
+.side .empty { color: var(--text-faint); font-style: italic; }
+
+.roster { display: flex; flex-direction: column; gap: 9px; }
+.member { border-left: 2px solid var(--edge); padding-left: 8px; }
+.member.lead { border-left-color: var(--gold); }
+.member .who { display: flex; gap: 8px; align-items: baseline; }
+.member .who b { font-weight: 500; color: var(--text); }
+.member .kills { margin-left: auto; color: var(--verm-lit); }
+
+.pips { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.pips .mini {
+  width: 22px; height: 22px; display: grid; place-items: center;
+  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--ink);
+}
+
+@media (max-width: 560px) { .sides { grid-template-columns: 1fr; } }

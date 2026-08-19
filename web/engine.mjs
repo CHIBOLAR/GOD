@@ -43,7 +43,7 @@ export function createGame({ factions, seed = Date.now(), names = [] }) {
     lastCharge: null,
     end: null,
     winners: [],
-    log: [],
+    log: [], logN: 0,
     stats: Array.from({ length: n }, () => ({
       deploys: 0, withdraws: 0, charges: 0, holds: 0, kills: 0, losses: 0,
     })),
@@ -54,7 +54,7 @@ const nm = (s, i) => s.g.players[i].name;
 // EVENTS, NOT LOG LINES. The log box is going away; these are the moments the client stages.
 // `data` lets it build a banner without parsing English out of `text`.
 const note = (s, text, kind = "info", data = null) => {
-  s.log.push({ charge: s.g.charge, text, kind, data });
+  s.log.push({ n: ++s.logN, charge: s.g.charge, text, kind, data });
   if (s.log.length > 200) s.log.shift();
 };
 const BROKER_NAME = Object.fromEntries(BROKERS.map((b) => [b.key, b.name]));
@@ -64,7 +64,10 @@ const armyName = (i) => ["I", "II", "III", "IV"][i] ?? String(i + 1);
 // The move space is the model's, translated to wire form. `uid` identifies a card in hand;
 // `card` identifies one already standing on the ground.
 export function legalActions(s, seat) {
-  if (s.phase === PHASE.CHARGE) return [{ type: "continue" }];
+  // ⚠️ "continue" IS NOT A PLAYER ACTION. Nobody chooses it and no client may draw a button for
+  // it — the server ticks it on a timer once the reveal has been held long enough for everyone
+  // to see. Doing anything at all carries you past a charge; there is nothing to decide here.
+  if (s.phase === PHASE.CHARGE) return [{ type: "continue", internal: true }];
   if (s.phase === PHASE.OVER || seat !== s.toAct) return [];
   return modelActions(s.g, seat).map((a) =>
     a.pass ? { type: "hold" }
@@ -296,7 +299,7 @@ export function view(s, seat) {
         : (u.readyAt ?? 0) > s.g.turn ? "recovering" : "ready",
       readyIn: (u.readyAt ?? 0) > s.g.turn ? (u.readyAt - s.g.turn) : undefined,
     })),
-    reveal: showAll ? s.lastCharge : null,
+    reveal: s.lastCharge,        // resolved history — safe to read after the phase moves on
     log: s.log.slice(-60),
     supplyLeft: s.g.supply.length,
     actions: legalActions(s, seat),
