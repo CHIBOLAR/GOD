@@ -202,6 +202,26 @@ export function legalActions(g, seat) {
   return acts;
 }
 
+// ---- WHAT A BOT SAYS IT IS ------------------------------------------------------------------
+// A declaration is only worth making if it cannot be read, so this is a mixed strategy: silence,
+// truth, and one specific lie, chosen at random every time.
+//
+// THE LIE IS DERIVED FROM THE RING, not invented. If you claim arm Y, opponents counter by
+// deploying the arms that KILL Y — the two before it. You want those to be arms your REAL unit
+// kills — the two after it. Solving killers(Y) = prey(X) gives Y = X + 3. So a bot holding an
+// Elephant claims Horseman: the table brings Riflemen and Cannons to deal with the horse, and
+// the Elephant eats both.
+//
+// ⚠️ THE GATES CANNOT MEASURE ANY OF THIS. Nothing in the policy READS a declaration, so a claim
+// changes no simulated decision and the numbers will not move a hair — the same untestability
+// trap recorded in D045. This is a human-facing rule, and only a table can price it.
+export function declarationFor(unit, rnd) {
+  const r = rnd();
+  if (r < 0.35) return null;                                   // say nothing
+  if (r < 0.65) return unit.arm;                               // the truth
+  return ARMS[(ARMS.indexOf(unit.arm) + 3) % 5];               // the trap
+}
+
 export const boardFull = (g) => g.armies.every((a) => a.length >= ARMY_CAP);
 
 // `claim` is what the player SAYS this unit is. It may be a lie. It is attached to the card and

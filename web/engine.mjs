@@ -11,7 +11,7 @@
 import { FACTIONS, ARMS } from "../sim/cards.mjs";
 import {
   NUM_ARMIES, ARMY_CAP, MAX_PER_ARMY, TARGET,
-  makeRng, newGame, legalActions as modelActions, score, commit, charge, boardFull, recovering,
+  makeRng, newGame, legalActions as modelActions, score, commit, charge, boardFull, recovering, declarationFor,
 } from "../sim/charge.mjs";
 
 export const PHASE = {
@@ -214,7 +214,8 @@ export function botAction(s, seat) {
     : pick.charge ? { type: "charge" }
     : pick.defect ? { type: "defect", from: pick.from, to: pick.to }
     : pick.withdraw ? { type: "withdraw", card: pick.withdraw.ref.uid, army: pick.army }
-    : { type: "deploy", uid: pick.unit.uid, army: pick.army, claim: null };
+    : { type: "deploy", uid: pick.unit.uid, army: pick.army,
+        claim: declarationFor(pick.unit, s.rnd) };
 }
 
 // ---- the per-seat view --------------------------------------------------------
